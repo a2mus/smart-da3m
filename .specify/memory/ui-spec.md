@@ -63,7 +63,15 @@
 - **Journey Map**: Visualizes the pedagogy graph as a dashed path using SVG graphics natively integrated behind HTML nodes for organic, non-linear progression.
 - **Zakat al-Ilm Component**: A subtle, beautifully contained block presenting peer-to-peer audio hints, reinforcing solidarity.
 
-*(Future screens: Expert Pedagogical View, Remediation Atom Flow — to be derived from these UI patterns).*
+### 3.3 Expert Pedagogical Back-Office (Desktop-Optimized)
+- **Objective**: Provide a data-dense, highly analytical view for pedagogical experts to monitor cohorts without reverting to visually harsh "spreadsheet" aesthetics.
+- **Layout Rhythm**: Fixed sidebar navigation (Right-side in RTL) with a sprawling main content area optimized for larger monitors.
+- **KPI Bento Grid**: Replaces standard dashboard widgets with softened glass-cards showcasing key metrics (e.g., class average, academic risk factors) using elegant data-visualizations (SVG rings).
+- **Student Risk Cards**: List/Grid hybrid cards profiling critical students. Combines qualitative missing concepts, historical progress tracts (Soft stacked bars), and semantic risk badges.
+- **Adaptive Learning Clusters**: Distinct visual nodes grouping students who share specific pedagogical gaps, with clear CTAs for manual cluster creation.
+- **Primary Actions**: Floating Action Buttons (FAB) for global capabilities and strong, rounded CTAs (`rounded-2xl`) to trigger remediation sessions.
+
+*(Future screens: Remediation Atom Flow — to be derived from these UI patterns).*
 
 ## 4. Navigation Architecture
 - **Primary Interaction**: Sticky Bottom Navigation Bar (Home, Progress, Recommendations, Account) adapted for one-handed mobile use.
