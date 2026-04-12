@@ -55,7 +55,7 @@ jobs:
       working-directory: ./frontend
       run: pnpm run build
       env:
-        VITE_API_URL: https://ihsan-dz.duckdns.org/api
+        VITE_API_URL: https://ihsan-dz.duckdns.org:8443/api
 
   deploy:
     name: Deploy to VPS
@@ -169,8 +169,8 @@ jobs:
             exit 0
           fi
           
-          # Try via domain as fallback
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://ihsan-dz.duckdns.org/api/health" 2>/dev/null || echo "000")
+          # Try via domain as fallback (using alternate port 8443)
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://ihsan-dz.duckdns.org:8443/api/health" 2>/dev/null || echo "000")
           
           if [ "$HTTP_STATUS" = "200" ]; then
             echo "✅ Application is healthy via domain! (HTTP $HTTP_STATUS)"
@@ -183,7 +183,7 @@ jobs:
         done
         
         echo "⚠️  Health check timed out (normal on first deploy - SSL takes 1-2 min)."
-        echo "   Check manually: https://ihsan-dz.duckdns.org"
+        echo "   Check manually: https://ihsan-dz.duckdns.org:8443"
         echo ""
         echo "📋 Debug commands (run on VPS):"
         echo "   cd ${{ secrets.DEPLOY_PATH }}"

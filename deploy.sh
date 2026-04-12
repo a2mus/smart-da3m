@@ -121,17 +121,13 @@ ${COMPOSE_CMD} -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || t
 
 # Start all services
 echo ""
-echo "🧹 Freeing up ports 80/443 (stopping default web servers if any)..."
-sudo systemctl stop apache2 nginx caddy lighttpd 2>/dev/null || true
-sudo systemctl disable apache2 nginx caddy lighttpd 2>/dev/null || true
+echo "🧹 Checking for port conflicts on 8080/8443..."
 
-echo "🔍 Identifying processes on port 80/443:"
-sudo ss -tulnp | grep -E ':(80|443) ' || true
-
-if sudo ss -tulnp | grep -E ':(80|443) ' | grep -q 'docker-proxy'; then
-    echo "⚠️ A Docker container from another project is using port 80/443! Stopping it..."
+# Check if our ports are already in use
+if sudo ss -tulnp | grep -E ':(8080|8443) ' | grep -q 'docker-proxy'; then
+    echo "⚠️  A Docker container is using port 8080/8443! Stopping it..."
     for c in $(docker ps -q); do
-        if docker port $c | grep -qE ':(80|443)$'; then
+        if docker port $c 2>/dev/null | grep -qE ':(8080|8443)$'; then
             echo "Stopping conflicting container: $c"
             docker stop $c
         fi
@@ -139,8 +135,8 @@ if sudo ss -tulnp | grep -E ':(80|443) ' | grep -q 'docker-proxy'; then
 fi
 
 if command -v fuser >/dev/null; then
-    sudo fuser -k 80/tcp 2>/dev/null || true
-    sudo fuser -k 443/tcp 2>/dev/null || true
+    sudo fuser -k 8080/tcp 2>/dev/null || true
+    sudo fuser -k 8443/tcp 2>/dev/null || true
 fi
 sleep 2
 
@@ -206,10 +202,14 @@ echo "================================================"
 echo -e "${GREEN}🎉 Deployment Complete!${NC}"
 echo "================================================"
 echo ""
-echo "🔗 Access your application:"
-echo -e "   ${BLUE}🌐 Website:${NC}    https://ihsan-dz.duckdns.org"
-echo -e "   ${BLUE}📚 API Docs:${NC}   https://ihsan-dz.duckdns.org/docs"
-echo -e "   ${BLUE}💓 Health:${NC}     https://ihsan-dz.duckdns.org/api/health"
+echo "🔗 Access your application (alternate ports 8080/8443):"
+echo -e "   ${BLUE}🌐 Website:${NC}    https://ihsan-dz.duckdns.org:8443"
+echo -e "   ${BLUE}📚 API Docs:${NC}   https://ihsan-dz.duckdns.org:8443/docs"
+echo -e "   ${BLUE}💓 Health:${NC}     https://ihsan-dz.duckdns.org:8443/api/health"
+echo -e "   ${BLUE}🌐 HTTP (dev):${NC}  http://ihsan-dz.duckdns.org:8080"
+echo ""
+echo "⚠️  Note: Using alternate ports to avoid conflicts with system services"
+echo "   To use standard ports (80/443), ensure no other service is using them"
 echo ""
 echo "📋 Useful commands:"
 echo -e "   ${BLUE}View logs:${NC}       ${COMPOSE_CMD} -f docker-compose.prod.yml logs -f"

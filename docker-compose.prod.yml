@@ -51,7 +51,7 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
       - REFRESH_TOKEN_EXPIRE_DAYS=7
-      - CORS_ORIGINS=https://ihsan-dz.duckdns.org
+      - CORS_ORIGINS=https://ihsan-dz.duckdns.org:8443
     depends_on:
       postgres:
         condition: service_healthy
@@ -107,13 +107,14 @@ services:
   # - Automatic HTTPS (Let's Encrypt)
   # - Reverse proxy to backend
   # - Serves frontend static files
+  # NOTE: Using alternate ports 8080/8443 to avoid conflicts with system services
   caddy:
     image: caddy:2-alpine
     container_name: ihsane-caddy
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"  # HTTP/3
+      - "8080:80"
+      - "8443:443"
+      - "8443:443/udp"  # HTTP/3
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -137,7 +138,7 @@ services:
       - ./frontend:/src:ro
       - frontend_dist:/output
     environment:
-      - VITE_API_URL=https://ihsan-dz.duckdns.org/api
+      - VITE_API_URL=https://ihsan-dz.duckdns.org:8443/api
     command: >
       sh -c "
         echo 'Building frontend...' &&
