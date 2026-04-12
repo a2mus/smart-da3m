@@ -121,6 +121,10 @@ ${COMPOSE_CMD} -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || t
 
 # Start all services
 echo ""
+echo "🧹 Freeing up ports 80/443 (stopping default web servers if any)..."
+sudo systemctl stop apache2 nginx 2>/dev/null || true
+sudo systemctl disable apache2 nginx 2>/dev/null || true
+
 echo "🚀 Starting all services..."
 ${COMPOSE_CMD} -f docker-compose.prod.yml up -d
 
