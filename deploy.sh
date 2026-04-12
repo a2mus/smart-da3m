@@ -119,6 +119,9 @@ echo ""
 echo "🔄 Stopping any existing services..."
 ${COMPOSE_CMD} -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
 
+# Forcefully remove specifically named containers to avoid daemon conflicts
+docker rm -f ihsane-postgres ihsane-valkey ihsane-backend ihsane-celery-worker ihsane-celery-beat ihsane-caddy ihsane-frontend-build 2>/dev/null || true
+
 # Start all services
 echo ""
 echo "🧹 Checking for port conflicts on 8080/8443..."
