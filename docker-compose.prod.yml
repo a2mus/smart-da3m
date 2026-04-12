@@ -132,15 +132,16 @@ services:
   frontend-build:
     image: node:20-alpine
     container_name: ihsane-frontend-build
-    working_dir: /app
+    working_dir: /build
     volumes:
-      - ./frontend:/app:ro
+      - ./frontend:/src:ro
       - frontend_dist:/output
     environment:
       - VITE_API_URL=https://ihsan-dz.duckdns.org/api
     command: >
       sh -c "
         echo 'Building frontend...' &&
+        cp -a /src/. /build/ &&
         npm install -g pnpm &&
         pnpm install --frozen-lockfile &&
         pnpm run build &&
