@@ -118,7 +118,7 @@ mkdir -p caddy_data caddy_config
 # Pull latest images
 echo ""
 echo "📥 Pulling base images..."
-${COMPOSE_CMD} -f docker-compose.prod.yml pull caddy postgres valkey node
+${COMPOSE_CMD} -f docker-compose.prod.yml pull caddy postgres valkey
 
 # Build backend image
 echo ""
