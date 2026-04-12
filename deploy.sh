@@ -21,26 +21,38 @@ NC='\033[0m' # No Color
 
 # Check if .env file exists
 if [ ! -f .env ]; then
-    echo -e "${RED}❌ Error: .env file not found!${NC}"
-    echo ""
-    echo "Please create a .env file first:"
-    echo -e "  ${BLUE}cp .env.prod.example .env${NC}"
-    echo -e "  ${BLUE}nano .env${NC}  ${YELLOW}# Edit with your secure values${NC}"
-    echo ""
-    exit 1
+    echo -e "${YELLOW}⚠️  .env file not found. Creating from .env.prod.example...${NC}"
+    
+    if [ -f .env.prod.example ]; then
+        cp .env.prod.example .env
+        
+        # Generate secure defaults for required values
+        GENERATED_SECRET=$(openssl rand -hex 32 2>/dev/null || head -c 64 /dev/urandom | xxd -p -c 64 | head -n 1)
+        GENERATED_PG_PASS=$(openssl rand -base64 24 2>/dev/null || head -c 32 /dev/urandom | base64 | head -c 24)
+        
+        # Replace placeholder values with generated values
+        sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${GENERATED_PG_PASS}|" .env
+        sed -i "s|^SECRET_KEY=.*|SECRET_KEY=${GENERATED_SECRET}|" .env
+        
+        echo -e "${GREEN}✅ .env created with generated secrets${NC}"
+    else
+        echo -e "${RED}❌ Error: Neither .env nor .env.prod.example found!${NC}"
+        echo "   Cannot continue without environment configuration."
+        exit 1
+    fi
 fi
 
 # Load environment variables
 export $(grep -v '^#' .env | xargs)
 
 # Validate required variables
-if [ -z "$POSTGRES_PASSWORD" ] || [ "$POSTGRES_PASSWORD" = "changeme" ] || [ "$POSTGRES_PASSWORD" = "CHANGE_THIS_TO_STRONG_PASSWORD_12345" ]; then
-    echo -e "${RED}❌ Error: POSTGRES_PASSWORD must be changed from default in .env${NC}"
+if [ -z "$POSTGRES_PASSWORD" ]; then
+    echo -e "${RED}❌ Error: POSTGRES_PASSWORD is not set in .env${NC}"
     exit 1
 fi
 
-if [ -z "$SECRET_KEY" ] || [ ${#SECRET_KEY} -lt 32 ] || [ "$SECRET_KEY" = "CHANGE_THIS_TO_A_32_CHAR_RANDOM_STRING_xyz123abc" ]; then
-    echo -e "${RED}❌ Error: SECRET_KEY must be at least 32 characters and changed from default${NC}"
+if [ -z "$SECRET_KEY" ] || [ ${#SECRET_KEY} -lt 32 ]; then
+    echo -e "${RED}❌ Error: SECRET_KEY must be at least 32 characters${NC}"
     echo "   Generate one with: openssl rand -hex 32"
     exit 1
 fi
@@ -86,10 +98,15 @@ if [ "$PORT_80_IN_USE" = true ] || [ "$PORT_443_IN_USE" = true ]; then
     echo -e "${YELLOW}   You may need to stop another web server (nginx, apache, etc.)${NC}"
     echo "   Or the previous deployment is still running"
     echo ""
-    read -p "Continue anyway? (y/N) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
+    # Skip prompt in non-interactive (CI) mode
+    if [ -t 0 ]; then
+        read -p "Continue anyway? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    else
+        echo -e "${YELLOW}   Running in non-interactive mode, continuing...${NC}"
     fi
 fi
 
