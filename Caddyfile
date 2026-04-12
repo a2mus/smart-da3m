@@ -1,0 +1,101 @@
+# Caddy Configuration for Ihsane MVP Platform
+# Domain: ihsan-dz.duckdns.org
+# 
+# Caddy handles:
+# - Automatic HTTPS (Let's Encrypt)
+# - Reverse proxy to backend API
+# - Static file serving for Vue.js frontend
+
+{
+    # Global options
+    email admin@ihsan-dz.duckdns.org
+    # Debug logging (remove in production after setup)
+    # debug
+}
+
+# Main site - Caddy automatically handles HTTP->HTTPS redirect
+ihsan-dz.duckdns.org {
+    # Enable compression
+    encode gzip zstd
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://ihsan-dz.duckdns.org;"
+        -Server
+    }
+
+    # API Backend routes
+    handle_path /api/* {
+        reverse_proxy backend:8000 {
+            health_uri /health
+            health_interval 30s
+            health_timeout 5s
+            header_up Host {host}
+            header_up X-Real-IP {remote}
+            header_up X-Forwarded-For {remote}
+            header_up X-Forwarded-Proto {scheme}
+            header_up X-Forwarded-Host {host}
+        }
+    }
+
+    # API Documentation (Swagger UI)
+    handle_path /docs {
+        reverse_proxy backend:8000
+    }
+
+    handle_path /docs/* {
+        reverse_proxy backend:8000
+    }
+
+    handle_path /openapi.json {
+        reverse_proxy backend:8000
+    }
+
+    # Static uploads directory
+    handle_path /uploads/* {
+        root * /var/www/uploads
+        file_server
+    }
+
+    # Frontend - Single Page Application
+    # Caddy serves the Vue.js build files directly
+    handle {
+        # Root directory for static files
+        root * /usr/share/caddy/html
+        
+        # Try files, fallback to index.html for client-side routing
+        try_files {path} {path}/ /index.html
+        
+        # Serve files
+        file_server
+        
+        # Cache static assets (JS, CSS, images, fonts) for 1 year
+        @static {
+            path *.js *.css *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2 *.ttf *.eot *.webmanifest
+        }
+        header @static Cache-Control "public, max-age=31536000, immutable"
+        
+        # Don't cache HTML files (for SPA updates)
+        @html {
+            path *.html
+        }
+        header @html Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"
+        header @html Pragma "no-cache"
+        header @html Expires "0"
+    }
+
+    # Logging
+    log {
+        output file /data/access.log {
+            roll_size 10MB
+            roll_keep 10
+            roll_keep_days 90
+        }
+        format json
+    }
+}

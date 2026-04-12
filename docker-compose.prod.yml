@@ -1,0 +1,162 @@
+version: "3.8"
+
+services:
+  # PostgreSQL 16+ Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: ihsane-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-ihsane}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ihsane-network
+    restart: unless-stopped
+
+  # Valkey 8.x (Redis-compatible)
+  valkey:
+    image: valkey/valkey:8-alpine
+    container_name: ihsane-valkey
+    volumes:
+      - valkey_data:/data
+    command: valkey-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - ihsane-network
+    restart: unless-stopped
+
+  # Backend API (Production)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ihsane-backend
+    expose:
+      - "8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-ihsane}
+      - REDIS_URL=redis://valkey:6379/0
+      - CELERY_BROKER_URL=redis://valkey:6379/1
+      - CELERY_RESULT_BACKEND=redis://valkey:6379/2
+      - DEBUG=false
+      - SECRET_KEY=${SECRET_KEY}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
+      - CORS_ORIGINS=https://ihsan-dz.duckdns.org
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    networks:
+      - ihsane-network
+    restart: unless-stopped
+
+  # Celery Worker (Background tasks)
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ihsane-celery-worker
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-ihsane}
+      - REDIS_URL=redis://valkey:6379/0
+      - CELERY_BROKER_URL=redis://valkey:6379/1
+      - CELERY_RESULT_BACKEND=redis://valkey:6379/2
+      - DEBUG=false
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - postgres
+      - valkey
+    networks:
+      - ihsane-network
+    restart: unless-stopped
+    command: celery -A app.core.celery worker --loglevel=info
+
+  # Celery Beat (Scheduled tasks)
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ihsane-celery-beat
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-ihsane}
+      - REDIS_URL=redis://valkey:6379/0
+      - CELERY_BROKER_URL=redis://valkey:6379/1
+      - CELERY_RESULT_BACKEND=redis://valkey:6379/2
+      - DEBUG=false
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - postgres
+      - valkey
+    networks:
+      - ihsane-network
+    restart: unless-stopped
+    command: celery -A app.core.celery beat --loglevel=info
+
+  # Caddy - Everything runs through here!
+  # - Automatic HTTPS (Let's Encrypt)
+  # - Reverse proxy to backend
+  # - Serves frontend static files
+  caddy:
+    image: caddy:2-alpine
+    container_name: ihsane-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - frontend_dist:/usr/share/caddy/html:ro
+    environment:
+      - DOMAIN=ihsan-dz.duckdns.org
+    depends_on:
+      - backend
+      - frontend-build
+    networks:
+      - ihsane-network
+    restart: unless-stopped
+
+  # Build frontend static files (one-time build)
+  frontend-build:
+    image: node:20-alpine
+    container_name: ihsane-frontend-build
+    working_dir: /app
+    volumes:
+      - ./frontend:/app:ro
+      - frontend_dist:/output
+    environment:
+      - VITE_API_URL=https://ihsan-dz.duckdns.org/api
+    command: >
+      sh -c "
+        echo 'Building frontend...' &&
+        npm install -g pnpm &&
+        pnpm install --frozen-lockfile &&
+        pnpm run build &&
+        cp -r dist/* /output/ &&
+        echo '✅ Frontend build complete!'
+      "
+
+volumes:
+  postgres_data:
+  valkey_data:
+  caddy_data:
+  caddy_config:
+  frontend_dist:
+
+networks:
+  ihsane-network:
+    driver: bridge
