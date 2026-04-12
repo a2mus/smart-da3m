@@ -122,8 +122,27 @@ ${COMPOSE_CMD} -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || t
 # Start all services
 echo ""
 echo "🧹 Freeing up ports 80/443 (stopping default web servers if any)..."
-sudo systemctl stop apache2 nginx 2>/dev/null || true
-sudo systemctl disable apache2 nginx 2>/dev/null || true
+sudo systemctl stop apache2 nginx caddy lighttpd 2>/dev/null || true
+sudo systemctl disable apache2 nginx caddy lighttpd 2>/dev/null || true
+
+echo "🔍 Identifying processes on port 80/443:"
+sudo ss -tulnp | grep -E ':(80|443) ' || true
+
+if sudo ss -tulnp | grep -E ':(80|443) ' | grep -q 'docker-proxy'; then
+    echo "⚠️ A Docker container from another project is using port 80/443! Stopping it..."
+    for c in $(docker ps -q); do
+        if docker port $c | grep -qE ':(80|443)$'; then
+            echo "Stopping conflicting container: $c"
+            docker stop $c
+        fi
+    done
+fi
+
+if command -v fuser >/dev/null; then
+    sudo fuser -k 80/tcp 2>/dev/null || true
+    sudo fuser -k 443/tcp 2>/dev/null || true
+fi
+sleep 2
 
 echo "🚀 Starting all services..."
 ${COMPOSE_CMD} -f docker-compose.prod.yml up -d
