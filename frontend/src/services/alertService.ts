@@ -12,6 +12,8 @@ export interface Alert {
   context_data: Record<string, any>
   created_at: string
   read_at?: string
+  is_read?: boolean
+  message?: string
 }
 
 export interface AlertList {

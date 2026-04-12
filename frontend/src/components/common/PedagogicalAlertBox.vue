@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { alertService, type Alert, type ParentAlertSummary } from '@/services/alertService'
+import { alertService, type Alert } from '@/services/alertService'
 
 const { t } = useI18n()
 
@@ -14,13 +14,13 @@ const props = withDefaults(defineProps<Props>(), {
   compact: false,
 })
 
-const alerts = ref<Alert[] | ParentAlertSummary[]>([])
+const alerts = ref<Alert[]>([])
 const loading = ref(true)
 const expanded = ref(false)
 const error = ref<string | null>(null)
 
 const unreadCount = computed(() => {
-  return alerts.value.filter(a => !a.is_read && 'is_read' in a).length
+  return alerts.value.filter(a => !a.is_read).length
 })
 
 const hasCritical = computed(() => {
@@ -32,10 +32,26 @@ const fetchAlerts = async () => {
   error.value = null
   try {
     if (props.childId) {
-      alerts.value = await alertService.getChildAlerts(props.childId)
+      const parentAlerts = await alertService.getChildAlerts(props.childId)
+      alerts.value = parentAlerts.map(a => ({
+        id: a.id,
+        student_id: '',
+        trigger_type: 'INACTIVITY' as const,
+        severity: a.severity,
+        status: a.is_read ? 'READ' as const : 'UNREAD' as const,
+        simplified_message: a.message,
+        expert_message: a.message,
+        context_data: {},
+        created_at: a.created_at,
+        is_read: a.is_read,
+        message: a.message,
+      }))
     } else {
       const response = await alertService.getAlerts(true)
-      alerts.value = response.items
+      alerts.value = response.items.map(a => ({
+        ...a,
+        is_read: a.is_read ?? (a.status === 'READ'),
+      }))
     }
   } catch (err) {
     error.value = t('errors.fetchFailed')
@@ -49,7 +65,7 @@ const markAsRead = async (alertId: string) => {
   try {
     await alertService.markAlertsRead([alertId])
     const alert = alerts.value.find(a => a.id === alertId)
-    if (alert && 'is_read' in alert) {
+    if (alert) {
       alert.is_read = true
     }
   } catch (err) {
@@ -144,7 +160,7 @@ onMounted(fetchAlerts)
             alert.severity === 'CRITICAL' ? 'bg-red-50' :
             alert.severity === 'WARNING' ? 'bg-yellow-50' :
             'bg-blue-50',
-            !('is_read' in alert && alert.is_read) ? 'border-l-4' : 'opacity-75'
+            !alert.is_read ? 'border-l-4' : 'opacity-75'
           ]"
           :style="{
             borderLeftColor: alert.severity === 'CRITICAL' ? '#ef4444' :
@@ -157,7 +173,7 @@ onMounted(fetchAlerts)
             </span>
             <div class="flex-1 min-w-0">
               <p class="text-sm text-warm-800 leading-relaxed">
-                {{ 'simplified_message' in alert ? alert.simplified_message : alert.message }}
+{{ alert.simplified_message || alert.message }}
               </p>
               <div class="flex items-center justify-between mt-2">
                 <span class="text-xs text-warm-500">
@@ -165,7 +181,7 @@ onMounted(fetchAlerts)
                 </span>
                 <div class="flex gap-2">
                   <button
-                    v-if="'is_read' in alert && !alert.is_read"
+                    v-if="!alert.is_read"
                     @click="markAsRead(alert.id)"
                     class="text-xs text-primary-600 hover:text-primary-700 font-medium"
                   >
@@ -216,7 +232,7 @@ onMounted(fetchAlerts)
           <div class="flex items-start gap-2">
             <span>{{ alertService.getSeverityIcon(alert.severity) }}</span>
             <p class="text-sm text-warm-700 line-clamp-2">
-              {{ 'simplified_message' in alert ? alert.simplified_message : alert.message }}
+              {{ alert.simplified_message || alert.message }}
             </p>
           </div>
         </div>

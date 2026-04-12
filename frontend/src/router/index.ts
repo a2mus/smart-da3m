@@ -124,7 +124,7 @@ let authInitialized = false
 // Navigation guards
 router.beforeEach(async (
   to: RouteLocationNormalized,
-  from: RouteLocationNormalized,
+  _from: RouteLocationNormalized,
   next: NavigationGuardNext
 ) => {
   const authStore = useAuthStore()

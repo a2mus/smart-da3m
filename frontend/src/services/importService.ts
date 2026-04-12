@@ -38,7 +38,18 @@ class ImportService {
       headers.forEach((header, index) => {
         row[header] = values[index] || ''
       })
-      rows.push(row as CsvQuestionRow)
+      if (row.text) {
+        const typedRow: CsvQuestionRow = {
+          text: row.text,
+          type: (row.type as CsvQuestionRow['type']) || 'multiple_choice',
+          options: row.options,
+          correct_answer: row.correct_answer,
+          difficulty_level: row.difficulty_level || '3',
+          misconception_id: row.misconception_id,
+          time_seconds: row.time_seconds || '60',
+        }
+        rows.push(typedRow)
+      }
     }
 
     return rows
@@ -62,7 +73,7 @@ class ImportService {
           module_id: moduleId,
           content: {
             text: row.text,
-            type: row.type || 'multiple_choice',
+            type: (row.type as CsvQuestionRow['type']) || 'multiple_choice',
             options: row.options ? row.options.split('|') : undefined,
             correct_answer: row.correct_answer,
           },

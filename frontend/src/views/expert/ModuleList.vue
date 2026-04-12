@@ -42,7 +42,7 @@ const handleCreateModule = async (moduleData: Omit<Module, 'id' | 'created_at' |
   }
 }
 
-const handleUpdateModule = async (moduleData: Module) => {
+const handleUpdateModule = async (moduleData: Partial<Module> & { id: string }) => {
   try {
     await contentService.updateModule(moduleData.id, moduleData)
     showEditModal.value = false

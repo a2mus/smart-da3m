@@ -53,6 +53,8 @@ const form = reactive<QuestionForm>({
   estimated_time_sec: props.question?.estimated_time_sec ?? 60,
 })
 
+const optionsList = computed(() => form.content.options ?? [])
+
 const errors = reactive<Partial<Record<string, string>>>({})
 
 const validateForm = (): boolean => {
@@ -65,7 +67,7 @@ const validateForm = (): boolean => {
   }
 
   if (form.content.type === 'multiple_choice') {
-    const validOptions = form.content.options?.filter((o) => o.trim())
+    const validOptions = optionsList.value.filter((o: string) => o.trim())
     if (!validOptions || validOptions.length < 2) {
       errors.options = t('validation.minOptions')
       isValid = false
@@ -80,7 +82,8 @@ const validateForm = (): boolean => {
 }
 
 const addOption = () => {
-  form.content.options?.push('')
+  if (!form.content.options) form.content.options = []
+  form.content.options.push('')
 }
 
 const removeOption = (index: number) => {
@@ -157,12 +160,12 @@ const togglePreview = () => {
         </label>
         <div class="space-y-2">
           <div
-            v-for="(option, index) in form.content.options"
+            v-for="(option, index) in optionsList"
             :key="index"
             class="flex gap-2"
           >
             <input
-              v-model="form.content.options[index]"
+              v-model="form.content.options![index]"
               type="text"
               data-testid="option-input"
               class="flex-1 px-4 py-2 rounded-xl border-2 border-warm-200 focus:border-primary-400 outline-none transition-all"
@@ -176,7 +179,7 @@ const togglePreview = () => {
               :title="t('expert.markCorrect')"
             />
             <button
-              v-if="form.content.options.length > 2"
+              v-if="optionsList.length > 2"
               type="button"
               @click="removeOption(index)"
               class="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
@@ -269,7 +272,7 @@ const togglePreview = () => {
 
         <div v-if="form.content.type === 'multiple_choice'" class="space-y-2">
           <div
-            v-for="(option, index) in form.content.options"
+            v-for="(option, index) in optionsList"
             :key="index"
             class="p-3 rounded-lg border-2 border-warm-200 hover:border-primary-300 cursor-pointer transition-colors"
           >

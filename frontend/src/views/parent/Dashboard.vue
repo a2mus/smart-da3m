@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { dashboardService, type ChildDashboardData, type ChildSummary } from '@/services/dashboardService'
 import SubjectRadarChart from '@/components/parent/SubjectRadarChart.vue'
@@ -12,10 +12,6 @@ const selectedChildId = ref<string>('')
 const childData = ref<ChildDashboardData | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
-
-const selectedChild = computed(() => {
-  return children.value.find(c => c.child_id === selectedChildId.value)
-})
 
 const fetchChildren = async () => {
   try {

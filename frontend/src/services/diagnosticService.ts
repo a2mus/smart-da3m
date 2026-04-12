@@ -43,6 +43,7 @@ export interface AnswerSubmitResponse {
   mastery_level: 'NOT_STARTED' | 'ATTEMPTED' | 'FAMILIAR' | 'PROFICIENT' | 'MASTERED'
   next_question: Question | null
   is_complete: boolean
+  accuracy: number
 }
 
 export interface DiagnosticResults {

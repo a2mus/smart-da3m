@@ -49,7 +49,7 @@ export class OfflineDatabase extends Dexie {
 export const offlineDB = new OfflineDatabase()
 
 class OfflineModuleStore {
-  async cacheQuestions(moduleId: string, questions: OfflineQuestion[]): Promise<void> {
+  async cacheQuestions(_moduleId: string, questions: OfflineQuestion[]): Promise<void> {
     await offlineDB.questions.bulkPut(questions)
   }
 

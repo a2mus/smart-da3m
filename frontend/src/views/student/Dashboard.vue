@@ -39,16 +39,6 @@ const startDiagnostic = (moduleId: string) => {
   router.push(`/student/diagnostic/${moduleId}`)
 }
 
-const getMasteryColor = (level: string) => {
-  switch (level) {
-    case 'MASTERED': return 'bg-green-500'
-    case 'PROFICIENT': return 'bg-blue-500'
-    case 'FAMILIAR': return 'bg-yellow-500'
-    case 'ATTEMPTED': return 'bg-orange-500'
-    default: return 'bg-gray-300'
-  }
-}
-
 onMounted(fetchData)
 </script>
 

@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 
 const { locale, t } = useI18n()
 
-const currentLang = computed(() => locale.value)
 const isArabic = computed(() => locale.value === 'ar')
 
 const toggleLanguage = () => {
