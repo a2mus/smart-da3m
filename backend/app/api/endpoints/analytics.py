@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import get_current_active_user, require_expert
-from app.db.session import get_async_db
+from app.db.session import get_db
 from app.models.diagnostic import (
     CompetencyProfile,
     DiagnosticAnswer,
@@ -39,7 +39,7 @@ router = APIRouter()
 @router.post("/heatmap", response_model=HeatmapResponse)
 async def get_competency_heatmap(
     filters: HeatmapFilters,
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_expert),
 ) -> HeatmapResponse:
     """
@@ -150,7 +150,7 @@ def _mastery_to_score(mastery: MasteryLevel) -> int:
 async def auto_group_students(
     filters: HeatmapFilters,
     group_by: str = Query("competency", description="Group by: competency or error_type"),
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_expert),
 ) -> AutoGroupResponse:
     """
@@ -279,7 +279,7 @@ async def get_platform_metrics(
     class_id: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_expert),
 ) -> MetricResponse:
     """
@@ -354,7 +354,7 @@ async def get_platform_metrics(
 @router.post("/export", response_model=ExportResponse)
 async def export_analytics(
     request: ExportRequest,
-    db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_expert),
 ) -> ExportResponse:
     """

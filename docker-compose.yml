@@ -64,6 +64,12 @@ services:
     networks:
       - ihsane-network
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import httpx; httpx.get('http://localhost:8000/health', timeout=5)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Celery Worker (Background tasks)
   celery-worker:
@@ -85,6 +91,37 @@ services:
     networks:
       - ihsane-network
     command: celery -A app.core.celery worker --loglevel=info
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.core.celery inspect ping --destination celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Frontend (Vue 3 + Vite development server)
+  frontend:
+    image: node:20-alpine
+    container_name: ihsane-frontend
+    working_dir: /app
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8000
+    command: sh -c "npm install -g pnpm && pnpm install && pnpm dev --host"
+    depends_on:
+      - backend
+    networks:
+      - ihsane-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:5173 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 volumes:
   postgres_data:
