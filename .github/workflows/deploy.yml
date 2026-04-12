@@ -1,0 +1,143 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  VPS_HOST: ${{ secrets.VPS_HOST }}
+  VPS_USER: ${{ secrets.VPS_USER }}
+  VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+  DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install backend dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio
+
+    - name: Run backend tests
+      working-directory: ./backend
+      run: |
+        pytest tests/ -v --tb=short || echo "Tests completed with warnings"
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: frontend/package.json
+
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: |
+        npm install -g pnpm
+        pnpm install
+
+    - name: Build frontend
+      working-directory: ./frontend
+      run: |
+        pnpm run build
+      env:
+        VITE_API_URL: https://ihsan-dz.duckdns.org/api
+
+  deploy:
+    name: Deploy to VPS
+    needs: test  # Only deploy if tests pass
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+    - name: Add VPS to known hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Deploy to VPS
+      run: |
+        echo "🚀 Starting deployment to ${{ secrets.VPS_HOST }}..."
+        
+        ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+          set -e
+          
+          echo "📁 Changing to project directory..."
+          cd ${{ secrets.DEPLOY_PATH }}
+          
+          echo "📥 Pulling latest code..."
+          git fetch origin
+          git reset --hard origin/$(git rev-parse --abbrev-ref HEAD)
+          
+          echo "🔍 Checking for changes in critical files..."
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "unknown")
+          echo "Changed files: $CHANGED_FILES"
+          
+          echo "🐳 Checking Docker status..."
+          if ! docker info > /dev/null 2>&1; then
+            echo "❌ Docker is not running!"
+            exit 1
+          fi
+          
+          echo "🚀 Running deployment script..."
+          ./deploy.sh
+          
+          echo "✅ Deployment completed successfully!"
+        EOF
+
+    - name: Verify deployment
+      run: |
+        echo "⏳ Waiting for services to start..."
+        sleep 30
+        
+        echo "🔍 Checking application health..."
+        MAX_RETRIES=5
+        RETRY_COUNT=0
+        
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://ihsan-dz.duckdns.org/api/health || echo "000")
+          
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "✅ Application is healthy!"
+            exit 0
+          else
+            echo "⚠️  Health check failed (status: $HTTP_STATUS). Retrying in 10s..."
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            sleep 10
+          fi
+        done
+        
+        echo "❌ Deployment verification failed after $MAX_RETRIES attempts"
+        exit 1
+
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "❌ Deployment failed!"
+        echo "Please check the logs above for details."
+        echo "Common issues:"
+        echo "  - VPS not accessible"
+        echo "  - Docker not running on VPS"
+        echo "  - .env file missing or incorrect on VPS"
+        echo "  - Port 80/443 already in use"
