@@ -4,6 +4,7 @@ Authentication and security utilities.
 
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
+from uuid import UUID
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -77,7 +78,7 @@ def create_refresh_token(subject: Any) -> str:
 
 
 def verify_token(token: str) -> Optional[dict]:
-    """Verify and decode JWT token."""
+    """"Verify and decode JWT token."""
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
@@ -85,3 +86,38 @@ def verify_token(token: str) -> Optional[dict]:
         return payload
     except JWTError:
         return None
+
+
+def get_current_active_user(token: str = None) -> Optional["User"]:
+    """Validate token and return current active user."""
+    from app.db.session import async_session_maker
+    from app.models.user import User
+    import sqlalchemy
+
+    if not token:
+        return None
+    payload = verify_token(token)
+    if not payload:
+        return None
+    user_id = payload.get("sub")
+    if not user_id:
+        return None
+    try:
+        with async_session_maker() as session:
+            result = session.execute(
+                sqlalchemy.select(User).where(User.id == UUID(user_id))
+            )
+            user = result.scalar_one_or_none()
+            if user and user.is_active:
+                return user
+    except Exception:
+        pass
+    return None
+
+
+def require_expert(user: "User" = None) -> "User":
+    """Dependency that requires an expert user."""
+    from fastapi import HTTPException, status
+    if not user or user.role.value not in ("expert", "admin"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Expert access required")
+    return user
