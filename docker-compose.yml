@@ -1,4 +1,4 @@
-version: "3.8"
+# version field removed – obsolete in Compose v2+
 
 services:
   # PostgreSQL 16+ Database
@@ -45,7 +45,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: ihsane-backend
     ports:
-      - "8000:8000"
+      - "8001:8000"  # host 8001 → container 8000 (avoids Docker Desktop's port 8000 reservation on Windows)
     volumes:
       - ./backend:/app
       - /app/__pycache__
@@ -110,7 +110,7 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=http://localhost:8001
     command: sh -c "npm install -g pnpm && pnpm install && pnpm dev --host"
     depends_on:
       - backend

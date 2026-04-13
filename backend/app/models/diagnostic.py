@@ -14,8 +14,8 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Uuid,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
 
 from app.db.session import Base
 
@@ -60,12 +60,12 @@ class DiagnosticSession(Base):
 
     __tablename__ = "diagnostic_sessions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     student_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     module_id = Column(
-        UUID(as_uuid=True), ForeignKey("modules.id", ondelete="CASCADE"), nullable=False
+        Uuid(as_uuid=True), ForeignKey("modules.id", ondelete="CASCADE"), nullable=False
     )
     status = Column(
         Enum(DiagnosticSessionStatus),
@@ -90,14 +90,14 @@ class DiagnosticAnswer(Base):
 
     __tablename__ = "diagnostic_answers"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     session_id = Column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("diagnostic_sessions.id", ondelete="CASCADE"),
         nullable=False,
     )
     question_id = Column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("questions.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -120,9 +120,9 @@ class CompetencyProfile(Base):
 
     __tablename__ = "competency_profiles"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     student_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     competency_id = Column(String(50), nullable=False, index=True)
     mastery_level = Column(Enum(MasteryLevel), default=MasteryLevel.NOT_STARTED)

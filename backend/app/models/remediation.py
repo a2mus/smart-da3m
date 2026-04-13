@@ -6,8 +6,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy import JSON, Column, DateTime, Enum, ForeignKey, Integer, String, Uuid
 
 from app.db.session import Base
 
@@ -26,9 +25,9 @@ class RemediationPath(Base):
 
     __tablename__ = "remediation_paths"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     student_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     competency_id = Column(String(50), nullable=False, index=True)
     status = Column(
@@ -36,7 +35,7 @@ class RemediationPath(Base):
         default=RemediationPathStatus.IN_PROGRESS,
         nullable=False,
     )
-    atoms_completed = Column(ARRAY(UUID(as_uuid=True)), default=list)
+    atoms_completed = Column(JSON, default=list)  # stored as JSON array of UUID strings
     current_difficulty = Column(Integer, default=5)  # Dynamic difficulty tracking
     started_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
@@ -55,14 +54,14 @@ class AtomCompletion(Base):
 
     __tablename__ = "atom_completions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     path_id = Column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("remediation_paths.id", ondelete="CASCADE"),
         nullable=False,
     )
     atom_id = Column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("knowledge_atoms.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -84,9 +83,9 @@ class PassportAssessment(Base):
 
     __tablename__ = "passport_assessments"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     student_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     competency_id = Column(String(50), nullable=False, index=True)
     passed = Column(Integer, nullable=True)  # 0 or 1, null if not completed

@@ -1,26 +1,27 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* ========================================
-   Font Imports with Display Swap
+   Font Imports — MUST be first in file
+   (PostCSS requires @import before @tailwind)
    ======================================== */
 
 /* Arabic Fonts - Primary: Tajawal, Fallback: Cairo */
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Cairo:wght@400;500;600;700&display=swap');
 
 /* Latin Fonts - Primary: Plus Jakarta Sans, Fallback: Inter */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   /* ========================================
      Base Typography & Font Stack
      ======================================== */
-  
+
   /* Default (LTR) - Latin fonts with system fallbacks */
   html {
     @apply antialiased;
-    font-family: 
+    font-family:
       'Plus Jakarta Sans',
       'Inter',
       -apple-system,
@@ -35,7 +36,7 @@
 
   /* RTL - Arabic fonts with Latin fallbacks */
   html[dir="rtl"] {
-    font-family: 
+    font-family:
       'Tajawal',
       'Cairo',
       'Plus Jakarta Sans',
@@ -46,13 +47,13 @@
       sans-serif;
   }
 
-  /* Ensure consistent line height across languages */
+  /* Slightly higher line-height for Arabic legibility */
   html[dir="rtl"] body {
-    line-height: 1.8; /* Slightly higher for Arabic */
+    line-height: 1.8;
   }
 
   html[dir="ltr"] body {
-    line-height: 1.6; /* Standard for Latin */
+    line-height: 1.6;
   }
 
   /* Smooth scrolling */
@@ -60,32 +61,17 @@
     scroll-behavior: smooth;
   }
 
-  /* Soft background - no pure white */
+  /* Soft background - no pure white per ui-spec §1.1 */
   body {
-    @apply bg-soft-cream text-warm-800;
+    @apply bg-surface text-ink-800;
   }
 
-  /* ========================================
-     Component Styles
-     ======================================== */
-  
-  /* Asymmetric border radius for nurturing feel */
-  .nurturing-card {
-    @apply rounded-asymmetric bg-white shadow-soft;
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-  }
-
-  /* Touch targets for accessibility */
-  .touch-target {
-    @apply min-h-touch min-w-touch flex items-center justify-center;
-  }
-
-  /* Focus visible styles for keyboard navigation */
+  /* Focus visible ring */
   :focus-visible {
-    @apply outline-none ring-2 ring-primary-400 ring-offset-2 ring-offset-soft-cream;
+    @apply outline-none ring-2 ring-teal-400 ring-offset-2 ring-offset-surface;
   }
 
-  /* Reduced motion preference */
+  /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -99,117 +85,120 @@
 
 @layer components {
   /* ========================================
-     Button Styles
+     Buttons — ui-spec §2
      ======================================== */
-  
+
+  /* Primary action — deep teal */
   .btn-primary {
-    @apply bg-primary-500 hover:bg-primary-600 text-white 
-           px-6 py-3 rounded-soft font-medium transition-colors
-           touch-target focus:ring-2 focus:ring-primary-400 focus:ring-offset-2;
+    @apply bg-teal-700 hover:bg-teal-600 active:scale-95 text-white
+           px-6 py-3 rounded-xl font-semibold transition-all duration-200
+           min-h-touch min-w-[2.5rem] flex items-center justify-center gap-2
+           focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2
+           shadow-[0_4px_16px_rgba(0,83,91,0.18)];
   }
 
+  /* Secondary action — warm neutral */
   .btn-secondary {
-    @apply bg-warm-100 hover:bg-warm-200 text-warm-700
-           px-6 py-3 rounded-soft font-medium transition-colors
-           touch-target focus:ring-2 focus:ring-warm-400 focus:ring-offset-2;
+    @apply bg-ink-100 hover:bg-ink-200 active:scale-95 text-ink-700
+           px-6 py-3 rounded-xl font-semibold transition-all duration-200
+           min-h-touch min-w-[2.5rem] flex items-center justify-center gap-2
+           focus-visible:ring-2 focus-visible:ring-ink-400 focus-visible:ring-offset-2;
   }
 
+  /* Danger — soft rose per ui-spec §1.1 */
   .btn-danger {
-    @apply bg-danger-500 hover:bg-danger-600 text-white
-           px-6 py-3 rounded-soft font-medium transition-colors
-           touch-target focus:ring-2 focus:ring-danger-400 focus:ring-offset-2;
+    @apply bg-rose-500 hover:bg-rose-600 active:scale-95 text-white
+           px-6 py-3 rounded-xl font-semibold transition-all duration-200
+           min-h-touch min-w-[2.5rem] flex items-center justify-center gap-2
+           focus-visible:ring-2 focus-visible:ring-rose-300 focus-visible:ring-offset-2;
   }
 
   /* ========================================
      Form Inputs
      ======================================== */
-  
+
   .input-soft {
-    @apply w-full px-4 py-3 rounded-soft 
-           bg-white border border-warm-200
-           focus:border-primary-400 focus:ring-2 focus:ring-primary-100
+    @apply w-full px-4 py-3 rounded-xl
+           bg-white border border-ink-200
+           focus:border-teal-400 focus:ring-2 focus:ring-teal-100
            transition-all outline-none
-           placeholder:text-warm-400;
+           placeholder:text-ink-400
+           text-ink-800;
   }
 
   .input-soft:disabled {
-    @apply bg-warm-100 text-warm-500 cursor-not-allowed;
+    @apply bg-ink-100 text-ink-500 cursor-not-allowed;
   }
 
   /* ========================================
-     Card Styles
+     Cards — ui-spec §1.5, §2
      ======================================== */
-  
+
+  /* Standard soft card */
+  .card-soft {
+    @apply bg-white rounded-2xl
+           shadow-[0_4px_20px_rgba(0,0,0,0.05)]
+           p-5 transition-all duration-300;
+  }
+
+  /* Asymmetric nurturing card for insight modules */
+  .card-nurturing {
+    background: white;
+    border-radius: 2rem 0.75rem 2rem 0.75rem;
+    box-shadow: 0 10px 30px rgba(140, 78, 53, 0.08);
+    @apply p-5 transition-all duration-300;
+  }
+
+  /* Hover lift */
   .card-hover {
-    @apply transition-all duration-200 ease-in-out
-           hover:shadow-md hover:-translate-y-0.5;
+    @apply hover:shadow-md hover:-translate-y-0.5 transition-all duration-200;
   }
 
   /* ========================================
-     Text Styles
+     Text utilities
      ======================================== */
-  
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-400;
+
+  .text-gradient-teal {
+    @apply bg-clip-text text-transparent
+           bg-gradient-to-r from-teal-800 to-teal-500;
   }
 }
 
 @layer utilities {
   /* ========================================
-     Logical Properties for RTL/LTR
+     RTL / LTR Logical Properties
      ======================================== */
-  
-  .margin-start {
-    margin-inline-start: var(--ms, 0);
-  }
 
-  .margin-end {
-    margin-inline-end: var(--me, 0);
-  }
+  .margin-start  { margin-inline-start:  var(--ms, 0); }
+  .margin-end    { margin-inline-end:    var(--me, 0); }
+  .padding-start { padding-inline-start: var(--ps, 0); }
+  .padding-end   { padding-inline-end:   var(--pe, 0); }
+  .border-start  { border-inline-start:  var(--bs, 1px solid); }
+  .border-end    { border-inline-end:    var(--be, 1px solid); }
 
-  .padding-start {
-    padding-inline-start: var(--ps, 0);
-  }
-
-  .padding-end {
-    padding-inline-end: var(--pe, 0);
-  }
-
-  .border-start {
-    border-inline-start: var(--bs, 1px solid);
-  }
-
-  .border-end {
-    border-inline-end: var(--be, 1px solid);
-  }
-
-  /* ========================================
-     RTL/LTR Specific Utilities
-     ======================================== */
-  
-  /* Safe area for mobile devices with notches */
+  /* Safe area for mobile notches */
   .safe-area-inset {
-    padding-left: env(safe-area-inset-left);
+    padding-left:  env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
 
-  /* Text balance for better typography */
-  .text-balance {
-    text-wrap: balance;
-  }
+  /* Typography balance */
+  .text-balance { text-wrap: balance; }
 
   /* Truncate with tooltip support */
   .truncate-tooltip {
     @apply overflow-hidden text-ellipsis whitespace-nowrap;
   }
 
-  /* Hide scrollbar but keep functionality */
+  /* Hide scrollbar, keep functionality */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
 
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
+  /* Touch target helper */
+  .touch-target {
+    @apply min-h-touch min-w-touch flex items-center justify-center;
   }
 }

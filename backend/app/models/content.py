@@ -6,8 +6,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import JSON, Column, DateTime, Enum, ForeignKey, Integer, String, Text, Uuid
 
 from app.db.session import Base
 
@@ -32,7 +31,7 @@ class Module(Base):
 
     __tablename__ = "modules"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     subject = Column(String(100), nullable=False, index=True)
     grade_level = Column(String(50), nullable=False, index=True)
     domain = Column(String(200), nullable=False)
@@ -61,11 +60,11 @@ class Question(Base):
 
     __tablename__ = "questions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     module_id = Column(
-        UUID(as_uuid=True), ForeignKey("modules.id", ondelete="CASCADE"), nullable=False
+        Uuid(as_uuid=True), ForeignKey("modules.id", ondelete="CASCADE"), nullable=False
     )
-    content = Column(JSONB, nullable=False)  # Question text, images, interactive layout
+    content = Column(JSON, nullable=False)  # Question text, images, interactive layout
     difficulty_level = Column(Integer, nullable=False)  # 1-10 scale
     target_misconception_id = Column(String(50), nullable=True, index=True)
     estimated_time_sec = Column(Integer, nullable=False, default=60)
@@ -90,10 +89,10 @@ class KnowledgeAtom(Base):
 
     __tablename__ = "knowledge_atoms"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     competency_id = Column(String(50), nullable=False, index=True)
     remediation_type = Column(Enum(RemediationType), nullable=False)
-    content = Column(JSONB, nullable=False)  # Title, description, media URLs, etc.
+    content = Column(JSON, nullable=False)  # Title, description, media URLs, etc.
     created_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

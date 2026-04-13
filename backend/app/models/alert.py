@@ -6,8 +6,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import JSON, Column, DateTime, Enum, ForeignKey, Integer, String, Text, Uuid
 
 from app.db.session import Base
 
@@ -44,9 +43,9 @@ class PedagogicalAlert(Base):
 
     __tablename__ = "pedagogical_alerts"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     student_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     trigger_type = Column(Enum(AlertTriggerType), nullable=False)
     severity = Column(Enum(AlertSeverity), nullable=False, index=True)
@@ -57,7 +56,7 @@ class PedagogicalAlert(Base):
     expert_message = Column(Text, nullable=False)  # For experts with details
 
     # Additional context
-    context_data = Column(JSONB, default=dict)  # Store trigger-specific data
+    context_data = Column(JSON, default=dict)  # Store trigger-specific data
     recommended_action = Column(Text, nullable=True)
 
     # Tracking
@@ -77,12 +76,12 @@ class AlertRecipient(Base):
 
     __tablename__ = "alert_recipients"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     alert_id = Column(
-        UUID(as_uuid=True), ForeignKey("pedagogical_alerts.id", ondelete="CASCADE"), nullable=False
+        Uuid(as_uuid=True), ForeignKey("pedagogical_alerts.id", ondelete="CASCADE"), nullable=False
     )
     user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
 
     # Delivery tracking
