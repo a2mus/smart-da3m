@@ -1,230 +1,155 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { dashboardService, type ChildDashboardData, type ChildSummary } from '@/services/dashboardService'
-import SubjectRadarChart from '@/components/parent/SubjectRadarChart.vue'
-import InsightCard from '@/components/parent/InsightCard.vue'
-
-const { t } = useI18n()
-
-const children = ref<ChildSummary[]>([])
-const selectedChildId = ref<string>('')
-const childData = ref<ChildDashboardData | null>(null)
-const loading = ref(true)
-const error = ref<string | null>(null)
-
-const fetchChildren = async () => {
-  try {
-    children.value = await dashboardService.getChildrenList()
-    if (children.value.length > 0 && !selectedChildId.value) {
-      selectedChildId.value = children.value[0].child_id
-      await fetchChildData()
-    }
-  } catch (err) {
-    error.value = t('errors.fetchFailed')
-    console.error('Failed to fetch children:', err)
-  }
-}
-
-const fetchChildData = async () => {
-  if (!selectedChildId.value) return
-  loading.value = true
-  error.value = null
-  try {
-    childData.value = await dashboardService.getChildDetails(selectedChildId.value)
-  } catch (err) {
-    error.value = t('errors.fetchFailed')
-    console.error('Failed to fetch child data:', err)
-  } finally {
-    loading.value = false
-  }
-}
-
-const selectChild = async (childId: string) => {
-  selectedChildId.value = childId
-  await fetchChildData()
-}
-
-const getMasteryColor = (level: string) => {
-  switch (level) {
-    case 'MASTERED': return 'bg-green-500'
-    case 'PROFICIENT': return 'bg-blue-500'
-    case 'FAMILIAR': return 'bg-yellow-500'
-    case 'ATTEMPTED': return 'bg-orange-500'
-    default: return 'bg-gray-300'
-  }
-}
-
-const getActivityIcon = (type: string) => {
-  switch (type) {
-    case 'DIAGNOSTIC': return '📝'
-    case 'REMEDIATION': return '📚'
-    case 'PASSPORT': return '🛂'
-    case 'ACHIEVEMENT': return '🏆'
-    default: return '📌'
-  }
-}
-
-const formatRelativeTime = (timestamp: string) => {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  
-  if (days === 0) return t('time.today')
-  if (days === 1) return t('time.yesterday')
-  if (days < 7) return t('time.daysAgo', { days })
-  return date.toLocaleDateString()
-}
-
-onMounted(fetchChildren)
 </script>
 
 <template>
-  <div class="min-h-screen bg-warm-50">
-    <!-- Mobile-First Header -->
-    <div class="bg-white shadow-sm sticky top-0 z-10">
-      <div class="max-w-lg mx-auto px-4 py-4">
-        <h1 class="text-xl font-bold text-primary-700">{{ t('parent.dashboard') }}</h1>
-        
-        <!-- Child Selector -->
-        <div v-if="children.length > 1" class="mt-3 flex gap-2 overflow-x-auto pb-2">
-          <button
-            v-for="child in children"
-            :key="child.child_id"
-            @click="selectChild(child.child_id)"
-            :class="[
-              'flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-colors',
-              selectedChildId === child.child_id
-                ? 'bg-primary-500 text-white'
-                : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
-            ]"
-          >
-            <span class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-sm">
-              {{ child.name.charAt(0) }}
-            </span>
-            <span class="text-sm font-medium">{{ child.name }}</span>
-            <span
-              v-if="child.needs_attention"
-              class="w-2 h-2 bg-red-500 rounded-full"
-            ></span>
-          </button>
+  <div class="bg-background text-on-surface mb-24 min-h-screen font-['Tajawal']" dir="rtl">
+    <!-- TopAppBar -->
+    <header class="fixed top-0 w-full z-50 bg-[#faf9f6]/80 dark:bg-stone-900/80 backdrop-blur-xl">
+      <div class="flex flex-row-reverse justify-between items-center w-full px-6 py-4">
+        <div class="flex items-center gap-3">
+          <div class="text-right">
+            <p class="text-xs text-stone-500 font-medium leading-none">مرحباً بوليّ أمر</p>
+            <h2 class="text-primary font-bold text-lg">أحمد</h2>
+          </div>
+          <div class="w-12 h-12 rounded-2xl bg-primary-fixed overflow-hidden ring-4 ring-primary/5">
+            <img alt="أحمد" data-alt="vibrant character illustration of a young smiling boy with short dark hair in a playful educational style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDN1A1ACgKMLdwtl3eZxJuuks3EhV7uvW0a7TudvfNjviZtI-RptKKdG6MPE-XwQoXYDmRQSFIQV_UpJpIEUrwWPR-kEkL50Q-QM9YICJZcZai2aC_5XfDnA2XABXUNm3CVi6XYMyR85TMFNsvKY59NeQBSUay90oOtLdMotlpjEd6S8iEWN2Hghtvekr_XUcTXhEKnbRfQH9TBwrL6jlligISAxtooVFd-awMn3dNwPpywDeAu8xVdxd42KFYoq4mpwRKGFEm5nbg"/>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="text-2xl font-black text-[#00535b] dark:text-[#006D77] font-['Plus_Jakarta_Sans','Tajawal']">إحسان</div>
+          <button class="material-symbols-outlined text-primary text-2xl transition-all duration-300 active:scale-95">swap_horiz</button>
         </div>
       </div>
-    </div>
+    </header>
 
-    <!-- Main Content -->
-    <div class="max-w-lg mx-auto px-4 py-6">
-      <!-- Loading -->
-      <div v-if="loading" class="text-center py-12">
-        <div class="animate-spin inline-block w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full"></div>
-        <p class="mt-3 text-warm-600">{{ t('common.loading') }}</p>
-      </div>
-
-      <!-- Error -->
-      <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4">
-        {{ error }}
-      </div>
-
-      <!-- Empty State -->
-      <div v-else-if="!childData" class="text-center py-12 text-warm-600">
-        <div class="text-6xl mb-4">👨‍👩‍👧</div>
-        <p class="text-lg">{{ t('parent.noChildren') }}</p>
-      </div>
-
-      <!-- Dashboard Content -->
-      <div v-else class="space-y-6">
-        <!-- Welcome & Summary -->
-        <div class="bg-white rounded-2xl p-5 shadow-soft">
-          <h2 class="text-lg font-bold text-warm-800 mb-2">
-            {{ t('parent.hello', { name: childData.name }) }}
-          </h2>
-          <p class="text-warm-600 text-sm leading-relaxed">
-            {{ childData.summary }}
-          </p>
-          
-          <!-- Overall Progress -->
-          <div class="mt-4 flex items-center gap-3">
-            <div class="flex-1">
-              <div class="flex justify-between text-sm mb-1">
-                <span class="text-warm-600">{{ t('parent.overallProgress') }}</span>
-                <span class="font-semibold text-primary-600">{{ Math.round(childData.overall_progress) }}%</span>
-              </div>
-              <div class="h-2 bg-warm-200 rounded-full overflow-hidden">
-                <div 
-                  class="h-full bg-primary-500 rounded-full transition-all duration-500"
-                  :style="{ width: `${childData.overall_progress}%` }"
-                ></div>
-              </div>
+    <main class="pt-24 px-6 space-y-8 max-w-4xl mx-auto">
+      <!-- Smart Message Card (Insight) -->
+      <section class="relative">
+        <div class="bg-surface-container-lowest p-6 asymmetric-border border-r-4 border-secondary shadow-[0_10px_30px_rgba(140,78,53,0.08)]">
+          <div class="flex items-start gap-4">
+            <div class="bg-secondary-fixed p-3 rounded-2xl shrink-0">
+              <span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+            </div>
+            <div>
+              <h3 class="text-secondary font-bold text-lg mb-1">رؤية ذكية</h3>
+              <p class="text-on-surface-variant leading-relaxed">أحمد يتفوق في <span class="font-bold text-primary">التعبير الشفهي</span> ولكنه يحتاج للمساعدة في <span class="font-bold text-secondary">التاء المربوطة</span>.</p>
             </div>
           </div>
         </div>
+      </section>
 
-        <!-- Radar Chart -->
-        <div class="bg-white rounded-2xl p-5 shadow-soft">
-          <h3 class="text-lg font-bold text-warm-800 mb-4">{{ t('parent.subjectBalance') }}</h3>
-          <SubjectRadarChart 
-            :subjects="childData.subjects"
-            class="w-full"
-          />
+      <!-- Stats Section: Progress Comparison -->
+      <section class="space-y-4">
+        <div class="flex justify-between items-end">
+          <h3 class="text-xl font-bold text-primary">نظرة على التقدم</h3>
+          <span class="text-sm text-stone-500 font-label">الفصل الدراسي الأول</span>
         </div>
+        <div class="grid grid-cols-1 gap-6">
+          <!-- Subject: Arabic -->
+          <div class="bg-surface-container-low p-5 rounded-3xl space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="font-bold">اللغة العربية</span>
+              <span class="font-label text-primary font-bold">92%</span>
+            </div>
+            <div class="w-full bg-surface-container-highest rounded-full overflow-hidden h-4">
+              <div class="h-full bg-primary rounded-full transition-all duration-1000" style="width: 92%"></div>
+            </div>
+            <p class="text-xs text-stone-500 italic">تميز ملحوظ في القواعد</p>
+          </div>
+          <!-- Subject: Math -->
+          <div class="bg-surface-container-low p-5 rounded-3xl space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="font-bold">الرياضيات</span>
+              <span class="font-label text-secondary font-bold">78%</span>
+            </div>
+            <div class="w-full bg-surface-container-highest rounded-full overflow-hidden h-4">
+              <div class="h-full bg-secondary rounded-full transition-all duration-1000" style="width: 78%"></div>
+            </div>
+            <p class="text-xs text-stone-500 italic">يحتاج للتركيز على الحساب الذهني</p>
+          </div>
+          <!-- Subject: Science -->
+          <div class="bg-surface-container-low p-5 rounded-3xl space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="font-bold">العلوم</span>
+              <span class="font-label text-tertiary font-bold">85%</span>
+            </div>
+            <div class="w-full bg-surface-container-highest rounded-full overflow-hidden h-4">
+              <div class="h-full bg-tertiary rounded-full transition-all duration-1000" style="width: 85%"></div>
+            </div>
+            <p class="text-xs text-stone-500 italic">اهتمام كبير بالتجارب العملية</p>
+          </div>
+        </div>
+      </section>
 
-        <!-- Subject Breakdown -->
-        <div class="bg-white rounded-2xl p-5 shadow-soft">
-          <h3 class="text-lg font-bold text-warm-800 mb-4">{{ t('parent.subjects') }}</h3>
-          <div class="space-y-3">
-            <div
-              v-for="subject in childData.subjects"
-              :key="subject.competency_id"
-              class="flex items-center gap-3 p-3 bg-warm-50 rounded-xl"
-            >
-              <div 
-                :class="['w-3 h-3 rounded-full', getMasteryColor(subject.mastery_level)]"
-              ></div>
-              <div class="flex-1">
-                <div class="flex justify-between items-center">
-                  <span class="font-medium text-warm-800">{{ subject.name }}</span>
-                  <span class="text-sm text-warm-600">{{ subject.score }}%</span>
-                </div>
-                <div class="text-xs text-warm-500 capitalize">
-                  {{ t(`mastery.${subject.mastery_level.toLowerCase()}`) }}
-                </div>
-              </div>
+      <!-- Recommendation Card -->
+      <section>
+        <div class="bg-primary p-6 rounded-[2.5rem] text-white relative overflow-hidden group">
+          <!-- Decorative Circle -->
+          <div class="absolute -top-12 -left-12 w-32 h-32 bg-primary-container rounded-full opacity-20"></div>
+          <div class="absolute -bottom-8 -right-8 w-24 h-24 bg-secondary rounded-full opacity-10"></div>
+          <div class="relative z-10 flex flex-col gap-4">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined bg-white/20 p-2 rounded-xl">lightbulb</span>
+              <h4 class="font-bold text-lg">توصية اليوم</h4>
+            </div>
+            <p class="text-primary-fixed text-xl font-bold leading-snug">5 دقائق من الحساب الذهني اليوم</p>
+            <button class="bg-secondary text-white px-6 py-3 rounded-2xl font-bold self-start mt-2 shadow-lg shadow-secondary/20 active:scale-95 transition-transform hover:bg-[#a65d3f]">
+              ابدأ التحدي
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent Activities (Bento-ish) -->
+      <section class="space-y-4 pb-8">
+        <h3 class="text-xl font-bold text-primary">آخر النشاطات</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-tertiary-fixed-dim p-4 rounded-3xl h-32 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer">
+            <span class="material-symbols-outlined text-tertiary-container">history_edu</span>
+            <span class="text-sm font-bold text-on-tertiary-fixed-variant">واجب الإملاء</span>
+          </div>
+          <div class="bg-secondary-fixed p-4 rounded-3xl flex flex-col justify-between row-span-2 h-auto hover:scale-[1.02] transition-transform cursor-pointer">
+            <span class="material-symbols-outlined text-on-secondary-fixed-variant">emoji_events</span>
+            <div>
+              <span class="text-2xl font-black font-label text-on-secondary-fixed">12</span>
+              <p class="text-xs font-bold text-on-secondary-fixed-variant">نقطة تميز جديدة</p>
             </div>
           </div>
-        </div>
-
-        <!-- Recommendations -->
-        <div v-if="childData.recommendations.length > 0" class="bg-white rounded-2xl p-5 shadow-soft">
-          <h3 class="text-lg font-bold text-warm-800 mb-4">{{ t('parent.recommendations') }}</h3>
-          <div class="space-y-3">
-            <InsightCard
-              v-for="(rec, index) in childData.recommendations"
-              :key="index"
-              :title="rec.title"
-              :description="rec.description"
-              :duration="rec.duration"
-              :priority="rec.priority"
-            />
+          <div class="bg-surface-container p-4 rounded-3xl h-32 flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer">
+            <span class="material-symbols-outlined text-outline">menu_book</span>
+            <span class="text-sm font-bold">قصة ما قبل النوم</span>
           </div>
         </div>
+      </section>
+    </main>
 
-        <!-- Recent Activities -->
-        <div v-if="childData.recent_activities.length > 0" class="bg-white rounded-2xl p-5 shadow-soft">
-          <h3 class="text-lg font-bold text-warm-800 mb-4">{{ t('parent.recentActivities') }}</h3>
-          <div class="grid grid-cols-2 gap-3">
-            <div
-              v-for="activity in childData.recent_activities.slice(0, 4)"
-              :key="activity.timestamp"
-              class="p-3 bg-warm-50 rounded-xl"
-            >
-              <div class="text-2xl mb-1">{{ getActivityIcon(activity.type) }}</div>
-              <div class="text-sm font-medium text-warm-800 line-clamp-2">{{ activity.title }}</div>
-              <div class="text-xs text-warm-500 mt-1">{{ formatRelativeTime(activity.timestamp) }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- BottomNavBar -->
+    <nav class="fixed bottom-0 left-0 w-full flex flex-row-reverse justify-around items-center px-4 pb-6 pt-3 bg-[#faf9f6]/80 dark:bg-stone-900/80 backdrop-blur-xl z-50 rounded-t-3xl shadow-[0_-4px_40px_rgba(0,109,119,0.06)] max-w-md mx-auto md:max-w-none md:justify-center md:gap-16">
+      <!-- Home (Active) -->
+      <a class="flex flex-col items-center justify-center bg-[#00535b]/10 dark:bg-[#006D77]/20 text-[#00535b] dark:text-[#006D77] rounded-2xl px-5 py-2 scale-110 transition-transform duration-200" href="#">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+        <span class="font-['Plus_Jakarta_Sans','Tajawal'] text-[12px] font-bold font-body">الرئيسية</span>
+      </a>
+      <!-- Progress -->
+      <a class="flex flex-col items-center justify-center text-stone-400 dark:text-stone-500 px-5 py-2 hover:bg-[#f4f3f1] dark:hover:bg-stone-800 transition-colors rounded-2xl" href="#">
+        <span class="material-symbols-outlined">insights</span>
+        <span class="font-['Plus_Jakarta_Sans','Tajawal'] text-[12px] font-medium font-body">التقدم</span>
+      </a>
+      <!-- Recommendations -->
+      <a class="flex flex-col items-center justify-center text-stone-400 dark:text-stone-500 px-5 py-2 hover:bg-[#f4f3f1] dark:hover:bg-stone-800 transition-colors rounded-2xl" href="#">
+        <span class="material-symbols-outlined">auto_awesome</span>
+        <span class="font-['Plus_Jakarta_Sans','Tajawal'] text-[12px] font-medium font-body">التوصيات</span>
+      </a>
+      <!-- Account -->
+      <a class="flex flex-col items-center justify-center text-stone-400 dark:text-stone-500 px-5 py-2 hover:bg-[#f4f3f1] dark:hover:bg-stone-800 transition-colors rounded-2xl" href="#">
+        <span class="material-symbols-outlined">person</span>
+        <span class="font-['Plus_Jakarta_Sans','Tajawal'] text-[12px] font-medium font-body">الحساب</span>
+      </a>
+    </nav>
   </div>
 </template>
+
+<style scoped>
+.tajawal-black { font-weight: 900; }
+.asymmetric-border { border-radius: 2rem 1rem 3rem 1rem; }
+</style>

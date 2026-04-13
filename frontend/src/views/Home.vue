@@ -1,101 +1,194 @@
 <script setup lang="ts">
-// Home view - Landing page for Ihsane platform
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col relative overflow-hidden bg-surface">
-    <!-- Abstract Nurturing Background Element -->
-    <div class="absolute top-0 inset-x-0 h-[50vh] bg-gradient-to-b from-teal-50 to-surface -z-10 rounded-b-cloud opacity-70"></div>
-    <div class="absolute -top-24 -end-24 w-96 h-96 bg-teal-100 rounded-full blur-3xl opacity-50 -z-10"></div>
-    <div class="absolute top-32 -start-24 w-72 h-72 bg-ochre-100 rounded-full blur-3xl opacity-40 -z-10"></div>
-
-    <!-- Header area -->
-    <header class="w-full p-6 flex justify-between items-center z-10 max-w-7xl mx-auto">
-      <div class="flex items-center gap-3">
-        <img src="@/assets/logo.png" alt="Ihsane Logo" class="w-12 h-12 object-contain" />
-        <span class="font-arabic text-2xl font-bold text-teal-800">{{ $t('app.name') }}</span>
-      </div>
-      <div class="flex items-center gap-4">
-        <!-- Language Switcher placeholder -->
-        <button class="text-ink-500 font-medium hover:text-teal-600 transition-colors">
-          <span v-if="$i18n.locale === 'ar'">Fr</span>
-          <span v-else>عربي</span>
-        </button>
-      </div>
+  <div class="min-h-screen text-on-surface bg-surface" dir="rtl">
+    <!-- TopAppBar -->
+    <header class="fixed top-0 w-full z-50 bg-[#faf9f6]/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm shadow-teal-900/5">
+      <nav class="flex flex-row-reverse justify-between items-center px-8 py-4 max-w-7xl mx-auto font-['Plus_Jakarta_Sans','Tajawal'] text-right">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-[#00535b] dark:text-teal-400 text-3xl" data-icon="menu_book">menu_book</span>
+          <span class="text-2xl font-bold text-[#00535b] dark:text-teal-500">إحسان</span>
+        </div>
+        <div class="hidden md:flex flex-row-reverse gap-8 items-center">
+          <a class="text-[#00535b] font-bold border-b-2 border-[#00535b]" href="#">الرئيسية</a>
+          <a class="text-slate-600 dark:text-slate-400 hover:text-[#8c4e35] transition-colors duration-300" href="#">المميزات</a>
+          <a class="text-slate-600 dark:text-slate-400 hover:text-[#8c4e35] transition-colors duration-300" href="#">كيف نعمل</a>
+          <a class="text-slate-600 dark:text-slate-400 hover:text-[#8c4e35] transition-colors duration-300" href="#">من نحن</a>
+        </div>
+        <router-link to="/login" class="bg-primary text-on-primary px-6 py-2.5 rounded-xl font-bold scale-95 active:opacity-80 transition-transform hover:bg-primary-container inline-block">
+          تسجيل الدخول
+        </router-link>
+      </nav>
     </header>
 
-    <!-- Main Content -->
-    <main class="flex-1 flex items-center justify-center p-6 z-10 w-full max-w-7xl mx-auto">
-      <div class="w-full max-w-4xl grid md:grid-cols-2 gap-12 items-center">
-        
-        <!-- Left/Right (RTL aware): Text Content -->
-        <div class="text-center md:text-start space-y-6">
-          <div class="inline-block px-4 py-1.5 rounded-full bg-teal-50 border border-teal-100 text-teal-700 font-medium text-sm mb-2">
-            ✨ {{ $t('app.welcome') }}
+    <main class="pt-24 overflow-hidden">
+      <!-- Hero Section -->
+      <section class="relative px-6 py-12 md:py-24 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div class="z-10 text-right">
+            <h1 class="text-5xl md:text-7xl font-black text-primary leading-tight mb-6">
+              مستقبل تعليم طفلك يبدأ هنا
+            </h1>
+            <p class="text-xl text-on-surface-variant max-w-xl mb-10 leading-relaxed">
+              منصة إحسان تعتمد على تقنيات الذكاء الاصطناعي لتوفير رحلة تعليمية مخصصة لكل تلميذ جزائري، تتماشى مع وتيرته الخاصة وتطلعاته.
+            </p>
+            <div class="flex flex-col sm:flex-row-reverse gap-4">
+              <router-link to="/login" class="bg-secondary text-on-secondary px-10 py-5 rounded-3xl text-xl font-bold shadow-lg hover:opacity-90 transition-all text-center">
+                ابدأ الرحلة مجاناً
+              </router-link>
+              <button class="bg-surface-container-low text-primary px-10 py-5 rounded-3xl text-xl font-bold hover:bg-surface-container-high transition-all">
+                اكتشف المزيد
+              </button>
+            </div>
           </div>
-          
-          <h1 class="text-5xl md:text-6xl font-black text-ink-900 leading-tight font-arabic text-balance">
-            {{ $t('app.name') }}
-          </h1>
-          <p class="text-xl md:text-2xl font-medium text-teal-700 mt-2 font-arabic text-balance">
-            {{ $t('app.tagline') }}
-          </p>
-          
-          <p class="text-lg text-ink-600 max-w-lg mx-auto md:mx-0 text-balance leading-relaxed py-4">
-            منصة تعليمية متطورة تدعم نمو طفلك الأكاديمي بأسلوب تربوي ذكي، آمن، وممتع. تتبع التقدم وتلقى التوصيات في بيئة تشجع على التعلم الذاتي.
-          </p>
+          <div class="relative">
+            <div class="absolute -top-10 -right-10 w-64 h-64 bg-tertiary-fixed-dim/20 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-10 -left-10 w-64 h-64 bg-secondary-fixed-dim/20 rounded-full blur-3xl"></div>
+            <div class="relative aspect-square rounded-3xl overflow-hidden shadow-2xl rotate-2">
+              <img alt="Student studying" class="w-full h-full object-cover" data-alt="warm and inspiring portrait of a happy young Algerian student wearing headphones using a tablet in a bright sunlit home environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEN1zX9zChPg6yDgs-biPXWsEPm6lWU4SGBUBHDE9hOCHdAbhFYP_legk3NXlAOzOHVIfS11T-6M7yeDMtY6OS1u_z-aJxsw2oMdSDvDpkbJSOJkxE8u-YPgMZj6sBhK5ke33tlM-npYt1GgU5Y-pA1gH-5VSWxa01g4WcaDwqjkTYhgjdsd0yp4Mvk2p8lGvNwCVSd3b1e88MzcCURZ0VjXCv4ERwCDuvhSj7kYOnPRDyzVP5AT30sFlFMmfrq8O8KIGSz1AdYCQ"/>
+            </div>
+            <!-- Decorative Floating Element -->
+            <div class="absolute -bottom-6 -right-6 bg-white p-6 rounded-2xl shadow-xl flex items-center gap-4 animate-bounce">
+              <div class="w-12 h-12 bg-tertiary-container rounded-full flex items-center justify-center text-white">
+                <span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+              </div>
+              <div class="text-right">
+                <p class="font-bold text-primary">ذكاء تكيفي</p>
+                <p class="text-xs text-on-surface-variant">مخصص 100% لطفلك</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start pt-2">
-            <router-link
-              to="/login"
-              class="btn-primary shadow-teal text-lg px-8 py-4 w-full sm:w-auto"
-            >
-              {{ $t('auth.login') }}
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 rtl:rotate-180" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-              </svg>
+      <!-- Features Bento Grid -->
+      <section class="bg-surface-container-low py-24 px-6">
+        <div class="max-w-7xl mx-auto">
+          <div class="text-center mb-16">
+            <h2 class="text-4xl font-bold text-primary mb-4">لماذا يختار الأولياء إحسان؟</h2>
+            <p class="text-on-surface-variant max-w-2xl mx-auto">نحن نجمع بين الخبرة البيداغوجية الجزائرية وأحدث تقنيات التعليم الرقمي</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Feature 1 -->
+            <div class="bg-surface-container-lowest p-10 rounded-3xl shadow-sm hover:shadow-md transition-shadow group">
+              <div class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6 text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                <span class="material-symbols-outlined text-4xl" data-icon="psychology">psychology</span>
+              </div>
+              <h3 class="text-2xl font-bold text-primary mb-4">التعلم التكيفي</h3>
+              <p class="text-on-surface-variant leading-relaxed">تتغير صعوبة الأسئلة والمحتوى تلقائياً بناءً على مستوى فهم طفلك لضمان عدم الملل أو الإحباط.</p>
+            </div>
+            <!-- Feature 2 -->
+            <div class="bg-surface-container-lowest p-10 rounded-3xl shadow-sm hover:shadow-md transition-shadow group">
+              <div class="w-16 h-16 bg-secondary/10 rounded-2xl flex items-center justify-center mb-6 text-secondary group-hover:bg-secondary group-hover:text-white transition-all">
+                <span class="material-symbols-outlined text-4xl" data-icon="family_history">family_history</span>
+              </div>
+              <h3 class="text-2xl font-bold text-primary mb-4">متابعة دقيقة للأولياء</h3>
+              <p class="text-on-surface-variant leading-relaxed">تقارير دورية وشاملة تصلك مباشرة، توضح نقاط القوة والمجالات التي تحتاج إلى تحسين في أداء طفلك.</p>
+            </div>
+            <!-- Feature 3 -->
+            <div class="bg-surface-container-lowest p-10 rounded-3xl shadow-sm hover:shadow-md transition-shadow group">
+              <div class="w-16 h-16 bg-tertiary-container/10 rounded-2xl flex items-center justify-center mb-6 text-tertiary group-hover:bg-tertiary-container group-hover:text-white transition-all">
+                <span class="material-symbols-outlined text-4xl" data-icon="verified">verified</span>
+              </div>
+              <h3 class="text-2xl font-bold text-primary mb-4">منهج جزائري معتمد</h3>
+              <p class="text-on-surface-variant leading-relaxed">كل محتوياتنا مصممة وفقاً للمنهاج الرسمي لوزارة التربية الوطنية الجزائرية، بالتعاون مع نخبة من الأساتذة.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- How it Works -->
+      <section class="py-24 px-6 max-w-7xl mx-auto">
+        <div class="text-center mb-20">
+          <h2 class="text-4xl font-bold text-primary">كيف تبدأ الرحلة؟</h2>
+        </div>
+        <div class="relative">
+          <!-- Connecting Line (Desktop Only) -->
+          <div class="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-dashed border-t-2 border-dashed border-primary/20 -translate-y-1/2"></div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+            <!-- Step 1 -->
+            <div class="bg-background flex flex-col items-center text-center">
+              <div class="w-20 h-20 bg-primary text-white rounded-full flex items-center justify-center text-3xl font-black mb-8 z-10 border-8 border-background shadow-lg">
+                1
+              </div>
+              <h4 class="text-2xl font-bold text-primary mb-3">التقييم الأولي</h4>
+              <p class="text-on-surface-variant">اختبار ذكي لتحديد مستوى المكتسبات القبلية وفجوات التعلم.</p>
+            </div>
+            <!-- Step 2 -->
+            <div class="bg-background flex flex-col items-center text-center">
+              <div class="w-20 h-20 bg-secondary text-white rounded-full flex items-center justify-center text-3xl font-black mb-8 z-10 border-8 border-background shadow-lg">
+                2
+              </div>
+              <h4 class="text-2xl font-bold text-primary mb-3">تخصيص المسار</h4>
+              <p class="text-on-surface-variant">خوارزميتنا تبني برنامجاً دراسياً خاصاً بطفلك يركز على ما يحتاجه فعلاً.</p>
+            </div>
+            <!-- Step 3 -->
+            <div class="bg-background flex flex-col items-center text-center">
+              <div class="w-20 h-20 bg-tertiary text-white rounded-full flex items-center justify-center text-3xl font-black mb-8 z-10 border-8 border-background shadow-lg">
+                3
+              </div>
+              <h4 class="text-2xl font-bold text-primary mb-3">الإتقان والتميز</h4>
+              <p class="text-on-surface-variant">دروس تفاعلية وتمارين مستمرة حتى يصل طفلك لدرجة الإتقان الكامل.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Testimonial -->
+      <section class="bg-primary py-24 px-6 overflow-hidden relative">
+        <div class="absolute top-0 right-0 p-20 opacity-10">
+          <span class="material-symbols-outlined text-[200px]" data-icon="format_quote">format_quote</span>
+        </div>
+        <div class="max-w-4xl mx-auto text-center relative z-10">
+          <div class="mb-8">
+            <img alt="Parent Testimonial" class="w-24 h-24 rounded-full mx-auto border-4 border-white shadow-xl object-cover" data-alt="headshot of a smiling professional middle-aged woman looking confident and satisfied" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgVvboab6kgO3YGJgYTcOeFk6xUVvgvMluLn3dNXCfBkaZimZ2konWzxiFJ1CFzP4RLYgYvoLdDyPKqIUEfP3tis7rSxv7NPriarHnbPvs8tsMVknOrIu-hZ1rJ4a9vRdwewoRYqISHA7RgW75M_YMugZLvM0C0wk4NerUvPPNo_baY0vI01UNR_MhQga1IEPVS1EQ1xlTZhDA2ZQhwdiBZ_M5PqGlMZ3raKHIa1M5V_Oo_MI1St9PG6o1I4Ub2RdQ5VcIOiTVOXU"/>
+          </div>
+          <p class="text-3xl md:text-4xl font-medium text-white italic leading-relaxed mb-10">
+            "بفضل إحسان، لاحظت تحسناً مذهلاً في نتائج ابني في مادة الرياضيات خلال شهر واحد فقط. المنصة تشعره وكأنه يلعب بينما هو في الحقيقة يتعلم بذكاء."
+          </p>
+          <div>
+            <h5 class="text-white text-xl font-bold">السيدة مريم بن علي</h5>
+            <p class="text-primary-fixed-dim">أم لتلميذ في السنة الرابعة ابتدائي - الجزائر العاصمة</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Final CTA -->
+      <section class="py-24 px-6">
+        <div class="max-w-5xl mx-auto bg-surface-container rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden">
+          <div class="absolute -top-24 -left-24 w-64 h-64 bg-secondary/5 rounded-full"></div>
+          <div class="relative z-10">
+            <h2 class="text-4xl md:text-5xl font-black text-primary mb-6">هل أنت مستعد لتغيير مسار طفلك الدراسي؟</h2>
+            <p class="text-xl text-on-surface-variant mb-12 max-w-2xl mx-auto">
+              انضم إلى آلاف العائلات الجزائرية التي وضعت ثقتها في إحسان. التسجيل سريع ومجاني للبدء.
+            </p>
+            <router-link to="/login" class="bg-secondary text-on-secondary px-12 py-6 rounded-3xl text-2xl font-bold shadow-2xl hover:scale-105 active:scale-95 transition-all inline-block">
+              سجل الآن مجاناً
             </router-link>
-            
-            <button class="btn-secondary w-full sm:w-auto px-8 py-4 text-lg">
-              تعرف على المزيد
-            </button>
+            <p class="mt-6 text-on-surface-variant text-sm">لا حاجة لبطاقة دفع • تجربة كاملة لمدة 7 أيام</p>
           </div>
         </div>
-
-        <!-- Right/Left (RTL aware): Visuals/Nurturing Card Focus -->
-        <div class="relative hidden md:block">
-          <div class="card-nurturing p-8 relative z-10 border border-white/50 bg-white/80 backdrop-blur-xl">
-            <div class="flex items-start gap-4 mb-6">
-              <div class="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <div>
-                <h3 class="font-bold text-ink-900 text-lg">التعلم التكيفي</h3>
-                <p class="text-ink-600 mt-1 leading-relaxed">يتكيف المحتوى مع مستوى استيعاب التلميذ خطوة بخطوة، معززاً ثقته بنفسه.</p>
-              </div>
-            </div>
-            
-            <div class="flex items-start gap-4 mb-6">
-              <div class="w-12 h-12 rounded-full bg-ochre-100 flex items-center justify-center text-ochre-600 shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <h3 class="font-bold text-ink-900 text-lg">متابعة الأبوين</h3>
-                <p class="text-ink-600 mt-1 leading-relaxed">تحديثات إيجابية مستمرة وتوجيهات عملية لدعم طفلك في المنزل دون ضغوط.</p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Decorative UI elements floating around -->
-          <div class="absolute -bottom-6 -start-6 w-24 h-24 bg-teal-500 rounded-3xl opacity-10 rotate-12 -z-10"></div>
-          <div class="absolute -top-8 -end-8 w-32 h-32 bg-ochre-400 rounded-full opacity-10 -z-10"></div>
-        </div>
-
-      </div>
+      </section>
     </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-[#00535b]/10 bg-[#f4f3f1] dark:bg-slate-950">
+      <div class="flex flex-col md:flex-row-reverse justify-between items-center px-12 py-10 gap-6 max-w-7xl mx-auto font-['Plus_Jakarta_Sans','Tajawal'] text-right text-sm">
+        <div class="flex items-center gap-2">
+          <span class="text-xl font-black text-[#00535b]">إحسان</span>
+          <span class="material-symbols-outlined text-[#00535b]" data-icon="menu_book">menu_book</span>
+        </div>
+        <div class="flex flex-wrap flex-row-reverse justify-center gap-8">
+          <a class="text-slate-500 dark:text-slate-500 hover:underline hover:text-[#00535b] transition-all opacity-80 hover:opacity-100" href="#">المميزات</a>
+          <a class="text-slate-500 dark:text-slate-500 hover:underline hover:text-[#00535b] transition-all opacity-80 hover:opacity-100" href="#">عن المنصة</a>
+          <a class="text-slate-500 dark:text-slate-500 hover:underline hover:text-[#00535b] transition-all opacity-80 hover:opacity-100" href="#">تواصل معنا</a>
+          <a class="text-slate-500 dark:text-slate-500 hover:underline hover:text-[#00535b] transition-all opacity-80 hover:opacity-100" href="#">سياسة الخصوصية</a>
+        </div>
+        <div class="text-slate-500 dark:text-slate-500">
+          © ٢٠٢٤ إحسان. جميع الحقوق محفوظة.
+        </div>
+      </div>
+    </footer>
   </div>
 </template>

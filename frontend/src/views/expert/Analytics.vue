@@ -1,343 +1,466 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-import CompetencyHeatmap from '@/components/expert/CompetencyHeatmap.vue'
-import { analyticsService, type HeatmapResponse, type StudentGroup, type MetricsResponse } from '@/services/analyticsService'
-
-const { t } = useI18n()
-const router = useRouter()
-
-// Data refs
-const heatmapData = ref<HeatmapResponse | null>(null)
-const studentGroups = ref<StudentGroup[]>([])
-const metrics = ref<MetricsResponse | null>(null)
-
-// UI state
-const loading = ref({
-  heatmap: false,
-  groups: false,
-  metrics: false,
-  export: false,
-})
-
-const error = ref<string | null>(null)
-
-// Filters
-const selectedCompetencies = ref<string[]>([])
-const groupBy = ref<'competency' | 'error_type'>('competency')
-const activeTab = ref<'heatmap' | 'groups' | 'metrics'>('heatmap')
-
-// Fetch heatmap data
-const fetchHeatmap = async () => {
-  loading.value.heatmap = true
-  error.value = null
-  try {
-    const filters = {
-      competency_ids: selectedCompetencies.value.length > 0 ? selectedCompetencies.value : undefined,
-    }
-    heatmapData.value = await analyticsService.getHeatmap(filters)
-  } catch (err) {
-    error.value = t('errors.fetchHeatmapFailed')
-    console.error('Failed to fetch heatmap:', err)
-  } finally {
-    loading.value.heatmap = false
-  }
-}
-
-// Fetch auto-grouped students
-const fetchGroups = async () => {
-  loading.value.groups = true
-  error.value = null
-  try {
-    const filters = {}
-    const response = await analyticsService.autoGroup(filters, groupBy.value)
-    studentGroups.value = response.groups
-  } catch (err) {
-    error.value = t('errors.fetchGroupsFailed')
-    console.error('Failed to fetch groups:', err)
-  } finally {
-    loading.value.groups = false
-  }
-}
-
-// Fetch platform metrics
-const fetchMetrics = async () => {
-  loading.value.metrics = true
-  error.value = null
-  try {
-    metrics.value = await analyticsService.getMetrics()
-  } catch (err) {
-    error.value = t('errors.fetchMetricsFailed')
-    console.error('Failed to fetch metrics:', err)
-  } finally {
-    loading.value.metrics = false
-  }
-}
-
-// Export report
-const exportReport = async (format: 'csv' | 'pdf') => {
-  loading.value.export = true
-  error.value = null
-  try {
-    const studentIds = heatmapData.value?.students.map(s => s.id)
-    const response = await analyticsService.exportReport({
-      format,
-      report_type: 'heatmap',
-      filters: {
-        competency_ids: selectedCompetencies.value.length > 0 ? selectedCompetencies.value : undefined,
-      },
-      student_ids: studentIds,
-    })
-
-    // Show success message
-    alert(t('analytics.exportSuccess', { file: response.file_path }))
-  } catch (err) {
-    error.value = t('errors.exportFailed')
-    console.error('Failed to export report:', err)
-  } finally {
-    loading.value.export = false
-  }
-}
-
-// Handle heatmap cell click
-const handleCellClick = (cell: any) => {
-  console.log('Cell clicked:', cell)
-  // Could navigate to student detail view
-}
-
-// Handle student click
-const handleStudentClick = (studentId: string) => {
-  router.push(`/expert/students/${studentId}`)
-}
-
-// Refresh all data
-const refreshData = async () => {
-  await Promise.all([
-    fetchHeatmap(),
-    fetchGroups(),
-    fetchMetrics(),
-  ])
-}
-
-onMounted(() => {
-  refreshData()
-})
-
-// Computed available competencies from heatmap data
-const availableCompetencies = computed(() => {
-  return heatmapData.value?.competencies || []
-})
 </script>
 
 <template>
-  <div class="min-h-screen p-6">
-    <div class="nurturing-card p-6">
-      <!-- Header -->
-      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+  <div class="min-h-screen bg-[#faf9f6] text-on-surface font-['Tajawal']" dir="rtl">
+    <!-- SideNavBar (Desktop Drawer) -->
+    <aside class="h-screen w-72 fixed right-0 top-0 border-l-0 bg-[#faf9f6]/80 dark:bg-slate-900/80 backdrop-blur-3xl flex flex-col py-8 px-4 z-50">
+      <div class="mb-10 px-4">
+        <h1 class="text-2xl font-bold text-[#00535b] dark:text-[#006D77]">إحسان للتحليل</h1>
+        <p class="text-slate-500 text-sm mt-1">لوحة تحكم الخبراء</p>
+      </div>
+      <nav class="space-y-2 flex-1">
+        <a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 font-medium hover:bg-[#f4f3f1]/50 transition-colors duration-200 rounded-xl group" href="#">
+          <span class="material-symbols-outlined group-hover:scale-110 transition-transform">dashboard</span>
+          <span>نظرة عامة</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 font-medium hover:bg-[#f4f3f1]/50 transition-colors duration-200 rounded-xl group" href="#">
+          <span class="material-symbols-outlined group-hover:scale-110 transition-transform">inventory_2</span>
+          <span>الوحدات</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 text-[#00535b] dark:text-[#006D77] font-bold border-r-4 border-[#00535b] bg-[#f4f3f1] dark:bg-slate-800 rounded-l-none rounded-xl" href="#">
+          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
+          <span>الطلاب</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 font-medium hover:bg-[#f4f3f1]/50 transition-colors duration-200 rounded-xl group" href="#">
+          <span class="material-symbols-outlined group-hover:scale-110 transition-transform">error</span>
+          <span>تنبيهات تربوية</span>
+        </a>
+        <a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 font-medium hover:bg-[#f4f3f1]/50 transition-colors duration-200 rounded-xl group" href="#">
+          <span class="material-symbols-outlined group-hover:scale-110 transition-transform">menu_book</span>
+          <span>المناهج</span>
+        </a>
+      </nav>
+      <div class="mt-auto flex items-center gap-3 px-4 py-4 bg-surface-container-low rounded-2xl">
+        <img alt="صورة الملف الشخصي للمحلل التربوي" class="w-10 h-10 rounded-full border-2 border-primary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdoDSjHTIZortaEeGbw3uoG65zCK5G_zEpjCcvGo5ph6mz_qjtIlnywjy2vkPdXVq0QMeuht8ga81shCdrWHk6wt-e6-DnA5garwwkrkv-SMkO4uBFmOnTABzgCp3UoJguu-ElS5CpTkxBH9vxfFfUxSTNrSL1VXRaCKlnT67atKecjn2AqgXIjNp0Mf80tpa0GnscwRVV5hTwW234CYcN0eJ5j9RLgwHc1kg7sc_ELv0SYrsWae28WPTkI3HpW-ZUgNJLtcCiIvM"/>
         <div>
-          <h1 class="text-2xl font-bold text-primary-700">
-            {{ t('expert.analytics') }}
-          </h1>
-          <p class="text-warm-600 mt-1">
-            {{ t('expert.analyticsDescription') }}
-          </p>
-        </div>
-        <div class="flex gap-2">
-          <button
-            @click="exportReport('csv')"
-            :disabled="loading.export"
-            class="btn-secondary flex items-center gap-2"
-          >
-            <span v-if="loading.export" class="animate-spin">⟳</span>
-            <span v-else>📊</span>
-            {{ t('analytics.exportCSV') }}
-          </button>
-          <button
-            @click="exportReport('pdf')"
-            :disabled="loading.export"
-            class="btn-secondary flex items-center gap-2"
-          >
-            <span v-if="loading.export" class="animate-spin">⟳</span>
-            <span v-else>📄</span>
-            {{ t('analytics.exportPDF') }}
-          </button>
-          <button @click="refreshData" class="btn-primary">
-            🔄 {{ t('common.refresh') }}
-          </button>
+          <p class="font-bold text-sm text-on-surface">د. سمير الجزائري</p>
+          <p class="text-xs text-slate-500">خبير تحليلات عليا</p>
         </div>
       </div>
+    </aside>
 
-      <!-- Error Message -->
-      <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4">
-        {{ error }}
-      </div>
-
-      <!-- Metrics Overview -->
-      <div v-if="metrics" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-        <div class="bg-warm-50 rounded-xl p-4 text-center">
-          <div class="text-2xl font-bold text-primary-600">{{ metrics.total_students }}</div>
-          <div class="text-sm text-warm-600">{{ t('analytics.totalStudents') }}</div>
+    <!-- TopNavBar -->
+    <header class="w-[calc(100%-18rem)] fixed left-0 top-0 z-40 bg-[#faf9f6]/80 dark:bg-slate-950/80 backdrop-blur-2xl flex flex-row-reverse justify-between items-center h-16 px-8">
+      <div class="flex items-center gap-6">
+        <div class="relative">
+          <span class="material-symbols-outlined text-slate-400 hover:text-[#8c4e35] transition-colors cursor-pointer">notifications</span>
+          <span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
         </div>
-        <div class="bg-warm-50 rounded-xl p-4 text-center">
-          <div class="text-2xl font-bold text-green-600">{{ Math.round(metrics.gap_reduction_rate) }}%</div>
-          <div class="text-sm text-warm-600">{{ t('analytics.gapReduction') }}</div>
-        </div>
-        <div class="bg-warm-50 rounded-xl p-4 text-center">
-          <div class="text-2xl font-bold text-blue-600">{{ metrics.mastery_speed.toFixed(1) }}</div>
-          <div class="text-sm text-warm-600">{{ t('analytics.masterySpeed') }}</div>
-        </div>
-        <div class="bg-warm-50 rounded-xl p-4 text-center">
-          <div class="text-2xl font-bold text-purple-600">{{ Math.round(metrics.retention_rate) }}%</div>
-          <div class="text-sm text-warm-600">{{ t('analytics.retentionRate') }}</div>
-        </div>
-        <div class="bg-warm-50 rounded-xl p-4 text-center">
-          <div class="text-2xl font-bold text-orange-600">{{ Math.round(metrics.resilience_score) }}%</div>
-          <div class="text-sm text-warm-600">{{ t('analytics.resilienceScore') }}</div>
+        <span class="material-symbols-outlined text-slate-400 hover:text-[#8c4e35] transition-colors cursor-pointer">settings</span>
+        <span class="material-symbols-outlined text-slate-400 hover:text-[#8c4e35] transition-colors cursor-pointer">help_outline</span>
+        <div class="h-8 w-[1px] bg-outline-variant/30"></div>
+        <div class="flex items-center gap-3">
+          <span class="font-['Cairo'] text-sm font-bold text-[#00535b]">الأستاذ المشرف</span>
+          <img alt="الأستاذ المشرف" class="w-8 h-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXUBFtIf0YV_3Zwdb58nWk-yHcBz7aK5R5fntf2AtM4pElTlYH1_G6jBKTjRTGrtqnlrxTTPFOk3m-jBoSMw5jqmUdEfmJuu5kLgHejV6VtrkyDoiJVuqfgj72nGRUoNR4rAJJa9hQ9q8QkU3YJ9VHtWlJ6LevMaYZF6CFJcSgRhUfp_KxxC6Bz9GV0JHWpYsWZmie_a4aGjkiKiw51ArKyMacis2h5sWcE92bX22tQU729Bn3CmwyB1s0Uyowgh6xVTfwDecA7bE"/>
         </div>
       </div>
-
-      <!-- Tabs -->
-      <div class="border-b border-warm-200 mb-6">
-        <nav class="flex gap-1">
-          <button
-            @click="activeTab = 'heatmap'"
-            :class="[
-              'px-4 py-2 font-medium text-sm rounded-t-lg transition-colors',
-              activeTab === 'heatmap'
-                ? 'bg-primary-100 text-primary-700 border-b-2 border-primary-500'
-                : 'text-warm-600 hover:text-warm-800 hover:bg-warm-50'
-            ]"
-          >
-            {{ t('analytics.heatmap') }}
-          </button>
-          <button
-            @click="activeTab = 'groups'"
-            :class="[
-              'px-4 py-2 font-medium text-sm rounded-t-lg transition-colors',
-              activeTab === 'groups'
-                ? 'bg-primary-100 text-primary-700 border-b-2 border-primary-500'
-                : 'text-warm-600 hover:text-warm-800 hover:bg-warm-50'
-            ]"
-          >
-            {{ t('analytics.studentGroups') }}
-          </button>
-          <button
-            @click="activeTab = 'metrics'"
-            :class="[
-              'px-4 py-2 font-medium text-sm rounded-t-lg transition-colors',
-              activeTab === 'metrics'
-                ? 'bg-primary-100 text-primary-700 border-b-2 border-primary-500'
-                : 'text-warm-600 hover:text-warm-800 hover:bg-warm-50'
-            ]"
-          >
-            {{ t('analytics.detailedMetrics') }}
-          </button>
+      <div class="flex items-center gap-8">
+        <h2 class="text-xl font-black text-[#00535b] dark:text-[#006D77] font-['Cairo']">نظام إحسان الذكي</h2>
+        <nav class="hidden md:flex gap-6">
+          <a class="text-slate-400 hover:text-[#8c4e35] transition-colors font-['Cairo'] text-sm" href="#">الرئيسية</a>
+          <a class="text-[#00535b] dark:text-white font-bold font-['Cairo'] text-sm border-b-2 border-primary pb-1" href="#">تحليلات متقدمة</a>
         </nav>
       </div>
+    </header>
 
-      <!-- Filters -->
-      <div class="bg-warm-50 rounded-xl p-4 mb-6">
-        <div class="flex flex-wrap items-center gap-4">
-          <div class="flex items-center gap-2">
-            <span class="text-sm font-medium text-warm-700">{{ t('analytics.filterBy') }}:</span>
-            <select
-              v-model="selectedCompetencies"
-              multiple
-              class="form-select min-w-[200px]"
-            >
-              <option v-for="comp in availableCompetencies" :key="comp" :value="comp">
-                {{ comp }}
-              </option>
-            </select>
-          </div>
-          <button @click="fetchHeatmap" class="btn-primary text-sm">
-            {{ t('analytics.applyFilters') }}
+    <!-- Main Content -->
+    <main class="mr-72 pt-24 pb-12 px-8 min-h-screen">
+      <!-- Header Section -->
+      <section class="mb-10 flex flex-col md:flex-row justify-between items-end gap-6">
+        <div class="max-w-2xl">
+          <span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-xs font-bold font-['Inter'] mb-3 inline-block uppercase tracking-wider">Analysis Hub</span>
+          <h2 class="text-4xl font-black text-primary leading-tight mb-2">تحليل الاستجابة التربوية: الطلاب المتعثرون</h2>
+          <p class="text-on-surface-variant leading-relaxed">بناءً على خوارزميات التعلم التكيفي، تم تحديد 8 طلاب يتطلبون تدخلاً فورياً بناءً على فجوات في المفاهيم الأساسية للوحدات الأخيرة.</p>
+        </div>
+        <div class="flex gap-3">
+          <button class="bg-surface-container-high hover:bg-surface-container-highest text-primary font-bold px-6 py-3 rounded-xl transition-all flex items-center gap-2">
+            <span class="material-symbols-outlined">download</span>
+            تصدير التقرير الكامل
+          </button>
+          <button class="bg-primary text-white font-bold px-8 py-3 rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all flex items-center gap-2">
+            <span class="material-symbols-outlined">bolt</span>
+            تفعيل جلسة المعالجة
           </button>
         </div>
-      </div>
+      </section>
 
-      <!-- Heatmap Tab -->
-      <div v-if="activeTab === 'heatmap'">
-        <CompetencyHeatmap
-          :data="heatmapData"
-          :loading="loading.heatmap"
-          @cell-click="handleCellClick"
-          @student-click="handleStudentClick"
-        />
-      </div>
-
-      <!-- Student Groups Tab -->
-      <div v-if="activeTab === 'groups'">
-        <div v-if="loading.groups" class="flex items-center justify-center py-12">
-          <div class="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full"></div>
-        </div>
-        <div v-else-if="studentGroups.length === 0" class="text-center py-12 text-warm-600">
-          <p class="text-lg">{{ t('analytics.noGroupsFound') }}</p>
-          <p class="text-sm mt-1">{{ t('analytics.groupsDescription') }}</p>
-        </div>
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div
-            v-for="group in studentGroups"
-            :key="group.group_id"
-            class="bg-white rounded-xl p-5 border-2 border-warm-100 hover:border-primary-200 transition-colors"
-          >
-            <div class="flex justify-between items-start mb-3">
-              <h3 class="font-semibold text-warm-800">{{ group.name }}</h3>
-              <span class="px-2 py-1 bg-primary-100 text-primary-700 text-xs font-medium rounded-full">
-                {{ group.student_count }} {{ t('analytics.students') }}
-              </span>
+      <!-- KPI Bento Grid -->
+      <div class="grid grid-cols-12 gap-6 mb-12">
+        <!-- Avg Score Card -->
+        <div class="col-span-12 md:col-span-4 bg-white p-6 rounded-[2rem] border border-outline-variant/10 flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-start mb-4">
+              <div class="w-12 h-12 bg-primary-fixed rounded-2xl flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined">trending_up</span>
+              </div>
+              <span class="text-tertiary font-bold text-sm bg-tertiary-fixed/30 px-3 py-1 rounded-full">+12.4%</span>
             </div>
-            <p class="text-sm text-warm-600 mb-4">{{ group.recommended_action }}</p>
-            <div class="flex flex-wrap gap-1">
-              <span
-                v-for="studentId in group.student_ids.slice(0, 5)"
-                :key="studentId"
-                class="px-2 py-1 bg-warm-100 text-warm-600 text-xs rounded"
-              >
-                {{ studentId.slice(0, 8) }}...
-              </span>
-              <span v-if="group.student_ids.length > 5" class="text-xs text-warm-500">
-                +{{ group.student_ids.length - 5 }} more
-              </span>
+            <p class="text-slate-500 text-sm font-bold">متوسط التحصيل الصفي</p>
+            <h3 class="text-4xl font-black text-primary font-['Inter'] mt-1">74.8<span class="text-xl">%</span></h3>
+          </div>
+          <div class="mt-6 h-12 w-full bg-slate-50 rounded-lg overflow-hidden relative">
+            <div class="absolute inset-0 flex items-end gap-1 px-2">
+              <div class="bg-primary-fixed-dim w-full h-[40%] rounded-t-sm"></div>
+              <div class="bg-primary-fixed-dim w-full h-[60%] rounded-t-sm"></div>
+              <div class="bg-primary-fixed-dim w-full h-[55%] rounded-t-sm"></div>
+              <div class="bg-primary-fixed-dim w-full h-[80%] rounded-t-sm"></div>
+              <div class="bg-primary w-full h-[90%] rounded-t-sm"></div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Detailed Metrics Tab -->
-      <div v-if="activeTab === 'metrics'">
-        <div v-if="loading.metrics" class="flex items-center justify-center py-12">
-          <div class="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full"></div>
-        </div>
-        <div v-else-if="!metrics" class="text-center py-12 text-warm-600">
-          <p class="text-lg">{{ t('analytics.noMetricsAvailable') }}</p>
-        </div>
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="bg-warm-50 rounded-xl p-6">
-            <h3 class="font-semibold text-warm-800 mb-4">{{ t('analytics.effortVsResults') }}</h3>
-            <div class="flex items-center justify-center h-32">
-              <div class="text-4xl font-bold text-primary-600">
-                {{ Math.round(metrics.effort_vs_results * 100) }}%
+        <!-- Risk Factor Card -->
+        <div class="col-span-12 md:col-span-8 bg-primary text-white p-8 rounded-[2rem] relative overflow-hidden">
+          <div class="relative z-10 grid grid-cols-2 gap-8 h-full">
+            <div class="flex flex-col justify-between">
+              <div>
+                <h4 class="text-2xl font-bold mb-2">مؤشر المخاطر الأكاديمية</h4>
+                <p class="text-primary-fixed/70 text-sm">تم رصد انخفاض في استيعاب وحدة "الجبر المتقدم" لدى 32% من الطلاب.</p>
+              </div>
+              <div class="flex gap-8">
+                <div>
+                  <p class="text-primary-fixed/60 text-xs uppercase tracking-widest font-['Inter'] mb-1">Critical</p>
+                  <p class="text-2xl font-black font-['Inter']">08</p>
+                </div>
+                <div>
+                  <p class="text-primary-fixed/60 text-xs uppercase tracking-widest font-['Inter'] mb-1">Moderate</p>
+                  <p class="text-2xl font-black font-['Inter']">14</p>
+                </div>
               </div>
             </div>
-            <p class="text-sm text-warm-600 text-center">
-              {{ t('analytics.effortResultsDescription') }}
-            </p>
-          </div>
-          <div class="bg-warm-50 rounded-xl p-6">
-            <h3 class="font-semibold text-warm-800 mb-4">{{ t('analytics.totalAssessments') }}</h3>
-            <div class="flex items-center justify-center h-32">
-              <div class="text-4xl font-bold text-primary-600">
-                {{ metrics.total_assessments }}
+            <div class="flex items-center justify-center">
+              <div class="w-32 h-32 rounded-full border-[12px] border-primary-container flex items-center justify-center relative">
+                <svg class="absolute inset-0 w-full h-full -rotate-90">
+                  <circle cx="64" cy="64" fill="transparent" r="52" stroke="#82d3de" stroke-dasharray="326" stroke-dashoffset="100" stroke-width="12"></circle>
+                </svg>
+                <span class="text-2xl font-black font-['Inter']">68%</span>
               </div>
             </div>
-            <p class="text-sm text-warm-600 text-center">
-              {{ t('analytics.assessmentsDescription') }}
-            </p>
+          </div>
+          <!-- Decorative element -->
+          <div class="absolute -right-12 -top-12 w-48 h-48 bg-primary-container rounded-full blur-3xl opacity-50"></div>
+        </div>
+      </div>
+
+      <!-- Student Analysis Grid -->
+      <div class="mb-6 flex items-center justify-between">
+        <h3 class="text-2xl font-bold text-primary">تحليل الحالات الحرجة</h3>
+        <div class="flex gap-2">
+          <div class="bg-white border border-outline-variant/20 rounded-lg flex p-1">
+            <button class="p-2 bg-surface-container-low text-primary rounded-md"><span class="material-symbols-outlined">grid_view</span></button>
+            <button class="p-2 text-slate-400"><span class="material-symbols-outlined">list</span></button>
           </div>
         </div>
       </div>
-    </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <!-- Student Card 1 -->
+        <div class="bg-white rounded-[2.5rem] p-8 border border-outline-variant/10 shadow-sm hover:shadow-xl transition-all group">
+          <div class="flex items-start justify-between mb-8">
+            <div class="flex gap-5">
+              <div class="relative">
+                <img alt="Student profile" class="w-20 h-20 rounded-[2rem] object-cover ring-4 ring-error-container/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcnyAX-fUsOUuFYmtbFqF0ENravACQV-E4-eUuVMrgHcKQOHsiTzbLyJK6g3BD16bVrwXmoVF3H4lraRJBtmHROkSiqeuuxb8WPzxUHe2O9h6YVNVEAAmyfoNE9-JwFxN-JkCU12vNVWrxljY3xT7pprXUdkatrm05GOKRZCLs3h5RBDVy1bOTTiyGCX4hDwc-bWYED_wgm1Q0EYvz5CfVXb9ACako5Urywh1HWSJ2fSpvzkgsrszdafLFmZKZyJv34d9SepXUMdo"/>
+                <span class="absolute -bottom-1 -right-1 bg-error text-white text-[10px] font-bold px-2 py-1 rounded-full border-2 border-white">HIGH RISK</span>
+              </div>
+              <div>
+                <h4 class="text-2xl font-black text-on-surface">ياسين بن علي</h4>
+                <p class="text-slate-500 font-['Inter'] text-sm">ID: #ST-88291 • Grade 12A</p>
+                <div class="flex gap-2 mt-2">
+                  <span class="bg-surface-container-low text-xs px-2 py-1 rounded-md text-on-surface-variant">الرياضيات</span>
+                  <span class="bg-surface-container-low text-xs px-2 py-1 rounded-md text-on-surface-variant">الفيزياء</span>
+                </div>
+              </div>
+            </div>
+            <div class="text-left">
+              <p class="text-slate-400 text-xs font-['Inter'] mb-1">Performance Score</p>
+              <h5 class="text-3xl font-black text-error font-['Inter']">42<span class="text-sm">/100</span></h5>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-8 mb-8">
+            <div>
+              <p class="text-xs font-bold text-slate-400 mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">psychology</span>
+                المفاهيم المفقودة
+              </p>
+              <ul class="space-y-2">
+                <li class="flex items-center gap-2 text-sm text-on-surface font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-error"></span> التكامل بالأجزاء
+                </li>
+                <li class="flex items-center gap-2 text-sm text-on-surface font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-error"></span> قوانين نيوتن الثالثة
+                </li>
+                <li class="flex items-center gap-2 text-sm text-on-surface font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-error"></span> المتتاليات الهندسية
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-slate-400 mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">timeline</span>
+                منحنى الأداء التاريخي
+              </p>
+              <div class="flex items-end gap-1.5 h-16 pt-2">
+                <div class="bg-slate-200 w-full h-[70%] rounded-t-sm"></div>
+                <div class="bg-slate-200 w-full h-[65%] rounded-t-sm"></div>
+                <div class="bg-slate-200 w-full h-[50%] rounded-t-sm"></div>
+                <div class="bg-error-container w-full h-[35%] rounded-t-sm"></div>
+                <div class="bg-error w-full h-[25%] rounded-t-sm"></div>
+              </div>
+            </div>
+          </div>
+          <div class="pt-6 border-t border-slate-50 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs text-on-surface-variant bg-surface-container rounded-full px-3 py-1.5">
+              <span class="material-symbols-outlined text-sm">schedule</span>آخر نشاط: منذ ساعتين
+            </div>
+            <button class="bg-[#00535b] text-white px-6 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 hover:bg-[#00424a] transition-all group-hover:px-8">
+              View Remediation Profile
+              <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Student Card 2 -->
+        <div class="bg-white rounded-[2.5rem] p-8 border border-outline-variant/10 shadow-sm hover:shadow-xl transition-all group">
+          <div class="flex items-start justify-between mb-8">
+            <div class="flex gap-5">
+              <div class="relative">
+                <img alt="Student profile" class="w-20 h-20 rounded-[2rem] object-cover ring-4 ring-secondary-container/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0ZEtKDEj1JBxCd2prRmJm3U7YfNHDbnpAu2h59OAmyZMWAvT2Kf7D_HXNI2m2_ExI45-KN-NbBHFd-AlnJlK5QEdxBNRV6vOaVxrajtOhHGL-b5UjBe9qFTA9L17bEdDzVow_IOLkvzdcc2SYIaGld8hQ89OEpy8DeZrPWoY-0JaK_gI8POy9cSxUcr5zpOSSEZLX3T9rPxugTv9-EFBo8ppesCnHRmcXEW8acIKUkqZGTXj2QHrXoRa3tax9YPlrQwquWeY-DI4"/>
+                <span class="absolute -bottom-1 -right-1 bg-secondary text-white text-[10px] font-bold px-2 py-1 rounded-full border-2 border-white">MODERATE</span>
+              </div>
+              <div>
+                <h4 class="text-2xl font-black text-on-surface">سارة الخياط</h4>
+                <p class="text-slate-500 font-['Inter'] text-sm">ID: #ST-99021 • Grade 12B</p>
+                <div class="flex gap-2 mt-2">
+                  <span class="bg-surface-container-low text-xs px-2 py-1 rounded-md text-on-surface-variant">علوم الطبيعة</span>
+                  <span class="bg-surface-container-low text-xs px-2 py-1 rounded-md text-on-surface-variant">الأدب</span>
+                </div>
+              </div>
+            </div>
+            <div class="text-left">
+              <p class="text-slate-400 text-xs font-['Inter'] mb-1">Performance Score</p>
+              <h5 class="text-3xl font-black text-secondary font-['Inter']">58<span class="text-sm">/100</span></h5>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-8 mb-8">
+            <div>
+              <p class="text-xs font-bold text-slate-400 mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">psychology</span>
+                المفاهيم المفقودة
+              </p>
+              <ul class="space-y-2">
+                <li class="flex items-center gap-2 text-sm text-on-surface font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> تركيب البروتين
+                </li>
+                <li class="flex items-center gap-2 text-sm text-on-surface font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> تحليل النصوص البلاغية
+                </li>
+                <li class="flex items-center gap-2 text-sm text-on-surface font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> الانقسام المنصف
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-slate-400 mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">timeline</span>
+                منحنى الأداء التاريخي
+              </p>
+              <div class="flex items-end gap-1.5 h-16 pt-2">
+                <div class="bg-slate-200 w-full h-[40%] rounded-t-sm"></div>
+                <div class="bg-slate-200 w-full h-[45%] rounded-t-sm"></div>
+                <div class="bg-secondary-container w-full h-[65%] rounded-t-sm"></div>
+                <div class="bg-secondary-container w-full h-[60%] rounded-t-sm"></div>
+                <div class="bg-secondary w-full h-[58%] rounded-t-sm"></div>
+              </div>
+            </div>
+          </div>
+          <div class="pt-6 border-t border-slate-50 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs text-on-surface-variant bg-surface-container rounded-full px-3 py-1.5">
+              <span class="material-symbols-outlined text-sm">schedule</span>آخر نشاط: منذ 15 دقيقة
+            </div>
+            <button class="bg-[#00535b] text-white px-6 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 hover:bg-[#00424a] transition-all group-hover:px-8">
+              View Remediation Profile
+              <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Student Card 3 -->
+        <div class="bg-white rounded-[2.5rem] p-8 border border-outline-variant/10 shadow-sm hover:shadow-xl transition-all group">
+          <div class="flex items-start justify-between mb-8">
+            <div class="flex gap-5">
+              <div class="relative">
+                <img alt="Student profile" class="w-20 h-20 rounded-[2rem] object-cover ring-4 ring-error-container/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_v0z4k5SerkpZlgdaLHcFXTxMFCjobBc_dK5ThAapEYSdHppjYjnub1Sv5zbcyeOKER-vGySuy1JGRw-bjc-aVs_0ipENSj5VfxvdQKIbdN3BjjoxGxJ0wtrFllHPS9J6d8uiIFXyau3Z4AVCijSPeShZcRTrHNqZEw8g_Sh1Mf618MwAeuDXPCD4KWFQ878U1FvuzdgGtR3A-O1M5G-5M5P8GlB-kRMKpaNWx9bkVfJrsnjRZMWWIvIJ5EIcZYk688yQ_0uxIxE"/>
+                <span class="absolute -bottom-1 -right-1 bg-error text-white text-[10px] font-bold px-2 py-1 rounded-full border-2 border-white">HIGH RISK</span>
+              </div>
+              <div>
+                <h4 class="text-2xl font-black text-on-surface">أمين لزرق</h4>
+                <p class="text-slate-500 font-['Inter'] text-sm">ID: #ST-77124 • Grade 12A</p>
+                <div class="flex gap-2 mt-2">
+                  <span class="bg-surface-container-low text-xs px-2 py-1 rounded-md text-on-surface-variant">الرياضيات</span>
+                  <span class="bg-surface-container-low text-xs px-2 py-1 rounded-md text-on-surface-variant">الفلسفة</span>
+                </div>
+              </div>
+            </div>
+            <div class="text-left">
+              <p class="text-slate-400 text-xs font-['Inter'] mb-1">Performance Score</p>
+              <h5 class="text-3xl font-black text-error font-['Inter']">38<span class="text-sm">/100</span></h5>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-8 mb-8">
+            <div>
+              <p class="text-xs font-bold text-slate-400 mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">psychology</span>
+                المفاهيم المفقودة
+              </p>
+              <ul class="space-y-2">
+                <li class="flex items-center gap-2 text-sm text-on-surface font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-error"></span> الأعداد المركبة
+                </li>
+                <li class="flex items-center gap-2 text-sm text-on-surface font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-error"></span> نظرية المعرفة
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-slate-400 mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">timeline</span>
+                منحنى الأداء التاريخي
+              </p>
+              <div class="flex items-end gap-1.5 h-16 pt-2">
+                <div class="bg-slate-200 w-full h-[80%] rounded-t-sm"></div>
+                <div class="bg-slate-200 w-full h-[60%] rounded-t-sm"></div>
+                <div class="bg-slate-200 w-full h-[40%] rounded-t-sm"></div>
+                <div class="bg-error-container w-full h-[45%] rounded-t-sm"></div>
+                <div class="bg-error w-full h-[38%] rounded-t-sm"></div>
+              </div>
+            </div>
+          </div>
+          <div class="pt-6 border-t border-slate-50 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs text-on-surface-variant bg-surface-container rounded-full px-3 py-1.5">
+              <span class="material-symbols-outlined text-sm">schedule</span>آخر نشاط: منذ يوم واحد
+            </div>
+            <button class="bg-[#00535b] text-white px-6 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 hover:bg-[#00424a] transition-all group-hover:px-8">
+              View Remediation Profile
+              <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Student Card 4 -->
+        <div class="bg-white rounded-[2.5rem] p-8 border border-outline-variant/10 shadow-sm hover:shadow-xl transition-all group">
+          <div class="flex items-start justify-between mb-8">
+            <div class="flex gap-5">
+              <div class="relative">
+                <img alt="Student profile" class="w-20 h-20 rounded-[2rem] object-cover ring-4 ring-secondary-container/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjxtlbVgAAPXh5KUyXe23BqYr2FaQ1-MATZDpr9BU_E3RPk_UT0x0LKUd8zMfWDj9ZNWBf-bXS_J0kLMbeSdiWfvF5tUq3C7SFKGdmksZq_aPtL8taTTXtf2jwyvSNBD1bBDRZtTqmYo1xfxzC59fXX9dXO6NaQTZ05pHSQRvadj-84PiSi5PcQ087l2HtvhFLptwRRkgbi6wYuEfCoIh1wYT7arqGARd12DUfrNZOFV8R5xQk3cVyTqpt_g0ZXUKSzR0VCNzK7mY"/>
+                <span class="absolute -bottom-1 -right-1 bg-secondary text-white text-[10px] font-bold px-2 py-1 rounded-full border-2 border-white">MODERATE</span>
+              </div>
+              <div>
+                <h4 class="text-2xl font-black text-on-surface">ليلى منصوري</h4>
+                <p class="text-slate-500 font-['Inter'] text-sm">ID: #ST-11029 • Grade 12B</p>
+                <div class="flex gap-2 mt-2">
+                  <span class="bg-surface-container-low text-xs px-2 py-1 rounded-md text-on-surface-variant">اللغة الفرنسية</span>
+                  <span class="bg-surface-container-low text-xs px-2 py-1 rounded-md text-on-surface-variant">التاريخ</span>
+                </div>
+              </div>
+            </div>
+            <div class="text-left">
+              <p class="text-slate-400 text-xs font-['Inter'] mb-1">Performance Score</p>
+              <h5 class="text-3xl font-black text-secondary font-['Inter']">61<span class="text-sm">/100</span></h5>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-8 mb-8">
+            <div>
+              <p class="text-xs font-bold text-slate-400 mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">psychology</span>
+                المفاهيم المفقودة
+              </p>
+              <ul class="space-y-2">
+                <li class="flex items-center gap-2 text-sm text-on-surface font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> قواعد النحو المتقدمة
+                </li>
+                <li class="flex items-center gap-2 text-sm text-on-surface font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> الثورة الجزائرية
+                </li>
+              </ul>
+            </div>
+            <div>
+              <p class="text-xs font-bold text-slate-400 mb-3 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">timeline</span>
+                منحنى الأداء التاريخي
+              </p>
+              <div class="flex items-end gap-1.5 h-16 pt-2">
+                <div class="bg-secondary-container w-full h-[55%] rounded-t-sm"></div>
+                <div class="bg-secondary-container w-full h-[62%] rounded-t-sm"></div>
+                <div class="bg-secondary-container w-full h-[58%] rounded-t-sm"></div>
+                <div class="bg-secondary w-full h-[64%] rounded-t-sm"></div>
+                <div class="bg-secondary w-full h-[61%] rounded-t-sm"></div>
+              </div>
+            </div>
+          </div>
+          <div class="pt-6 border-t border-slate-50 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs text-on-surface-variant bg-surface-container rounded-full px-3 py-1.5">
+              <span class="material-symbols-outlined text-sm">schedule</span>آخر نشاط: منذ 4 ساعات
+            </div>
+            <button class="bg-[#00535b] text-white px-6 py-3 rounded-2xl font-bold text-sm flex items-center gap-2 hover:bg-[#00424a] transition-all group-hover:px-8">
+              View Remediation Profile
+              <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Adaptive Learning Clusters Section -->
+      <section class="mt-16">
+        <h3 class="text-2xl font-bold text-primary mb-8">عناقيد التعلم التكيفية (Clusters)</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Cluster 1 -->
+          <div class="bg-tertiary-fixed/20 p-8 rounded-[2rem] border border-tertiary-fixed/30 relative overflow-hidden">
+            <div class="relative z-10">
+              <div class="w-10 h-10 bg-tertiary text-white rounded-xl flex items-center justify-center mb-4">
+                <span class="material-symbols-outlined">hub</span>
+              </div>
+              <h5 class="text-xl font-bold text-on-tertiary-fixed-variant mb-2">عنقود: المنطق الرياضي</h5>
+              <p class="text-sm text-on-tertiary-fixed-variant opacity-80 mb-6">4 طلاب يواجهون صعوبات في الاستدلال الاستنتاجي.</p>
+              <div class="flex -space-x-reverse space-x-3">
+                <img alt="Student" class="w-8 h-8 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2YI2DdglOcuIfIePFQ3iprZn5K3EJnLWhmo--JBjCXB8nIO6ZlcF-Ip2gdu4kqtJBJPgp7G85XfBh8_upCA3hOPuJyKOaNfjPYv3MLLWDONqtFt1f--GweuX6w-qWSZc23n-DZ-UwT2MIdQ1GnRstJP-Csa2fNAMtMo1oVubSSQNKOjpqjuogqRfhQ_vlt9HosMLdIThTyhf2l2wl9CaW7wNThEL0lmg46smca89FZc2biplacLIuRIxxNnYPlunG-UE8t7Wekyo"/>
+                <img alt="Student" class="w-8 h-8 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDd_dGXTb_wH4nG1908FbkGAb7nHbu-hqqqY5oIssQ_S5yT6nLWjHCn4ILXc1HDL0FpnfYGGiXhiKZkML1QHVkAZTRuZEZP7BeJN1SXK2HVUsPBzz-rUuyDD-xOqPyWSnKjgtW9ZC3yMDVqrxX73EQur6xkf8Ze5QVtnaC8gbtD0JEgDtEObmIQWOKbayp3agvOZnL29SHEdsJuBoOPJJZSmm9decHkaf8HRc3bubIcccyQuTaH_Jc_7XuqX_GSGgyLAylcWpVO9qg"/>
+                <img alt="Student" class="w-8 h-8 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCuAOOgbu0FKss1BZPXT-Q8FIit5Dfhj-FYYq7t9M_3fAaLqlMRLrCMtLMMut_LOKE3R1WHM20JyqaU0Mui8iVmSjpD8kuDdv8A1uvGecTa_YMK0zmJdt1oL5ymLXr6tq4SEraBYX-2P-OVE9Os3vf-V7NVOmxAzn5V8VAfuvEBxgz67Jar64TZB-g2gxXncEeAoQI69HlmJMvAGQXitVf7MrIaRKwpjK0U7hLxR1jAYKjhZ5G8TnlIDgacobvZDf0DGME-zPGmcto"/>
+                <div class="w-8 h-8 rounded-full border-2 border-white bg-tertiary-container text-[10px] flex items-center justify-center text-white">+1</div>
+              </div>
+            </div>
+          </div>
+          <!-- Cluster 2 -->
+          <div class="bg-secondary-fixed/20 p-8 rounded-[2rem] border border-secondary-fixed/30 relative overflow-hidden">
+            <div class="relative z-10">
+              <div class="w-10 h-10 bg-secondary text-white rounded-xl flex items-center justify-center mb-4">
+                <span class="material-symbols-outlined">science</span>
+              </div>
+              <h5 class="text-xl font-bold text-on-secondary-fixed-variant mb-2">عنقود: التحليل المجهري</h5>
+              <p class="text-sm text-on-secondary-fixed-variant opacity-80 mb-6">7 طلاب بحاجة لإعادة عرض تجارب الانقسام الخلوي.</p>
+              <div class="flex -space-x-reverse space-x-3">
+                <img alt="Student" class="w-8 h-8 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCCK08iAgg1SNeYg_g4hJjcMk8fAXjC-Kv6fLmXoVRqcJKRZcaVIe_OKDMydAlC4h3xjiGCYta3o9pSSqN89kHLo5W8peP-0TuMt56DNjhXp_h4VWu-4pHbnhC-iuKLgNg9B1XNND9X-_W1yXTZdVYTEXlF2-iseZWhPQ3WVE5QNhp7IiZnrzjo8ZP0R-UyPH79POhmNIL85SVNRPesBkorlaF43Vm8DXm2V3dwH-ye9ST2erOIp1G1u0RlYniLzGh4yvl5Ju7Eao"/>
+                <img alt="Student" class="w-8 h-8 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjGiMrrkJmay6YNtxXM-4drX5K5O1hNJ2s7f_s49710dkrjxdJsL5qenCvDrCqvlsG_6pjyVgFfcEWrY8-1QdGT7DsfWNclagLiPIJap8AR7BBs5pWipGle32uUpQgjH1kDd578jGWbsbk0tGgNqVGxIH0KHj4DrHGY5fddXgF-4JJQ2q56lt5qvDlSvjW60qp17MpSY5xK4wtqqdsOUpdQncR0CmyKTU_boEBHvmcwfRkVrRHvEjRet7bvSBSpow5WriUMdRVL38"/>
+                <img alt="Student" class="w-8 h-8 rounded-full border-2 border-white" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBA88Nzee9x96CGWOkQTThhlIW2ROyWsFN03m0Y3p0k-NR6aL64WqaYR6dlpZrIrhhTvjRWbFLYf6_oH5gy4w0GcCGWCWxF1SwOHSr-VCbtkejlKdp-c707CkF36lQbMW7jdhyDzk5ucIBknkmE8BvWjC7Zk1XrRxqUFco5U6w8iiku9qDnjagI_IXQ2tcKfjrfxstxxF0kSZFlheBJALDtZKsGciNr4OQ84uWYna39M99NzQDAvG4aLrV5oomx2AYofxp95VX3JKs"/>
+                <div class="w-8 h-8 rounded-full border-2 border-white bg-secondary-container text-[10px] flex items-center justify-center text-white">+4</div>
+              </div>
+            </div>
+          </div>
+          <!-- Recommendation -->
+          <div class="bg-white p-8 rounded-[2rem] border-2 border-dashed border-primary/20 flex flex-col items-center justify-center text-center group cursor-pointer hover:bg-primary-fixed/10 transition-colors">
+            <div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <span class="material-symbols-outlined text-primary">add</span>
+            </div>
+            <p class="font-bold text-primary">إنشاء عنقود يدوي</p>
+            <p class="text-xs text-slate-400 mt-1">تخصيص مسار لمجموعة طلابية محددة</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- FAB Action -->
+    <button class="fixed bottom-8 left-8 w-16 h-16 bg-secondary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50">
+      <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_moderator</span>
+    </button>
   </div>
 </template>
