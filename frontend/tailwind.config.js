@@ -39,6 +39,32 @@ export default {
           700: '#44403c',
           800: '#292524',
           900: '#1c1917',
+        },
+        // Semantic Nurturing Status Colors
+        danger: {
+          50: '#fdf2f4', // linked to soft.rose
+          100: '#fce4e8',
+          200: '#f9c5d1',
+          300: '#f49cb1',
+          400: '#ec6688',
+          500: '#e13666',
+          600: '#d12053',
+        },
+        warning: {
+          50: '#fffbf0', // linked to a warm yellow
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24',
+          500: '#f59e0b',
+        },
+        success: {
+          50: '#f0fdf4', // linked to soft mint
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',
         }
       },
       fontFamily: {

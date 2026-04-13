@@ -100,12 +100,14 @@ onMounted(fetchAlerts)
       @click="expanded = !expanded"
       class="relative p-2 rounded-full hover:bg-warm-100 transition-colors"
     >
-      <span class="text-2xl">🔔</span>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-warm-600">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+      </svg>
       <span
         v-if="unreadCount > 0"
         :class="[
-          'absolute top-0 right-0 w-5 h-5 rounded-full text-xs flex items-center justify-center text-white font-bold',
-          hasCritical ? 'bg-red-500' : 'bg-primary-500'
+          'absolute top-0 end-0 w-5 h-5 rounded-full text-xs flex items-center justify-center text-white font-bold',
+          hasCritical ? 'bg-danger-500' : 'bg-primary-500'
         ]"
       >
         {{ unreadCount }}
@@ -116,12 +118,14 @@ onMounted(fetchAlerts)
     <div
       v-else
       class="bg-white rounded-2xl shadow-soft overflow-hidden"
-      :class="{ 'border-2 border-red-200': hasCritical }"
+      :class="{ 'border-2 border-danger-200': hasCritical }"
     >
       <!-- Header -->
       <div class="flex items-center justify-between p-4 border-b border-warm-100">
         <div class="flex items-center gap-2">
-          <span class="text-xl">🔔</span>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-warm-600">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+          </svg>
           <h3 class="font-bold text-warm-800">{{ t('alerts.title') }}</h3>
           <span
             v-if="unreadCount > 0"
@@ -146,7 +150,9 @@ onMounted(fetchAlerts)
 
       <!-- Empty State -->
       <div v-else-if="alerts.length === 0" class="text-center py-8 text-warm-500">
-        <div class="text-4xl mb-2">✅</div>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-success-500 mx-auto mb-2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+        </svg>
         <p class="text-sm">{{ t('alerts.noAlerts') }}</p>
       </div>
 
@@ -157,15 +163,11 @@ onMounted(fetchAlerts)
           :key="alert.id"
           :class="[
             'p-4 border-b border-warm-100 last:border-b-0 transition-colors',
-            alert.severity === 'CRITICAL' ? 'bg-red-50' :
-            alert.severity === 'WARNING' ? 'bg-yellow-50' :
-            'bg-blue-50',
-            !alert.is_read ? 'border-l-4' : 'opacity-75'
+            alert.severity === 'CRITICAL' ? 'bg-danger-50 border-danger-500' :
+            alert.severity === 'WARNING' ? 'bg-warning-50 border-warning-500' :
+            'bg-success-50 border-success-500',
+            !alert.is_read ? 'border-s-4' : 'opacity-75'
           ]"
-          :style="{
-            borderLeftColor: alert.severity === 'CRITICAL' ? '#ef4444' :
-                            alert.severity === 'WARNING' ? '#eab308' : '#3b82f6'
-          }"
         >
           <div class="flex items-start gap-3">
             <span class="text-xl">
@@ -214,7 +216,7 @@ onMounted(fetchAlerts)
     <!-- Dropdown for Compact Mode -->
     <div
       v-if="compact && expanded"
-      class="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg z-50"
+      class="absolute end-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg z-50"
     >
       <div class="p-3 border-b border-warm-100 flex justify-between items-center">
         <span class="font-semibold text-warm-800">{{ t('alerts.title') }}</span>

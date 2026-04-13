@@ -115,9 +115,9 @@
   }
 
   .btn-danger {
-    @apply bg-red-500 hover:bg-red-600 text-white
+    @apply bg-danger-500 hover:bg-danger-600 text-white
            px-6 py-3 rounded-soft font-medium transition-colors
-           touch-target focus:ring-2 focus:ring-red-400 focus:ring-offset-2;
+           touch-target focus:ring-2 focus:ring-danger-400 focus:ring-offset-2;
   }
 
   /* ========================================
