@@ -112,9 +112,9 @@ services:
     image: caddy:2-alpine
     container_name: ihsane-caddy
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"  # HTTP/3
+      - "207.180.251.82:80:80"
+      - "207.180.251.82:443:443"
+      - "207.180.251.82:443:443/udp"  # HTTP/3
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
