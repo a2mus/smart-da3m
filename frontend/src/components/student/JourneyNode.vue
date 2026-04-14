@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import type { TaskState } from '@/models/stitchMockups';
 
 const props = defineProps<{
   id: string;
   title: string;
   type: string;
-  state: 'completed' | 'in_progress' | 'locked';
+  state: TaskState;
   score?: number;
 }>();
 

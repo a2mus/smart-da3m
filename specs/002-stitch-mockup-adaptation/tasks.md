@@ -90,9 +90,9 @@ description: "Task list for Stitch Mockup Adaptation"
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T021 [P] Perform visual regression check of `ParentDashboard` against Stitch PNGs.
-- [ ] T022 [P] Perform visual regression check of `StudentJourney` against Stitch PNGs.
-- [ ] T023 Run verification steps from `quickstart.md` locally to finalize responsive thresholds natively.
+- [x] T021 [P] Perform visual regression check of `ParentDashboard` against Stitch PNGs.
+- [x] T022 [P] Perform visual regression check of `StudentJourney` against Stitch PNGs.
+- [x] T023 Run verification steps from `quickstart.md` locally to finalize responsive thresholds natively.
 
 ---
 
