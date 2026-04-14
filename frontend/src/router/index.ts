@@ -13,12 +13,14 @@ declare module 'vue-router' {
 }
 
 const routes: RouteRecordRaw[] = [
+  /*
   {
     path: '/',
     name: 'Home',
     component: () => import('@/views/Home.vue'),
     meta: { public: true }
   },
+  */
   {
     path: '/login',
     name: 'Login',
@@ -99,6 +101,31 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       allowedRoles: ['EXPERT']
     }
+  },
+  // Stitch Mockup Routes
+  {
+    path: '/', // Overriding Home for LandingPage (or just use /landing if better, quickstart says "Navigate to Landing Page (/)")
+    name: 'LandingPage',
+    component: () => import('@/views/LandingPage.vue'),
+    meta: { public: true }
+  },
+  {
+    path: '/parent-dashboard',
+    name: 'StitchParentDashboard',
+    component: () => import('@/views/ParentDashboard.vue'),
+    meta: { public: true }
+  },
+  {
+    path: '/parent/analytics',
+    name: 'StitchAnalyticsView',
+    component: () => import('@/views/AnalyticsView.vue'),
+    meta: { public: true }
+  },
+  {
+    path: '/student/journey',
+    name: 'StitchStudentJourney',
+    component: () => import('@/views/StudentJourney.vue'),
+    meta: { public: true }
   },
   // 404
   {
