@@ -15,7 +15,7 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Initialize husky pre-commit hooks in `frontend/` (`npx husky init`)
+- [x] T001 Initialize husky pre-commit hooks in `frontend/` (`npx husky init`)
 
 ---
 
@@ -25,14 +25,14 @@ description: "Task list template for feature implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T002 Fix semantic token definitions to remove `#ffffff` violations and add `ink-*` aliases in `frontend/tailwind.config.js`
-- [ ] T003 Fix shadow definitions to remove pure black `rgba(0,0,0,0.05)` in `frontend/tailwind.config.js`
-- [ ] T004 Install linting dependencies (`stylelint`, `stylelint-config-standard`, `stylelint-plugin-logical-css`, `lint-staged`) in `frontend/package.json`
-- [ ] T005 Create base Stylelint configuration with color/logical rules in `frontend/.stylelintrc.json`
-- [ ] T006 Update ESLint configuration to flag banned/physical Tailwind classes in `frontend/eslint.config.js` (or applicable eslint configs in `frontend/node_modules/**` -> standard root config)
-- [ ] T007 Configure lint-staged targeting Vue/CSS/TS in `frontend/.lintstagedrc.json`
-- [ ] T008 Update husky pre-commit hook to execute lint-staged in `frontend/.husky/pre-commit`
-- [ ] T009 Add npm lint and audit scripts (`lint:design`, `lint:design:fix`, `audit:a11y`, `audit:full`) in `frontend/package.json`
+- [x] T002 Fix semantic token definitions to remove `#ffffff` violations and add `ink-*` aliases in `frontend/tailwind.config.js`
+- [x] T003 Fix shadow definitions to remove pure black `rgba(0,0,0,0.05)` in `frontend/tailwind.config.js`
+- [x] T004 Install linting dependencies (`stylelint`, `stylelint-config-standard`, `stylelint-plugin-logical-css`, `lint-staged`) in `frontend/package.json`
+- [x] T005 Create base Stylelint configuration with color/logical rules in `frontend/.stylelintrc.json`
+- [x] T006 Update ESLint configuration to flag banned/physical Tailwind classes in `frontend/eslint.config.js` (or applicable eslint configs in `frontend/node_modules/**` -> standard root config)
+- [x] T007 Configure lint-staged targeting Vue/CSS/TS in `frontend/.lintstagedrc.json`
+- [x] T008 Update husky pre-commit hook to execute lint-staged in `frontend/.husky/pre-commit`
+- [x] T009 Add npm lint and audit scripts (`lint:design`, `lint:design:fix`, `audit:a11y`, `audit:full`) in `frontend/package.json`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
