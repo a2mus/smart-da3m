@@ -38,6 +38,10 @@
     </header>
 
     <main class="pt-24 px-6 space-y-8 max-w-4xl mx-auto">
+      <!-- Screen-reader page title -->
+      <h1 class="sr-only">
+        لوحة تحكم ولي الأمر - إحسان
+      </h1>
       <!-- Smart Message Card (Insight) -->
       <section class="relative">
         <div class="bg-surface-container-lowest p-6 asymmetric-border border-e-4 border-secondary shadow-[0_10px_30px_rgba(140,78,53,0.08)]">

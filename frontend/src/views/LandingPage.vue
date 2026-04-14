@@ -180,23 +180,23 @@ const startNow = () => {
         </div>
         <div class="flex flex-wrap flex-row-reverse justify-center gap-8">
           <a
-            class="text-slate-500 dark:text-slate-500 hover:underline hover:text-[#00535b] transition-all opacity-80 hover:opacity-100"
+            class="text-slate-600 dark:text-slate-400 hover:underline hover:text-[#00535b] transition-all"
             href="#"
           >المميزات</a>
           <a
-            class="text-slate-500 dark:text-slate-500 hover:underline hover:text-[#00535b] transition-all opacity-80 hover:opacity-100"
+            class="text-slate-600 dark:text-slate-400 hover:underline hover:text-[#00535b] transition-all"
             href="#"
           >عن المنصة</a>
           <a
-            class="text-slate-500 dark:text-slate-500 hover:underline hover:text-[#00535b] transition-all opacity-80 hover:opacity-100"
+            class="text-slate-600 dark:text-slate-400 hover:underline hover:text-[#00535b] transition-all"
             href="#"
           >تواصل معنا</a>
           <a
-            class="text-slate-500 dark:text-slate-500 hover:underline hover:text-[#00535b] transition-all opacity-80 hover:opacity-100"
+            class="text-slate-600 dark:text-slate-400 hover:underline hover:text-[#00535b] transition-all"
             href="#"
           >سياسة الخصوصية</a>
         </div>
-        <div class="text-slate-500 dark:text-slate-500">
+        <div class="text-slate-600 dark:text-slate-400">
           © ٢٠٢٤ إحسان. جميع الحقوق محفوظة.
         </div>
       </div>
