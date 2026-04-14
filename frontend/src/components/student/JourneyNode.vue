@@ -25,13 +25,19 @@ const iconName = computed(() => {
 </script>
 
 <template>
-  <div class="flex items-center gap-6 z-10" :class="{ 'opacity-40': isLocked }">
+  <div
+    class="flex items-center gap-6 z-10"
+    :class="{ 'opacity-40': isLocked }"
+  >
     <!-- Active Node Layout (Icon first on right side) -->
     <template v-if="isActive">
       <div 
         class="w-28 h-28 bg-primary rounded-[3rem] flex items-center justify-center shadow-2xl shadow-primary/40 ring-8 ring-primary-fixed-dim/30 animate-pulse min-w-[112px] cursor-pointer hover:scale-105 transition-transform"
       >
-        <span class="material-symbols-outlined text-white text-5xl" style="font-variation-settings: 'FILL' 1;">{{ iconName }}</span>
+        <span
+          class="material-symbols-outlined text-on-primary text-5xl"
+          style="font-variation-settings: 'FILL' 1;"
+        >{{ iconName }}</span>
       </div>
       <div class="flex flex-col">
         <span class="text-3xl font-black text-primary">{{ title }}</span>
@@ -46,7 +52,10 @@ const iconName = computed(() => {
         <span class="text-lg font-bold text-secondary text-right">{{ title }}</span>
       </div>
       <div class="w-20 h-20 bg-secondary rounded-[2.5rem] flex items-center justify-center shadow-lg shadow-secondary/20 cursor-pointer min-w-[80px] hover:scale-105 transition-transform">
-        <span class="material-symbols-outlined text-white text-4xl" style="font-variation-settings: 'FILL' 1;">{{ iconName }}</span>
+        <span
+          class="material-symbols-outlined text-on-primary text-4xl"
+          style="font-variation-settings: 'FILL' 1;"
+        >{{ iconName }}</span>
       </div>
     </template>
 

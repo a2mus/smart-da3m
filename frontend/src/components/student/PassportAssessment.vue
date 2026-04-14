@@ -90,47 +90,88 @@ onMounted(loadQuestions)
 </script>
 
 <template>
-  <div class="min-h-screen p-4 md:p-6" data-testid="passport-assessment">
+  <div
+    class="min-h-screen p-4 md:p-6"
+    data-testid="passport-assessment"
+  >
     <div class="max-w-3xl mx-auto">
       <!-- Loading State -->
-      <div v-if="isLoading" class="text-center py-12">
-        <div class="animate-spin inline-block w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full"></div>
-        <p class="mt-3 text-warm-600">{{ t('passport.loading') }}</p>
+      <div
+        v-if="isLoading"
+        class="text-center py-12"
+      >
+        <div class="animate-spin inline-block w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full" />
+        <p class="mt-3 text-warm-600">
+          {{ t('passport.loading') }}
+        </p>
       </div>
 
       <!-- Error -->
-      <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4">
+      <div
+        v-else-if="error"
+        class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4"
+      >
         {{ error }}
       </div>
 
       <!-- Results Screen -->
-      <div v-else-if="results" class="text-center py-8">
+      <div
+        v-else-if="results"
+        class="text-center py-8"
+      >
         <!-- Success State -->
-        <div v-if="results.passed" class="mb-8">
-          <div class="text-7xl mb-4">🏆</div>
-          <h2 class="text-3xl font-bold text-green-600 mb-2">{{ t('passport.congratulations') }}</h2>
-          <p class="text-warm-600">{{ results.message }}</p>
+        <div
+          v-if="results.passed"
+          class="mb-8"
+        >
+          <div class="text-7xl mb-4">
+            🏆
+          </div>
+          <h2 class="text-3xl font-bold text-green-600 mb-2">
+            {{ t('passport.congratulations') }}
+          </h2>
+          <p class="text-warm-600">
+            {{ results.message }}
+          </p>
         </div>
 
         <!-- Failure State -->
-        <div v-else class="mb-8">
-          <div class="text-7xl mb-4">💪</div>
-          <h2 class="text-2xl font-bold text-warm-700 mb-2">{{ t('passport.keepTrying') }}</h2>
-          <p class="text-warm-600">{{ results.message }}</p>
+        <div
+          v-else
+          class="mb-8"
+        >
+          <div class="text-7xl mb-4">
+            💪
+          </div>
+          <h2 class="text-2xl font-bold text-warm-700 mb-2">
+            {{ t('passport.keepTrying') }}
+          </h2>
+          <p class="text-warm-600">
+            {{ results.message }}
+          </p>
         </div>
 
         <!-- Results Card -->
-        <div class="bg-white rounded-2xl p-6 shadow-soft mb-6 text-left">
+        <div class="bg-surface-bright rounded-2xl p-6 shadow-soft mb-6 text-left">
           <div class="grid grid-cols-2 gap-4 mb-6">
             <div class="text-center p-4 bg-warm-50 rounded-xl">
-              <div class="text-3xl font-bold" :class="results.passed ? 'text-green-600' : 'text-warm-600'">
+              <div
+                class="text-3xl font-bold"
+                :class="results.passed ? 'text-green-600' : 'text-warm-600'"
+              >
                 {{ Math.round(results.accuracy * 100) }}%
               </div>
-              <div class="text-sm text-warm-600">{{ t('passport.accuracy') }}</div>
+              <div class="text-sm text-warm-600">
+                {{ t('passport.accuracy') }}
+              </div>
             </div>
             <div class="text-center p-4 bg-warm-50 rounded-xl">
-              <div class="text-3xl font-bold text-primary-600">{{ results.correct_count }}/{{ results.total_questions }}</div>
-              <div class="text-sm text-warm-600">{{ t('passport.questions') }}</div>
+              <div class="text-3xl font-bold text-primary-600">
+                {{ results.correct_count }}/{{ results.total_questions }}
+              </div>
+              <div class="text-sm text-warm-600">
+                {{ t('passport.questions') }}
+              </div>
             </div>
           </div>
 
@@ -146,9 +187,16 @@ onMounted(loadQuestions)
           </div>
 
           <!-- Badge Earned -->
-          <div v-if="results.badge_earned" class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-center">
-            <div class="text-2xl mb-1">⭐</div>
-            <div class="font-semibold text-yellow-700">{{ t('passport.badgeEarned') }}</div>
+          <div
+            v-if="results.badge_earned"
+            class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-center"
+          >
+            <div class="text-2xl mb-1">
+              ⭐
+            </div>
+            <div class="font-semibold text-yellow-700">
+              {{ t('passport.badgeEarned') }}
+            </div>
           </div>
         </div>
 
@@ -156,14 +204,14 @@ onMounted(loadQuestions)
         <div class="flex gap-3 justify-center">
           <button
             v-if="!results.passed"
-            @click="retryAssessment"
             class="px-6 py-3 bg-warm-200 hover:bg-warm-300 text-warm-700 font-semibold rounded-xl transition-colors"
+            @click="retryAssessment"
           >
             {{ t('passport.retry') }}
           </button>
           <button
+            class="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-on-primary font-semibold rounded-xl transition-colors"
             @click="finishAssessment"
-            class="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
           >
             {{ t('passport.finish') }}
           </button>
@@ -171,7 +219,10 @@ onMounted(loadQuestions)
       </div>
 
       <!-- Question Screen -->
-      <div v-else-if="currentQuestion" class="bg-white rounded-2xl p-6 shadow-soft">
+      <div
+        v-else-if="currentQuestion"
+        class="bg-surface-bright rounded-2xl p-6 shadow-soft"
+      >
         <!-- Header -->
         <div class="mb-6">
           <div class="flex justify-between items-center mb-2">
@@ -179,7 +230,10 @@ onMounted(loadQuestions)
             <span class="text-sm text-warm-600">{{ Math.round(progress) }}%</span>
           </div>
           <div class="h-2 bg-warm-200 rounded-full overflow-hidden">
-            <div class="h-full bg-primary-500 rounded-full transition-all duration-300" :style="{ width: `${progress}%` }"></div>
+            <div
+              class="h-full bg-primary-500 rounded-full transition-all duration-300"
+              :style="{ width: `${progress}%` }"
+            />
           </div>
         </div>
 
@@ -191,43 +245,54 @@ onMounted(loadQuestions)
 
         <!-- Question -->
         <div class="mb-8">
-          <h2 class="text-xl font-semibold text-warm-800 mb-4">{{ currentQuestion.content.text }}</h2>
+          <h2 class="text-xl font-semibold text-warm-800 mb-4">
+            {{ currentQuestion.content.text }}
+          </h2>
 
           <!-- Multiple Choice -->
-          <div v-if="currentQuestion.content.type === 'multiple_choice'" class="space-y-3">
+          <div
+            v-if="currentQuestion.content.type === 'multiple_choice'"
+            class="space-y-3"
+          >
             <button
               v-for="(option, index) in currentQuestion.content.options"
               :key="index"
-              @click="selectedAnswer = option"
               :class="[
                 'w-full p-4 text-left rounded-xl border-2 transition-all min-h-[60px]',
                 selectedAnswer === option
                   ? 'border-primary-500 bg-primary-50'
                   : 'border-warm-200 hover:border-primary-300'
               ]"
+              @click="selectedAnswer = option"
             >
               {{ option }}
             </button>
           </div>
 
           <!-- Text Input -->
-          <div v-else class="space-y-3">
+          <div
+            v-else
+            class="space-y-3"
+          >
             <input
               v-model="selectedAnswer"
               type="text"
               class="w-full p-4 rounded-xl border-2 border-warm-200 focus:border-primary-500 outline-none transition-all"
               :placeholder="t('passport.enterAnswer')"
-            />
+            >
           </div>
         </div>
 
         <!-- Submit -->
         <button
-          @click="submitAnswer"
           :disabled="!canSubmit || isSubmitting"
-          class="w-full py-4 bg-primary-500 hover:bg-primary-600 disabled:bg-warm-300 text-white font-semibold rounded-xl transition-colors flex justify-center items-center gap-2"
+          class="w-full py-4 bg-primary-500 hover:bg-primary-600 disabled:bg-warm-300 text-on-primary font-semibold rounded-xl transition-colors flex justify-center items-center gap-2"
+          @click="submitAnswer"
         >
-          <span v-if="isSubmitting" class="animate-spin">⟳</span>
+          <span
+            v-if="isSubmitting"
+            class="animate-spin"
+          >⟳</span>
           {{ isSubmitting ? t('passport.submitting') : (currentIndex < questions.length - 1 ? t('passport.next') : t('passport.finish')) }}
         </button>
       </div>

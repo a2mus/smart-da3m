@@ -6,7 +6,9 @@ const notifications = mockUiState.notifications;
 
 <template>
   <section class="space-y-4 pb-8">
-    <h3 class="text-xl font-bold text-primary">آخر التنبيهات</h3>
+    <h3 class="text-xl font-bold text-primary">
+      آخر التنبيهات
+    </h3>
     <div class="grid grid-cols-2 gap-3">
       <!-- Dynamic list based on notifications -->
       <div 
@@ -33,15 +35,25 @@ const notifications = mockUiState.notifications;
         </span>
         
         <div v-if="notif.type === 'alert'">
-          <span class="text-xl font-black font-label" :class="notif.severity === 'high' ? 'text-error' : 'text-on-secondary-fixed'">
+          <span
+            class="text-xl font-black font-label"
+            :class="notif.severity === 'high' ? 'text-error' : 'text-on-secondary-fixed'"
+          >
             تنبيه
           </span>
-          <p class="text-xs font-bold mt-1" :class="notif.severity === 'high' ? 'text-on-error-container' : 'text-on-secondary-fixed-variant'">
+          <p
+            class="text-xs font-bold mt-1"
+            :class="notif.severity === 'high' ? 'text-on-error-container' : 'text-on-secondary-fixed-variant'"
+          >
             {{ notif.message }}
           </p>
         </div>
         
-        <span v-else class="text-sm font-bold" :class="notif.type === 'achievement' ? 'text-on-tertiary-fixed-variant' : 'text-on-surface'">
+        <span
+          v-else
+          class="text-sm font-bold"
+          :class="notif.type === 'achievement' ? 'text-on-tertiary-fixed-variant' : 'text-on-surface'"
+        >
           {{ notif.message }}
         </span>
       </div>

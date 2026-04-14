@@ -8,7 +8,7 @@ const props = defineProps<{
 }>()
 
 const cardClasses = computed(() => {
-  const base = ['bg-white', 'transition-all', 'duration-300']
+  const base = ['bg-surface-bright', 'transition-all', 'duration-300']
   
   if (props.hover) {
     base.push('card-hover')
@@ -16,7 +16,7 @@ const cardClasses = computed(() => {
 
   switch (props.variant) {
     case 'nurturing':
-      base.push('card-nurturing', 'border', 'border-white/50')
+      base.push('card-nurturing', 'border', 'border-#faf9f6/50')
       break
     case 'cloud':
       base.push('rounded-cloud', 'shadow-soft')
@@ -37,6 +37,6 @@ const paddingClass = computed(() => {
 
 <template>
   <div :class="[cardClasses, paddingClass]">
-    <slot></slot>
+    <slot />
   </div>
 </template>

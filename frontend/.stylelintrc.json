@@ -1,9 +1,9 @@
 {
-  "extends": ["stylelint-config-standard"],
+  "extends": ["stylelint-config-standard", "stylelint-config-html"],
   "plugins": ["stylelint-plugin-logical-css"],
   "rules": {
     "logical-css/require-logical-properties": [true, {
-      "ignore": ["top", "bottom", "margin-top", "margin-bottom", "padding-top", "padding-bottom", "border-top", "border-bottom", "max-height", "min-height", "height"]
+      "ignore": ["top", "bottom", "margin-top", "margin-bottom", "padding-top", "padding-bottom", "border-top", "border-bottom", "max-height", "min-height", "height", "width", "min-width", "max-width"]
     }],
     "logical-css/require-logical-keywords": true,
     "logical-css/require-logical-units": true,
@@ -28,6 +28,9 @@
     "color-function-alias-notation": null,
     "color-function-notation": null,
     "no-duplicate-selectors": null,
-    "at-rule-empty-line-before": null
+    "at-rule-empty-line-before": null,
+    "color-hex-length": null,
+    "declaration-block-no-redundant-longhand-properties": null,
+    "rule-empty-line-before": null
   }
 }

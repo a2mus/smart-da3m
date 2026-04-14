@@ -16,7 +16,7 @@ const getBarColorClass = (score: number) => {
 </script>
 
 <template>
-  <div class="bg-white p-6 rounded-[2rem] border border-outline-variant/10 flex flex-col justify-between h-full">
+  <div class="bg-surface-bright p-6 rounded-[2rem] border border-outline-variant/10 flex flex-col justify-between h-full">
     <div>
       <div class="flex justify-between items-start mb-4">
         <div class="w-12 h-12 bg-primary-fixed rounded-2xl flex items-center justify-center text-primary">
@@ -26,7 +26,9 @@ const getBarColorClass = (score: number) => {
           معدل التركيز
         </span>
       </div>
-      <p class="text-slate-500 text-sm font-bold">متوسط تركيز الطالب</p>
+      <p class="text-slate-500 text-sm font-bold">
+        متوسط تركيز الطالب
+      </p>
       <h3 class="text-4xl font-black text-primary font-['Inter'] mt-1">
         {{ mockUiState.analytics.weeklyFocusAverage }}<span class="text-xl">%</span>
       </h3>
@@ -41,7 +43,7 @@ const getBarColorClass = (score: number) => {
         :style="{ height: getBarHeight(session.focusScore) }"
       >
         <!-- Tooltip -->
-        <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+        <div class="absolute -top-10 start-1/2 -translate-x-1/2 bg-inverse-surface text-inverse-on-surface text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
           {{ session.focusScore }}% - {{ session.durationMinutes }}د
         </div>
       </div>

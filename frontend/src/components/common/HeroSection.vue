@@ -24,31 +24,44 @@ const learnMore = () => {
         </p>
         <div class="flex flex-col sm:flex-row-reverse gap-4">
           <button 
+            class="bg-secondary text-on-secondary px-10 py-5 rounded-3xl text-xl font-bold shadow-lg hover:opacity-90 transition-all"
             @click="startJourney"
-            class="bg-secondary text-on-secondary px-10 py-5 rounded-3xl text-xl font-bold shadow-lg hover:opacity-90 transition-all">
+          >
             ابدأ الرحلة مجاناً
           </button>
           <button 
+            class="bg-surface-container-low text-primary px-10 py-5 rounded-3xl text-xl font-bold hover:bg-surface-container-high transition-all"
             @click="learnMore"
-            class="bg-surface-container-low text-primary px-10 py-5 rounded-3xl text-xl font-bold hover:bg-surface-container-high transition-all">
+          >
             اكتشف المزيد
           </button>
         </div>
       </div>
       <div class="relative">
-        <div class="absolute -top-10 -right-10 w-64 h-64 bg-tertiary-fixed-dim/20 rounded-full blur-3xl"></div>
-        <div class="absolute -bottom-10 -left-10 w-64 h-64 bg-secondary-fixed-dim/20 rounded-full blur-3xl"></div>
+        <div class="absolute -top-10 -end-10 w-64 h-64 bg-tertiary-fixed-dim/20 rounded-full blur-3xl" />
+        <div class="absolute -bottom-10 -start-10 w-64 h-64 bg-secondary-fixed-dim/20 rounded-full blur-3xl" />
         <div class="relative aspect-square rounded-3xl overflow-hidden shadow-2xl rotate-2">
-          <img alt="Student studying" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEN1zX9zChPg6yDgs-biPXWsEPm6lWU4SGBUBHDE9hOCHdAbhFYP_legk3NXlAOzOHVIfS11T-6M7yeDMtY6OS1u_z-aJxsw2oMdSDvDpkbJSOJkxE8u-YPgMZj6sBhK5ke33tlM-npYt1GgU5Y-pA1gH-5VSWxa01g4WcaDwqjkTYhgjdsd0yp4Mvk2p8lGvNwCVSd3b1e88MzcCURZ0VjXCv4ERwCDuvhSj7kYOnPRDyzVP5AT30sFlFMmfrq8O8KIGSz1AdYCQ"/>
+          <img
+            alt="Student studying"
+            class="w-full h-full object-cover"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEN1zX9zChPg6yDgs-biPXWsEPm6lWU4SGBUBHDE9hOCHdAbhFYP_legk3NXlAOzOHVIfS11T-6M7yeDMtY6OS1u_z-aJxsw2oMdSDvDpkbJSOJkxE8u-YPgMZj6sBhK5ke33tlM-npYt1GgU5Y-pA1gH-5VSWxa01g4WcaDwqjkTYhgjdsd0yp4Mvk2p8lGvNwCVSd3b1e88MzcCURZ0VjXCv4ERwCDuvhSj7kYOnPRDyzVP5AT30sFlFMmfrq8O8KIGSz1AdYCQ"
+          >
         </div>
         <!-- Decorative Floating Element -->
-        <div class="absolute -bottom-6 -right-6 bg-white p-6 rounded-2xl shadow-xl flex items-center gap-4 animate-bounce">
-          <div class="w-12 h-12 bg-tertiary-container rounded-full flex items-center justify-center text-white">
-            <span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+        <div class="absolute -bottom-6 -end-6 bg-surface-bright p-6 rounded-2xl shadow-xl flex items-center gap-4 animate-bounce">
+          <div class="w-12 h-12 bg-tertiary-container rounded-full flex items-center justify-center text-on-primary">
+            <span
+              class="material-symbols-outlined"
+              data-icon="auto_awesome"
+            >auto_awesome</span>
           </div>
           <div class="text-right">
-            <p class="font-bold text-primary">ذكاء تكيفي</p>
-            <p class="text-xs text-on-surface-variant">مخصص 100% لطفلك</p>
+            <p class="font-bold text-primary">
+              ذكاء تكيفي
+            </p>
+            <p class="text-xs text-on-surface-variant">
+              مخصص 100% لطفلك
+            </p>
           </div>
         </div>
       </div>

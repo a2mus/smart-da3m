@@ -1,11 +1,25 @@
 import pluginVue from 'eslint-plugin-vue'
 import globals from 'globals'
+import tsParser from '@typescript-eslint/parser'
+import tseslint from 'typescript-eslint'
+import vueParser from 'vue-eslint-parser'
 
-export default [
+export default tseslint.config(
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'public/**']
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'public/**', '*.cjs']
   },
   ...pluginVue.configs['flat/recommended'],
+  ...tseslint.configs.recommended,
+  {
+    files: ['*.vue', '**/*.vue'],
+    languageOptions: {
+      parser: vueParser,
+      parserOptions: {
+        parser: tsParser,
+        extraFileExtensions: ['.vue']
+      }
+    }
+  },
   {
     languageOptions: {
       globals: {
@@ -29,7 +43,10 @@ export default [
         'right-0', 'right-1', 'right-2', 'right-3', 'right-4', 'right-5', 'right-6', 'right-8', 'right-10', 'right-12', 'right-16', 'right-20', 'right-24', 'right-32', 'right-auto', 'right-1/2', 'right-full',
         '-right-1', '-right-2', '-right-3', '-right-4', '-right-5', '-right-6', '-right-8', '-right-10', '-right-12', '-right-16', '-right-20', '-right-24', '-right-32', '-right-1/2', '-right-full'
       ],
-      'vue/multi-word-component-names': 'off'
+      'vue/multi-word-component-names': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-expressions': 'off'
     }
   }
-]
+)

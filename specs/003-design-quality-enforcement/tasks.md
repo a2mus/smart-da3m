@@ -46,16 +46,16 @@ description: "Task list template for feature implementation"
 
 ### Implementation for User Story 1
 
-- [ ] T010 [P] [US1] Remediate ~22 color violations in `frontend/src/views/student/Dashboard.vue`
-- [ ] T011 [P] [US1] Remediate ~15 color violations in `frontend/src/views/Home.vue`
-- [ ] T012 [P] [US1] Remediate ~12 color violations in `frontend/src/views/StudentJourney.vue`
-- [ ] T013 [P] [US1] Remediate ~12 color violations in `frontend/src/views/expert/Analytics.vue`
-- [ ] T014 [P] [US1] Remediate ~10 color violations in `frontend/src/views/Login.vue`
-- [ ] T015 [P] [US1] Remediate ~8 color violations in `frontend/src/views/LandingPage.vue`
-- [ ] T016 [P] [US1] Remediate ~8 color violations in `frontend/src/views/AnalyticsView.vue`
-- [ ] T017 [P] [US1] Remediate ~6 color violations in `frontend/src/views/ParentDashboard.vue`
-- [ ] T018 [P] [US1] Remediate ~6 color violations in `frontend/src/views/parent/Dashboard.vue`
-- [ ] T019 [P] [US1] Remediate color violations in minor components (`HeroSection.vue`, `CompetencyHeatmap.vue`) and verify 0 remaining issues
+- [x] T010 [P] [US1] Remediate ~22 color violations in `frontend/src/views/student/Dashboard.vue`
+- [x] T011 [P] [US1] Remediate ~15 color violations in `frontend/src/views/Home.vue`
+- [x] T012 [P] [US1] Remediate ~12 color violations in `frontend/src/views/StudentJourney.vue`
+- [x] T013 [P] [US1] Remediate ~12 color violations in `frontend/src/views/expert/Analytics.vue`
+- [x] T014 [P] [US1] Remediate ~10 color violations in `frontend/src/views/Login.vue`
+- [x] T015 [P] [US1] Remediate ~8 color violations in `frontend/src/views/LandingPage.vue`
+- [x] T016 [P] [US1] Remediate ~8 color violations in `frontend/src/views/AnalyticsView.vue`
+- [x] T017 [P] [US1] Remediate ~6 color violations in `frontend/src/views/ParentDashboard.vue`
+- [x] T018 [P] [US1] Remediate ~6 color violations in `frontend/src/views/parent/Dashboard.vue`
+- [x] T019 [P] [US1] Remediate color violations in minor components (`HeroSection.vue`, `CompetencyHeatmap.vue`) and verify 0 remaining issues
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently (`npm run lint:design` reports no color errors).
 
@@ -69,15 +69,15 @@ description: "Task list template for feature implementation"
 
 ### Implementation for User Story 2
 
-- [ ] T020 [P] [US2] Add safe-area exemption comments to physical padding in `frontend/src/assets/main.css`
-- [ ] T021 [P] [US2] Migrate physical CSS properties to logical in `frontend/src/views/expert/Analytics.vue`
-- [ ] T022 [P] [US2] Migrate physical CSS properties to logical in `frontend/src/views/AnalyticsView.vue`
-- [ ] T023 [P] [US2] Migrate physical CSS properties to logical in `frontend/src/views/student/Dashboard.vue`
-- [ ] T024 [P] [US2] Migrate physical CSS properties to logical in `frontend/src/views/StudentJourney.vue`
-- [ ] T025 [P] [US2] Migrate physical CSS properties to logical in `frontend/src/views/ParentDashboard.vue`
-- [ ] T026 [P] [US2] Migrate physical CSS properties to logical in `frontend/src/views/parent/Dashboard.vue`
-- [ ] T027 [P] [US2] Migrate physical CSS properties to logical in remaining views (`Home.vue`, `LandingPage.vue`, `Login.vue`)
-- [ ] T028 [P] [US2] Migrate physical CSS properties to logical in components (`IhsaneButton.vue`, `CompetencyHeatmap.vue`) and verify 0 left
+- [x] T020 [P] [US2] Add safe-area exemption comments to physical padding in `frontend/src/assets/main.css`
+- [x] T021 [P] [US2] Migrate physical CSS properties to logical in `frontend/src/views/expert/Analytics.vue`
+- [x] T022 [P] [US2] Migrate physical CSS properties to logical in `frontend/src/views/AnalyticsView.vue`
+- [x] T023 [P] [US2] Migrate physical CSS properties to logical in `frontend/src/views/student/Dashboard.vue`
+- [x] T024 [P] [US2] Migrate physical CSS properties to logical in `frontend/src/views/StudentJourney.vue`
+- [x] T025 [P] [US2] Migrate physical CSS properties to logical in `frontend/src/views/ParentDashboard.vue`
+- [x] T026 [P] [US2] Migrate physical CSS properties to logical in `frontend/src/views/parent/Dashboard.vue`
+- [x] T027 [P] [US2] Migrate physical CSS properties to logical in remaining views (`Home.vue`, `LandingPage.vue`, `Login.vue`)
+- [x] T028 [P] [US2] Migrate physical CSS properties to logical in components (`IhsaneButton.vue`, `CompetencyHeatmap.vue`) and verify 0 left
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently. (`npm run lint:design` passes fully).
 

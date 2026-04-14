@@ -91,9 +91,14 @@ const handleCancel = () => {
 
 <template>
   <div class="bg-warm-50 rounded-2xl p-6 shadow-soft">
-    <h2 class="text-2xl font-bold text-primary-700 mb-6">{{ title }}</h2>
+    <h2 class="text-2xl font-bold text-primary-700 mb-6">
+      {{ title }}
+    </h2>
 
-    <form @submit.prevent="handleSubmit" class="space-y-5">
+    <form
+      class="space-y-5"
+      @submit.prevent="handleSubmit"
+    >
       <!-- Subject -->
       <div>
         <label
@@ -107,11 +112,14 @@ const handleCancel = () => {
           v-model="form.subject"
           type="text"
           data-testid="subject-input"
-          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-white"
+          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-surface-bright"
           :class="{ 'border-red-400': errors.subject }"
           :placeholder="t('expert.subjectPlaceholder')"
-        />
-        <p v-if="errors.subject" class="error-message text-red-500 text-sm mt-1">
+        >
+        <p
+          v-if="errors.subject"
+          class="error-message text-red-500 text-sm mt-1"
+        >
           {{ errors.subject }}
         </p>
       </div>
@@ -128,17 +136,32 @@ const handleCancel = () => {
           id="grade_level"
           v-model="form.grade_level"
           data-testid="grade-level-input"
-          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-white"
+          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-surface-bright"
           :class="{ 'border-red-400': errors.grade_level }"
         >
-          <option value="">{{ t('expert.selectGrade') }}</option>
-          <option value="السنة 1">{{ t('grades.year1') }}</option>
-          <option value="السنة 2">{{ t('grades.year2') }}</option>
-          <option value="السنة 3">{{ t('grades.year3') }}</option>
-          <option value="السنة 4">{{ t('grades.year4') }}</option>
-          <option value="السنة 5">{{ t('grades.year5') }}</option>
+          <option value="">
+            {{ t('expert.selectGrade') }}
+          </option>
+          <option value="السنة 1">
+            {{ t('grades.year1') }}
+          </option>
+          <option value="السنة 2">
+            {{ t('grades.year2') }}
+          </option>
+          <option value="السنة 3">
+            {{ t('grades.year3') }}
+          </option>
+          <option value="السنة 4">
+            {{ t('grades.year4') }}
+          </option>
+          <option value="السنة 5">
+            {{ t('grades.year5') }}
+          </option>
         </select>
-        <p v-if="errors.grade_level" class="error-message text-red-500 text-sm mt-1">
+        <p
+          v-if="errors.grade_level"
+          class="error-message text-red-500 text-sm mt-1"
+        >
           {{ errors.grade_level }}
         </p>
       </div>
@@ -156,11 +179,14 @@ const handleCancel = () => {
           v-model="form.domain"
           type="text"
           data-testid="domain-input"
-          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-white"
+          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-surface-bright"
           :class="{ 'border-red-400': errors.domain }"
           :placeholder="t('expert.domainPlaceholder')"
-        />
-        <p v-if="errors.domain" class="error-message text-red-500 text-sm mt-1">
+        >
+        <p
+          v-if="errors.domain"
+          class="error-message text-red-500 text-sm mt-1"
+        >
           {{ errors.domain }}
         </p>
       </div>
@@ -178,11 +204,14 @@ const handleCancel = () => {
           v-model="form.competency_id"
           type="text"
           data-testid="competency-input"
-          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-white font-mono text-sm"
+          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-surface-bright font-mono text-sm"
           :class="{ 'border-red-400': errors.competency_id }"
           placeholder="MATH-4-NUM-01"
-        />
-        <p v-if="errors.competency_id" class="error-message text-red-500 text-sm mt-1">
+        >
+        <p
+          v-if="errors.competency_id"
+          class="error-message text-red-500 text-sm mt-1"
+        >
           {{ errors.competency_id }}
         </p>
       </div>
@@ -199,10 +228,14 @@ const handleCancel = () => {
           id="status"
           v-model="form.status"
           data-testid="status-input"
-          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-white"
+          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-surface-bright"
         >
-          <option value="DRAFT">{{ t('expert.draft') }}</option>
-          <option value="PUBLISHED">{{ t('expert.published') }}</option>
+          <option value="DRAFT">
+            {{ t('expert.draft') }}
+          </option>
+          <option value="PUBLISHED">
+            {{ t('expert.published') }}
+          </option>
         </select>
       </div>
 
@@ -211,15 +244,15 @@ const handleCancel = () => {
         <button
           type="submit"
           data-testid="submit-button"
-          class="flex-1 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors shadow-soft"
+          class="flex-1 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-on-primary font-semibold rounded-xl transition-colors shadow-soft"
         >
           {{ t('expert.save') }}
         </button>
         <button
           type="button"
           data-testid="cancel-button"
-          @click="handleCancel"
           class="px-6 py-3 bg-warm-200 hover:bg-warm-300 text-warm-700 font-semibold rounded-xl transition-colors"
+          @click="handleCancel"
         >
           {{ t('expert.cancel') }}
         </button>

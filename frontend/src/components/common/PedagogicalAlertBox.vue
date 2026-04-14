@@ -93,20 +93,34 @@ onMounted(fetchAlerts)
 </script>
 
 <template>
-  <div data-testid="pedagogical-alert-box" class="relative">
+  <div
+    data-testid="pedagogical-alert-box"
+    class="relative"
+  >
     <!-- Compact View (Badge) -->
     <button
       v-if="compact"
-      @click="expanded = !expanded"
       class="relative p-2 rounded-full hover:bg-warm-100 transition-colors"
+      @click="expanded = !expanded"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-warm-600">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="w-6 h-6 text-warm-600"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
+        />
       </svg>
       <span
         v-if="unreadCount > 0"
         :class="[
-          'absolute top-0 end-0 w-5 h-5 rounded-full text-xs flex items-center justify-center text-white font-bold',
+          'absolute top-0 end-0 w-5 h-5 rounded-full text-xs flex items-center justify-center text-on-primary font-bold',
           hasCritical ? 'bg-danger-500' : 'bg-primary-500'
         ]"
       >
@@ -117,47 +131,82 @@ onMounted(fetchAlerts)
     <!-- Expanded View -->
     <div
       v-else
-      class="bg-white rounded-2xl shadow-soft overflow-hidden"
+      class="bg-surface-bright rounded-2xl shadow-soft overflow-hidden"
       :class="{ 'border-2 border-danger-200': hasCritical }"
     >
       <!-- Header -->
       <div class="flex items-center justify-between p-4 border-b border-warm-100">
         <div class="flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-warm-600">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="w-6 h-6 text-warm-600"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
+            />
           </svg>
-          <h3 class="font-bold text-warm-800">{{ t('alerts.title') }}</h3>
+          <h3 class="font-bold text-warm-800">
+            {{ t('alerts.title') }}
+          </h3>
           <span
             v-if="unreadCount > 0"
-            class="bg-primary-500 text-white text-xs px-2 py-0.5 rounded-full"
+            class="bg-primary-500 text-on-primary text-xs px-2 py-0.5 rounded-full"
           >
             {{ unreadCount }}
           </span>
         </div>
         <button
           v-if="alerts.length > 0"
-          @click="fetchAlerts"
           class="text-sm text-primary-600 hover:text-primary-700"
+          @click="fetchAlerts"
         >
           {{ t('common.refresh') }}
         </button>
       </div>
 
       <!-- Loading -->
-      <div v-if="loading" class="text-center py-8">
-        <div class="animate-spin inline-block w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full"></div>
+      <div
+        v-if="loading"
+        class="text-center py-8"
+      >
+        <div class="animate-spin inline-block w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full" />
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="alerts.length === 0" class="text-center py-8 text-warm-500">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-success-500 mx-auto mb-2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+      <div
+        v-else-if="alerts.length === 0"
+        class="text-center py-8 text-warm-500"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="w-12 h-12 text-success-500 mx-auto mb-2"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+          />
         </svg>
-        <p class="text-sm">{{ t('alerts.noAlerts') }}</p>
+        <p class="text-sm">
+          {{ t('alerts.noAlerts') }}
+        </p>
       </div>
 
       <!-- Alerts List -->
-      <div v-else class="max-h-80 overflow-y-auto">
+      <div
+        v-else
+        class="max-h-80 overflow-y-auto"
+      >
         <div
           v-for="alert in alerts"
           :key="alert.id"
@@ -175,7 +224,7 @@ onMounted(fetchAlerts)
             </span>
             <div class="flex-1 min-w-0">
               <p class="text-sm text-warm-800 leading-relaxed">
-{{ alert.simplified_message || alert.message }}
+                {{ alert.simplified_message || alert.message }}
               </p>
               <div class="flex items-center justify-between mt-2">
                 <span class="text-xs text-warm-500">
@@ -184,14 +233,14 @@ onMounted(fetchAlerts)
                 <div class="flex gap-2">
                   <button
                     v-if="!alert.is_read"
-                    @click="markAsRead(alert.id)"
                     class="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                    @click="markAsRead(alert.id)"
                   >
                     {{ t('alerts.markRead') }}
                   </button>
                   <button
-                    @click="dismissAlert(alert.id)"
                     class="text-xs text-warm-400 hover:text-warm-600"
+                    @click="dismissAlert(alert.id)"
                   >
                     {{ t('common.dismiss') }}
                   </button>
@@ -203,7 +252,10 @@ onMounted(fetchAlerts)
       </div>
 
       <!-- View All Link -->
-      <div v-if="alerts.length > 0" class="p-3 border-t border-warm-100 text-center">
+      <div
+        v-if="alerts.length > 0"
+        class="p-3 border-t border-warm-100 text-center"
+      >
         <router-link
           to="/parent/alerts"
           class="text-sm text-primary-600 hover:text-primary-700 font-medium"
@@ -216,14 +268,22 @@ onMounted(fetchAlerts)
     <!-- Dropdown for Compact Mode -->
     <div
       v-if="compact && expanded"
-      class="absolute end-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg z-50"
+      class="absolute end-0 top-full mt-2 w-80 bg-surface-bright rounded-xl shadow-lg z-50"
     >
       <div class="p-3 border-b border-warm-100 flex justify-between items-center">
         <span class="font-semibold text-warm-800">{{ t('alerts.title') }}</span>
-        <button @click="expanded = false" class="text-warm-400 hover:text-warm-600">×</button>
+        <button
+          class="text-warm-400 hover:text-warm-600"
+          @click="expanded = false"
+        >
+          ×
+        </button>
       </div>
       <div class="max-h-64 overflow-y-auto">
-        <div v-if="alerts.length === 0" class="p-4 text-center text-warm-500 text-sm">
+        <div
+          v-if="alerts.length === 0"
+          class="p-4 text-center text-warm-500 text-sm"
+        >
           {{ t('alerts.noAlerts') }}
         </div>
         <div

@@ -76,14 +76,25 @@ const averageScore = computed(() => {
 </script>
 
 <template>
-  <div data-testid="radar-chart" class="relative" aria-label="Subject progress radar chart">
+  <div
+    data-testid="radar-chart"
+    class="relative"
+    aria-label="Subject progress radar chart"
+  >
     <!-- Empty State -->
-    <div v-if="processedSubjects.length === 0" data-testid="empty-state" class="text-center py-8 text-warm-500">
+    <div
+      v-if="processedSubjects.length === 0"
+      data-testid="empty-state"
+      class="text-center py-8 text-warm-500"
+    >
       {{ $t('parent.noData') }}
     </div>
 
     <!-- Chart -->
-    <div v-else class="flex flex-col items-center">
+    <div
+      v-else
+      class="flex flex-col items-center"
+    >
       <svg 
         data-testid="chart-svg"
         viewBox="0 0 300 300" 
@@ -163,15 +174,15 @@ const averageScore = computed(() => {
       <!-- Legend -->
       <div class="flex flex-wrap justify-center gap-4 mt-4 text-xs">
         <div class="flex items-center gap-1">
-          <div class="w-3 h-3 rounded-full bg-green-500"></div>
+          <div class="w-3 h-3 rounded-full bg-green-500" />
           <span class="text-warm-600">{{ $t('mastery.mastered') }}</span>
         </div>
         <div class="flex items-center gap-1">
-          <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+          <div class="w-3 h-3 rounded-full bg-blue-500" />
           <span class="text-warm-600">{{ $t('mastery.proficient') }}</span>
         </div>
         <div class="flex items-center gap-1">
-          <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+          <div class="w-3 h-3 rounded-full bg-yellow-500" />
           <span class="text-warm-600">{{ $t('mastery.familiar') }}</span>
         </div>
       </div>
