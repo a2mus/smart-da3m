@@ -1,8 +1,10 @@
 ﻿# smart-da3m Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-10
+Auto-generated from all feature plans. Last updated: 2026-04-14
 
 ## Active Technologies
+- Vue 3 (Composition API), TypeScript 5+, HTML/CSS + Tailwind CSS, Vue Router (002-stitch-mockup-adaptation)
+- N/A (Frontend Mock State via refs) (002-stitch-mockup-adaptation)
 
 - Python 3.12+ (Backend) / TypeScript + Vue 3.5+ (Frontend) + FastAPI, Pydantic v2, Alembic, Celery / Vite 6+, Pinia, Workbox, Dexie.js (001-ihsane-mvp-platform)
 
@@ -23,6 +25,7 @@ cd src; pytest; ruff check .
 Python 3.12+ (Backend) / TypeScript + Vue 3.5+ (Frontend): Follow standard conventions
 
 ## Recent Changes
+- 002-stitch-mockup-adaptation: Added Vue 3 (Composition API), TypeScript 5+, HTML/CSS + Tailwind CSS, Vue Router
 
 - 001-ihsane-mvp-platform: Added Python 3.12+ (Backend) / TypeScript + Vue 3.5+ (Frontend) + FastAPI, Pydantic v2, Alembic, Celery / Vite 6+, Pinia, Workbox, Dexie.js
 

@@ -85,7 +85,7 @@ The core mechanism is fully operational and ready for pilot testing:
 - [x] Production deployment configured (Caddy + Docker)
 - [x] CI/CD pipeline configured (GitHub Actions)
 - [x] GitHub Secrets setup guide created
-- [ ] **YOU ARE HERE:** Add 4 GitHub Secrets (VPS_HOST, VPS_USER, VPS_SSH_KEY, DEPLOY_PATH)
-- [ ] Initial deployment to pilot environment
+- [x] **YOU ARE HERE:** Add 4 GitHub Secrets (VPS_HOST, VPS_USER, VPS_SSH_KEY, DEPLOY_PATH)
+- [x] Initial deployment to pilot environment (ihsan-dz.duckdns.org)
 - [ ] Load initial content
 - [ ] Onboard first schools
