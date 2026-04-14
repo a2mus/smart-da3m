@@ -57,12 +57,12 @@ description: "Task list for Stitch Mockup Adaptation"
 
 ### Implementation for US2
 
-- [ ] T010 [P] [US2] Create the base `ParentDashboard.vue` view in `frontend/src/views/ParentDashboard.vue`
-- [ ] T011 [P] [US2] Create the base `AnalyticsView.vue` view in `frontend/src/views/AnalyticsView.vue`
-- [ ] T012 [P] [US2] Create `ParentNotificationsList.vue` in `frontend/src/components/parent/ParentNotificationsList.vue`
-- [ ] T013 [P] [US2] Create `StudentFocusChart.vue` component in `frontend/src/components/parent/StudentFocusChart.vue`
-- [ ] T014 [US2] Link `ParentDashboard.vue` and `AnalyticsView.vue` together, binding state from `mockUiState.ts`.
-- [ ] T015 [US2] Add hover and click states (modals/drawers) using local Vue refs in `AnalyticsView.vue`
+- [x] T010 [P] [US2] Create the base `ParentDashboard.vue` view in `frontend/src/views/ParentDashboard.vue`
+- [x] T011 [P] [US2] Create the base `AnalyticsView.vue` view in `frontend/src/views/AnalyticsView.vue`
+- [x] T012 [P] [US2] Create `ParentNotificationsList.vue` in `frontend/src/components/parent/ParentNotificationsList.vue`
+- [x] T013 [P] [US2] Create `StudentFocusChart.vue` component in `frontend/src/components/parent/StudentFocusChart.vue`
+- [x] T014 [US2] Link `ParentDashboard.vue` and `AnalyticsView.vue` together, binding state from `mockUiState.ts`.
+- [x] T015 [US2] Add hover and click states (modals/drawers) using local Vue refs in `AnalyticsView.vue`
 
 **Checkpoint**: Both Parent Dashboard screens work independently with mock data interactions.
 
@@ -76,11 +76,11 @@ description: "Task list for Stitch Mockup Adaptation"
 
 ### Implementation for US3
 
-- [ ] T016 [P] [US3] Create the base `StudentJourney.vue` view in `frontend/src/views/StudentJourney.vue`
-- [ ] T017 [P] [US3] Create `JourneyNode.vue` map point component in `frontend/src/components/student/JourneyNode.vue`
-- [ ] T018 [P] [US3] Create `JourneyPathSvg.vue` for the connecting lines in `frontend/src/components/student/JourneyPathSvg.vue`
-- [ ] T019 [US3] Assemble the map in `StudentJourney.vue` consuming the `LearningJourney` logic from the mock state.
-- [ ] T020 [US3] Ensure active task nodes animate or highlight according to `TaskState`.
+- [x] T016 [P] [US3] Create the base `StudentJourney.vue` view in `frontend/src/views/StudentJourney.vue`
+- [x] T017 [P] [US3] Create `JourneyNode.vue` map point component in `frontend/src/components/student/JourneyNode.vue`
+- [x] T018 [P] [US3] Create `JourneyPathSvg.vue` for the connecting lines in `frontend/src/components/student/JourneyPathSvg.vue`
+- [x] T019 [US3] Assemble the map in `StudentJourney.vue` consuming the `LearningJourney` logic from the mock state.
+- [x] T020 [US3] Ensure active task nodes animate or highlight according to `TaskState`.
 
 **Checkpoint**: Student Journey acts accurately to tablet-first design logic.
 
