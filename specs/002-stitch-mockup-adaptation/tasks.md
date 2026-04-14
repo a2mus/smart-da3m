@@ -40,10 +40,10 @@ description: "Task list for Stitch Mockup Adaptation"
 
 ### Implementation for US1
 
-- [ ] T006 [P] [US1] Create the base `LandingPage.vue` view in `frontend/src/views/LandingPage.vue`
-- [ ] T007 [P] [US1] Create reusable `HeroSection.vue` component in `frontend/src/components/common/HeroSection.vue`
-- [ ] T008 [P] [US1] Create reusable `FeatureGrid.vue` component in `frontend/src/components/common/FeatureGrid.vue`
-- [ ] T009 [US1] Integrate `HeroSection` and `FeatureGrid` into `LandingPage.vue` and wire up mock navigation to dashboards.
+- [x] T006 [P] [US1] Create the base `LandingPage.vue` view in `frontend/src/views/LandingPage.vue`
+- [x] T007 [P] [US1] Create reusable `HeroSection.vue` component in `frontend/src/components/common/HeroSection.vue`
+- [x] T008 [P] [US1] Create reusable `FeatureGrid.vue` component in `frontend/src/components/common/FeatureGrid.vue`
+- [x] T009 [US1] Integrate `HeroSection` and `FeatureGrid` into `LandingPage.vue` and wire up mock navigation to dashboards.
 
 **Checkpoint**: Landing page is fully functional and visually matches the Stitch mockups.
 
