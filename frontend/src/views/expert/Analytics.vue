@@ -7,7 +7,7 @@
     dir="rtl"
   >
     <!-- SideNavBar (Desktop Drawer) -->
-    <aside class="h-screen w-72 fixed end-0 top-0 border-l-0 bg-[#faf9f6]/80 dark:bg-slate-900/80 backdrop-blur-3xl flex flex-col py-8 px-4 z-50">
+    <aside class="h-screen w-72 fixed end-0 top-0 border-s-0 bg-[#faf9f6]/80 dark:bg-slate-900/80 backdrop-blur-3xl flex flex-col py-8 px-4 z-50">
       <div class="mb-10 px-4">
         <h1 class="text-2xl font-bold text-[#00535b] dark:text-[#006D77]">
           إحسان للتحليل
@@ -32,7 +32,7 @@
           <span>الوحدات</span>
         </a>
         <a
-          class="flex items-center gap-3 px-4 py-3 text-[#00535b] dark:text-[#006D77] font-bold border-r-4 border-[#00535b] bg-[#f4f3f1] dark:bg-slate-800 rounded-l-none rounded-xl"
+          class="flex items-center gap-3 px-4 py-3 text-[#00535b] dark:text-[#006D77] font-bold border-e-4 border-[#00535b] bg-[#f4f3f1] dark:bg-slate-800 rounded-s-none rounded-xl"
           href="#"
         >
           <span
@@ -260,7 +260,7 @@
                 </div>
               </div>
             </div>
-            <div class="text-left">
+            <div class="text-start">
               <p class="text-slate-400 text-xs font-['Inter'] mb-1">
                 Performance Score
               </p>
@@ -337,7 +337,7 @@
                 </div>
               </div>
             </div>
-            <div class="text-left">
+            <div class="text-start">
               <p class="text-slate-400 text-xs font-['Inter'] mb-1">
                 Performance Score
               </p>
@@ -414,7 +414,7 @@
                 </div>
               </div>
             </div>
-            <div class="text-left">
+            <div class="text-start">
               <p class="text-slate-400 text-xs font-['Inter'] mb-1">
                 Performance Score
               </p>
@@ -488,7 +488,7 @@
                 </div>
               </div>
             </div>
-            <div class="text-left">
+            <div class="text-start">
               <p class="text-slate-400 text-xs font-['Inter'] mb-1">
                 Performance Score
               </p>

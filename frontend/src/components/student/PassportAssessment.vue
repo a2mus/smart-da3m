@@ -152,7 +152,7 @@ onMounted(loadQuestions)
         </div>
 
         <!-- Results Card -->
-        <div class="bg-surface-bright rounded-2xl p-6 shadow-soft mb-6 text-left">
+        <div class="bg-surface-bright rounded-2xl p-6 shadow-soft mb-6 text-start">
           <div class="grid grid-cols-2 gap-4 mb-6">
             <div class="text-center p-4 bg-warm-50 rounded-xl">
               <div
@@ -258,7 +258,7 @@ onMounted(loadQuestions)
               v-for="(option, index) in currentQuestion.content.options"
               :key="index"
               :class="[
-                'w-full p-4 text-left rounded-xl border-2 transition-all min-h-[60px]',
+                'w-full p-4 text-start rounded-xl border-2 transition-all min-h-[60px]',
                 selectedAnswer === option
                   ? 'border-primary-500 bg-primary-50'
                   : 'border-warm-200 hover:border-primary-300'

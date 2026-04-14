@@ -19,7 +19,7 @@ const goToAnalytics = () => {
     <header class="fixed top-0 w-full z-50 bg-[#faf9f6]/80 dark:bg-stone-900/80 backdrop-blur-xl">
       <div class="flex flex-row-reverse justify-between items-center w-full px-6 py-4">
         <div class="flex items-center gap-3">
-          <div class="text-right">
+          <div class="text-end">
             <p class="text-xs text-stone-500 font-medium leading-none">
               مرحباً بوليّ أمر
             </p>
@@ -51,7 +51,7 @@ const goToAnalytics = () => {
     <main class="pt-24 px-6 space-y-8 max-w-lg mx-auto">
       <!-- Smart Message Card (Insight) -->
       <section class="relative">
-        <div class="bg-surface-container-lowest p-6 asymmetric-border border-r-4 border-secondary shadow-[0_10px_30px_rgba(140,78,53,0.08)]">
+        <div class="bg-surface-container-lowest p-6 asymmetric-border border-e-4 border-secondary shadow-[0_10px_30px_rgba(140,78,53,0.08)]">
           <div class="flex items-start gap-4">
             <div class="bg-secondary-fixed p-3 rounded-2xl">
               <span

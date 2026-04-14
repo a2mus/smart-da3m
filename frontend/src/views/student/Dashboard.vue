@@ -70,7 +70,7 @@
           <div class="flex flex-col gap-12 md:gap-20 relative z-10 items-center md:items-stretch">
             <!-- Node 1: Completed -->
             <div class="flex items-center gap-6 md:self-end md:translate-x-4">
-              <div class="flex flex-col text-left">
+              <div class="flex flex-col text-start">
                 <span class="text-lg font-bold text-secondary">الجمع</span>
                 <span class="text-sm text-stone-500 font-label">مكتمل</span>
               </div>
@@ -116,7 +116,7 @@
       <!-- Left Section: Welcome & Current Mission - Responsive Order 1 -->
       <section class="col-span-1 md:col-span-7 flex flex-col gap-8 order-1 md:order-2">
         <!-- Welcome Hero -->
-        <div class="bg-gradient-to-br from-primary to-primary-container rounded-[3rem] p-6 md:p-10 flex flex-col md:flex-row items-center justify-between shadow-[0_20px_50px_rgba(0,83,91,0.15)] relative overflow-hidden text-center md:text-right gap-6 md:gap-0">
+        <div class="bg-gradient-to-br from-primary to-primary-container rounded-[3rem] p-6 md:p-10 flex flex-col md:flex-row items-center justify-between shadow-[0_20px_50px_rgba(0,83,91,0.15)] relative overflow-hidden text-center md:text-end gap-6 md:gap-0">
           <div class="relative z-10 w-full">
             <h1 class="text-4xl md:text-6xl font-black text-on-primary mb-2">
               مرحباً يا بطل!
@@ -155,7 +155,7 @@
               style="font-variation-settings: 'FILL' 1;"
             >calculate</span>
           </div>
-          <div class="flex-1 text-center md:text-right w-full">
+          <div class="flex-1 text-center md:text-end w-full">
             <div class="flex flex-col gap-2">
               <span class="text-secondary font-black text-xl md:text-2xl">الوحدة الرابعة</span>
               <h3 class="text-5xl md:text-7xl font-black text-primary leading-tight">
@@ -186,7 +186,7 @@
                 style="font-variation-settings: 'FILL' 1;"
               >lightbulb</span>
             </div>
-            <div class="text-center sm:text-right">
+            <div class="text-center sm:text-end">
               <h4 class="text-xl md:text-2xl font-black text-secondary">
                 نصيحة من صديق
               </h4>

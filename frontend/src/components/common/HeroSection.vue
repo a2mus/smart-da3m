@@ -15,7 +15,7 @@ const learnMore = () => {
 <template>
   <section class="relative px-6 py-12 md:py-24 max-w-7xl mx-auto">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-      <div class="z-10 text-right">
+      <div class="z-10 text-end">
         <h1 class="text-5xl md:text-7xl font-black text-primary leading-tight mb-6">
           مستقبل تعليم طفلك يبدأ هنا
         </h1>
@@ -55,7 +55,7 @@ const learnMore = () => {
               data-icon="auto_awesome"
             >auto_awesome</span>
           </div>
-          <div class="text-right">
+          <div class="text-end">
             <p class="font-bold text-primary">
               ذكاء تكيفي
             </p>

@@ -89,7 +89,7 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
           <div
             v-for="competency in data.competencies"
             :key="competency"
-            class="w-24 flex-shrink-0 p-3 text-center text-xs font-medium text-warm-700 bg-warm-50 border-l border-warm-200"
+            class="w-24 flex-shrink-0 p-3 text-center text-xs font-medium text-warm-700 bg-warm-50 border-s border-warm-200"
             :title="competency"
           >
             <span class="truncate block">{{ competency }}</span>
@@ -119,7 +119,7 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
           <div
             v-for="(cell, index) in row.cells"
             :key="`${row.student.id}-${data.competencies[index]}`"
-            class="w-24 flex-shrink-0 p-2 border-l border-warm-100"
+            class="w-24 flex-shrink-0 p-2 border-s border-warm-100"
           >
             <div
               v-if="cell"

@@ -47,9 +47,9 @@ const iconName = computed(() => {
     
     <!-- Completed Node Layout -->
     <template v-else-if="isCompleted">
-      <div class="flex flex-col text-left">
-        <span class="text-sm text-stone-500 font-label text-left w-full block">مكتمل <span v-if="score">{{ score }}%</span></span>
-        <span class="text-lg font-bold text-secondary text-right">{{ title }}</span>
+      <div class="flex flex-col text-start">
+        <span class="text-sm text-stone-500 font-label text-start w-full block">مكتمل <span v-if="score">{{ score }}%</span></span>
+        <span class="text-lg font-bold text-secondary text-end">{{ title }}</span>
       </div>
       <div class="w-20 h-20 bg-secondary rounded-[2.5rem] flex items-center justify-center shadow-lg shadow-secondary/20 cursor-pointer min-w-[80px] hover:scale-105 transition-transform">
         <span

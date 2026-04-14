@@ -41,7 +41,11 @@ export default tseslint.config(
         'left-0', 'left-1', 'left-2', 'left-3', 'left-4', 'left-5', 'left-6', 'left-8', 'left-10', 'left-12', 'left-16', 'left-20', 'left-24', 'left-32', 'left-auto', 'left-1/2', 'left-full',
         '-left-1', '-left-2', '-left-3', '-left-4', '-left-5', '-left-6', '-left-8', '-left-10', '-left-12', '-left-16', '-left-20', '-left-24', '-left-32', '-left-1/2', '-left-full',
         'right-0', 'right-1', 'right-2', 'right-3', 'right-4', 'right-5', 'right-6', 'right-8', 'right-10', 'right-12', 'right-16', 'right-20', 'right-24', 'right-32', 'right-auto', 'right-1/2', 'right-full',
-        '-right-1', '-right-2', '-right-3', '-right-4', '-right-5', '-right-6', '-right-8', '-right-10', '-right-12', '-right-16', '-right-20', '-right-24', '-right-32', '-right-1/2', '-right-full'
+        '-right-1', '-right-2', '-right-3', '-right-4', '-right-5', '-right-6', '-right-8', '-right-10', '-right-12', '-right-16', '-right-20', '-right-24', '-right-32', '-right-1/2', '-right-full',
+        'text-left', 'text-right', 'float-left', 'float-right',
+        'border-l', 'border-r', 'border-l-0', 'border-l-2', 'border-l-4', 'border-l-8', 'border-r-0', 'border-r-2', 'border-r-4', 'border-r-8',
+        'rounded-l', 'rounded-r', 'rounded-l-none', 'rounded-l-sm', 'rounded-l-md', 'rounded-l-lg', 'rounded-l-xl', 'rounded-l-2xl', 'rounded-l-3xl', 'rounded-l-full',
+        'rounded-r-none', 'rounded-r-sm', 'rounded-r-md', 'rounded-r-lg', 'rounded-r-xl', 'rounded-r-2xl', 'rounded-r-3xl', 'rounded-r-full'
       ],
       'vue/multi-word-component-names': 'off',
       '@typescript-eslint/no-explicit-any': 'off',

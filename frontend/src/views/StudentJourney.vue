@@ -83,7 +83,7 @@ const getAlignmentClass = (index: number) => {
       <section class="lg:col-span-7 flex flex-col gap-8 order-1 lg:order-2">
         <!-- Welcome Hero -->
         <div class="bg-gradient-to-br from-primary to-primary-container rounded-[3rem] p-8 md:p-10 flex flex-col md:flex-row items-center justify-between shadow-[0_20px_50px_rgba(0,83,91,0.15)] relative overflow-hidden gap-6">
-          <div class="relative z-10 text-center md:text-right">
+          <div class="relative z-10 text-center md:text-end">
             <h1 class="text-4xl md:text-6xl font-black text-on-primary mb-2">
               مرحباً يا بطل!
             </h1>
@@ -121,7 +121,7 @@ const getAlignmentClass = (index: number) => {
               style="font-variation-settings: 'FILL' 1;"
             >calculate</span>
           </div>
-          <div class="flex-1 text-center md:text-right w-full">
+          <div class="flex-1 text-center md:text-end w-full">
             <div class="flex flex-col gap-2">
               <span class="text-secondary font-black text-xl md:text-2xl">{{ journey.moduleName }}</span>
               <h3 class="text-5xl md:text-7xl font-black text-primary leading-tight">

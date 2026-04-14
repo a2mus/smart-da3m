@@ -17,7 +17,7 @@ const startNow = () => {
   >
     <!-- TopAppBar -->
     <header class="fixed top-0 w-full z-50 bg-[#faf9f6]/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm shadow-teal-900/5">
-      <nav class="flex flex-row-reverse justify-between items-center px-8 py-4 max-w-7xl mx-auto font-['Plus_Jakarta_Sans','Tajawal'] text-right">
+      <nav class="flex flex-row-reverse justify-between items-center px-8 py-4 max-w-7xl mx-auto font-['Plus_Jakarta_Sans','Tajawal'] text-end">
         <div
           class="flex items-center gap-2 cursor-pointer"
           @click="router.push('/')"
@@ -170,7 +170,7 @@ const startNow = () => {
 
     <!-- Footer -->
     <footer class="w-full border-t border-[#00535b]/10 bg-[#f4f3f1] dark:bg-slate-950">
-      <div class="flex flex-col md:flex-row-reverse justify-between items-center px-12 py-10 gap-6 max-w-7xl mx-auto font-['Plus_Jakarta_Sans','Tajawal'] text-right text-sm">
+      <div class="flex flex-col md:flex-row-reverse justify-between items-center px-12 py-10 gap-6 max-w-7xl mx-auto font-['Plus_Jakarta_Sans','Tajawal'] text-end text-sm">
         <div class="flex items-center gap-2">
           <span class="text-xl font-black text-[#00535b]">إحسان</span>
           <span

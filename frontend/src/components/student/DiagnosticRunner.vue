@@ -212,7 +212,7 @@ onMounted(startDiagnostic)
               :key="index"
               data-testid="answer-option"
               :class="[
-                'w-full p-4 text-left rounded-xl border-2 transition-all min-h-[60px]',
+                'w-full p-4 text-start rounded-xl border-2 transition-all min-h-[60px]',
                 selectedAnswer === option
                   ? 'border-primary-500 bg-primary-50'
                   : 'border-warm-200 hover:border-primary-300'

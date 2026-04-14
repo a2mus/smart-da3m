@@ -55,7 +55,7 @@ const closeDrawer = () => {
 
     <!-- SideNavBar (Desktop Drawer) -->
     <aside 
-      class="h-screen w-72 fixed end-0 top-0 border-l border-outline-variant/20 bg-[#faf9f6]/95 dark:bg-slate-900/95 backdrop-blur-3xl flex flex-col py-8 px-4 z-50 transition-transform duration-300 xl:translate-x-0"
+      class="h-screen w-72 fixed end-0 top-0 border-s border-outline-variant/20 bg-[#faf9f6]/95 dark:bg-slate-900/95 backdrop-blur-3xl flex flex-col py-8 px-4 z-50 transition-transform duration-300 xl:translate-x-0"
       :class="showDrawer ? 'translate-x-0' : 'translate-x-full'"
     >
       <div class="mb-10 px-4">
@@ -74,7 +74,7 @@ const closeDrawer = () => {
           <span class="material-symbols-outlined group-hover:scale-110 transition-transform">dashboard</span>
           <span>الرئيسية</span>
         </a>
-        <a class="flex items-center gap-3 px-4 py-3 text-[#00535b] dark:text-[#006D77] font-bold border-r-4 border-[#00535b] bg-[#f4f3f1] dark:bg-slate-800 rounded-l-none rounded-xl cursor-default">
+        <a class="flex items-center gap-3 px-4 py-3 text-[#00535b] dark:text-[#006D77] font-bold border-e-4 border-[#00535b] bg-[#f4f3f1] dark:bg-slate-800 rounded-s-none rounded-xl cursor-default">
           <span
             class="material-symbols-outlined"
             style="font-variation-settings: 'FILL' 1;"
