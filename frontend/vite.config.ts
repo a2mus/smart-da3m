@@ -12,7 +12,7 @@ export default defineConfig({
       injectRegister: 'auto',
       strategies: 'generateSW',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,

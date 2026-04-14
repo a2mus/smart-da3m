@@ -53,6 +53,18 @@ export default {
           800: '#292524',  // default body text
           900: '#1c1917',
         },
+        warm: {
+          50:  '#fafaf9',
+          100: '#f5f5f4',
+          200: '#e7e5e4',
+          300: '#d6d3d1',
+          400: '#a8a29e',
+          500: '#78716c',
+          600: '#57534e',
+          700: '#44403c',
+          800: '#292524',
+          900: '#1c1917',
+        },
 
         // Semantic status — §1.1: no harsh neons/reds
         mint: {
