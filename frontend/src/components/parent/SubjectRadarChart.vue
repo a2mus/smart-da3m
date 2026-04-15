@@ -13,6 +13,10 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const emit = defineEmits<{
+  (e: 'select-subject', subject: Subject): void
+}>()
+
 const processedSubjects = computed(() => {
   // Limit to 6 subjects for readability
   const limited = props.subjects.slice(0, 6)
@@ -99,6 +103,7 @@ const averageScore = computed(() => {
         data-testid="chart-svg"
         viewBox="0 0 300 300" 
         class="w-full max-w-[300px] h-auto"
+        role="img"
       >
         <!-- Background circles (grid) -->
         <g data-testid="grid-circles">
@@ -151,6 +156,8 @@ const averageScore = computed(() => {
             r="4"
             :fill="getScoreColor(subject.normalizedScore)"
             data-testid="subject-point"
+            class="cursor-pointer"
+            @click="emit('select-subject', subject)"
           />
         </g>
 

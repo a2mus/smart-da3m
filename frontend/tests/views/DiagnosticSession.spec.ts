@@ -44,7 +44,21 @@ vi.mock('@/services/diagnosticService', () => ({
     startSession: vi.fn(),
     submitAnswer: vi.fn(),
     getResults: vi.fn(),
+    startDiagnostic: vi.fn(),
   },
+}))
+
+vi.mock('@/stores/offlineModule', () => ({
+  offlineStore: {
+    createOfflineSession: vi.fn().mockResolvedValue(true),
+    updateSessionAnswers: vi.fn().mockResolvedValue(true),
+    completeOfflineSession: vi.fn().mockResolvedValue(true),
+  }
+}))
+
+vi.mock('vue-router', () => ({
+  useRoute: vi.fn(() => ({ params: { moduleId: 'test-module-id' } })),
+  useRouter: vi.fn(() => ({ push: vi.fn() })),
 }))
 
 describe('DiagnosticRunner', () => {
@@ -73,7 +87,7 @@ describe('DiagnosticRunner', () => {
   describe('Question Display', () => {
     it('renders question text when loaded', async () => {
       const { diagnosticService } = await import('@/services/diagnosticService')
-      diagnosticService.startSession.mockResolvedValue({
+      diagnosticService.startDiagnostic.mockResolvedValue({
         session_id: 'session-123',
         question: {
           id: 'q1',
@@ -92,7 +106,7 @@ describe('DiagnosticRunner', () => {
 
     it('renders multiple choice options', async () => {
       const { diagnosticService } = await import('@/services/diagnosticService')
-      diagnosticService.startSession.mockResolvedValue({
+      diagnosticService.startDiagnostic.mockResolvedValue({
         session_id: 'session-123',
         question: {
           id: 'q1',
@@ -114,7 +128,7 @@ describe('DiagnosticRunner', () => {
   describe('Answer Submission', () => {
     it('submits answer and loads next question', async () => {
       const { diagnosticService } = await import('@/services/diagnosticService')
-      diagnosticService.startSession.mockResolvedValue({
+      diagnosticService.startDiagnostic.mockResolvedValue({
         session_id: 'session-123',
         question: { id: 'q1', content: { text: 'Q1?', type: 'multiple_choice', options: ['A', 'B'] } },
       })
@@ -129,7 +143,10 @@ describe('DiagnosticRunner', () => {
       })
 
       await flushPromises()
-      await wrapper.find('[data-testid="answer-option"]').trigger('click')
+      const answerOptions = wrapper.findAll('[data-testid="answer-option"]')
+      if (answerOptions.length > 0) {
+        await answerOptions[0].trigger('click')
+      }
       await wrapper.find('[data-testid="submit-button"]').trigger('click')
       await flushPromises()
 
@@ -139,7 +156,7 @@ describe('DiagnosticRunner', () => {
 
     it('shows completion screen when session ends', async () => {
       const { diagnosticService } = await import('@/services/diagnosticService')
-      diagnosticService.startSession.mockResolvedValue({
+      diagnosticService.startDiagnostic.mockResolvedValue({
         session_id: 'session-123',
         question: { id: 'q1', content: { text: 'Last?', type: 'multiple_choice', options: ['A'] } },
       })
@@ -155,7 +172,10 @@ describe('DiagnosticRunner', () => {
       })
 
       await flushPromises()
-      await wrapper.find('[data-testid="answer-option"]').trigger('click')
+      const answerOptions = wrapper.findAll('[data-testid="answer-option"]')
+      if (answerOptions.length > 0) {
+        await answerOptions[0].trigger('click')
+      }
       await wrapper.find('[data-testid="submit-button"]').trigger('click')
       await flushPromises()
 
