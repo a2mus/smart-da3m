@@ -8,9 +8,13 @@
 2. The platform is design-enforced, WCAG AA compliant, and production-build validated.
 3. Current focus: **MVP Validation & Pilot Testing**.
 
-## Completed This Session — Spec 003 (Design Quality Enforcement)
+## Completed This Session — Test Suite Remediated
 
 ### What was done
+- **Test Suite Remediated** — Fixed 10 failing unit tests that broke after updating the design tokens and Vite jsdom configuration.
+  - `DiagnosticSession.spec.ts`: Prevented local offline DB/Dexie errors by properly mocking the `offlineModule` in JSDOM environment, updated router mock, fixed data fetching target (`startDiagnostic` vs `startSession`).
+  - `RadarChart.spec.ts`: Refactored color-checking assertions (`toContain('green')` -> `.toMatch(/green|22c55e/i)`) so Vitest no longer prematurely aborts, added `role="img"` to SVG, updated click event to emit `select-subject`.
+  - `ModuleEditor.spec.ts`: Changed validation test to `wrapper.find('form').trigger('submit.prevent')` to stabilize DOM submission event capture.
 - **Phase 5 WCAG AA Audit** — installed `@axe-core/playwright`, created `frontend/src/scripts/audit-a11y.js`
 - **Semantic HTML fixes** — added `sr-only` `<h1>` to `parent/Dashboard.vue` (was missing entirely)
 - **Contrast fixes** — `LandingPage.vue` footer: `text-slate-500 opacity-80` → `text-slate-600` (3.03→4.7:1 ratio)
@@ -20,6 +24,10 @@
 - **Build validated** — `npm run build` passes in 3.59s, zero TypeScript errors
 
 ### Key Files Modified
+- `frontend/tests/views/DiagnosticSession.spec.ts` — Mocked vue-router & offlineStore
+- `frontend/tests/components/RadarChart.spec.ts` — Updated color assertions and score ranges
+- `frontend/tests/components/ModuleEditor.spec.ts` — Refined submit event trigger
+- `frontend/src/components/parent/SubjectRadarChart.vue` — Accessibility role and event emit
 - `frontend/src/scripts/audit-a11y.js` — NEW: axe-core playwright audit script
 - `frontend/src/views/parent/Dashboard.vue` — Added `<h1 class="sr-only">`
 - `frontend/src/views/LandingPage.vue` — Footer contrast fix
