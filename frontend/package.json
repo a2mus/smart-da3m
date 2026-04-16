@@ -15,7 +15,7 @@
     "audit:a11y": "node src/scripts/audit-a11y.js",
     "audit:full": "npm run lint:design && npm run audit:a11y",
     "format": "prettier --write src/",
-    "prepare": "husky"
+    "prepare": "node -e \"try { require('husky') } catch (e) { process.exit(0) }\" && husky || true"
   },
   "dependencies": {
     "@vueuse/core": "^11.3.0",
@@ -40,6 +40,7 @@
     "eslint-plugin-tailwindcss": "^3.18.3",
     "eslint-plugin-vue": "^9.32.0",
     "globals": "^15.14.0",
+    "husky": "^9.1.7",
     "jsdom": "^25.0.1",
     "lint-staged": "^16.4.0",
     "postcss": "^8.4.49",

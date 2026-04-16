@@ -30,7 +30,7 @@ const startNow = () => {
         </div>
         <div class="hidden md:flex flex-row-reverse gap-8 items-center">
           <a
-            class="text-[#00535b] font-bold border-b-2 border-[#00535b]"
+            class="text-[#00535b] dark:text-teal-400 font-bold border-b-2 border-[#00535b] dark:border-teal-400"
             href="#"
           >الرئيسية</a>
           <a
