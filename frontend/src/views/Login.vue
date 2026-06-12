@@ -1,144 +1,283 @@
 <script setup lang="ts">
-// Login view - Multi-role authentication
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import type { UserRole } from '@/types/auth'
+import RolePicker from '@/components/common/RolePicker.vue'
+import PinInput from '@/components/common/PinInput.vue'
+
+const router = useRouter()
+const route = useRoute()
+const authStore = useAuthStore()
+
+const selectedRole = ref<UserRole | null>(null)
+const email = ref('')
+const password = ref('')
+const parentEmail = ref('')
+const pinCode = ref('')
+const error = ref<string | null>(null)
+const isLoading = ref(false)
+
+const redirectPath = computed(() => (route.query.redirect as string) || null)
+
+function selectRole(role: UserRole) {
+  selectedRole.value = role
+  error.value = null
+}
+
+function backToRoles() {
+  selectedRole.value = null
+  error.value = null
+}
+
+async function handleEmailLogin() {
+  if (!email.value || !password.value) {
+    error.value = 'يرجى إدخال البريد الإلكتروني وكلمة المرور'
+    return
+  }
+  isLoading.value = true
+  error.value = null
+  try {
+    const success = await authStore.loginWithEmail(email.value, password.value)
+    if (success) {
+      const target = redirectPath.value || { name: authStore.getDefaultRouteForRole() }
+      router.push(target)
+    } else {
+      error.value = authStore.error || 'فشل تسجيل الدخول'
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function handlePinLogin() {
+  if (!parentEmail.value || pinCode.value.length < 4) {
+    error.value = 'يرجى إدخال البريد الإلكتروني للولي والرمز السري'
+    return
+  }
+  isLoading.value = true
+  error.value = null
+  try {
+    const success = await authStore.loginWithPin(parentEmail.value, pinCode.value)
+    if (success) {
+      const target = redirectPath.value || { name: 'StudentDashboard' }
+      router.push(target)
+    } else {
+      error.value = authStore.error || 'الرمز السري غير صحيح'
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center p-6 relative bg-surface overflow-hidden">
-    <!-- Abstract Nurturing Background -->
-    <div class="absolute top-0 start-0 w-full h-96 bg-gradient-to-b from-teal-50 to-transparent -z-10" />
-    <div class="absolute -bottom-32 -start-32 w-96 h-96 bg-ochre-50 rounded-full blur-3xl opacity-60 -z-10" />
-
-    <div class="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center bg-surface-bright rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.05)] p-4 md:p-8">
-      <!-- Logo & Branding Info -->
-      <div class="text-center md:text-start p-6 flex flex-col justify-center h-full border-b md:border-b-0 md:border-e border-ink-100">
-        <router-link
-          to="/"
-          class="inline-flex items-center gap-3 mb-8 mx-auto md:mx-0"
+  <div
+    dir="rtl"
+    class="min-h-screen flex items-center justify-center bg-[#faf9f6] dark:bg-slate-950 px-4 py-12"
+  >
+    <div class="w-full max-w-lg">
+      <!-- Header -->
+      <div class="text-center mb-10">
+        <div
+          class="flex items-center justify-center gap-3 mb-4 cursor-pointer"
+          @click="router.push('/')"
         >
-          <img
-            src="@/assets/logo.png"
-            alt="Ihsane Logo"
-            class="w-10 h-10 object-contain"
+          <span
+            class="material-symbols-outlined text-4xl text-[#00535b] dark:text-teal-400"
+            data-icon="menu_book"
           >
-          <span class="font-arabic text-2xl font-bold text-teal-800">{{ $t('app.name') }}</span>
-        </router-link>
-        
-        <h2 class="text-3xl font-bold text-ink-900 mb-2 font-arabic text-balance">
-          {{ $t('auth.welcomeBack') }}
-        </h2>
-        <p class="text-ink-600 mb-8 max-w-xs mx-auto md:mx-0 text-balance">
-          {{ $t('auth.loginOptions') }}
-        </p>
-
-        <!-- Parent/Expert Login Option -->
-        <div class="mt-auto">
-          <div class="bg-surface rounded-2xl p-5 border border-ink-100 card-hover cursor-pointer group">
-            <div class="flex items-center gap-4">
-              <div class="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 group-hover:bg-teal-600 group-hover:text-on-primary transition-colors">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                </svg>
-              </div>
-              <div class="text-start">
-                <h3 class="font-bold text-ink-900">
-                  {{ $t('auth.parentExpert') }}
-                </h3>
-                <p class="text-sm text-ink-500">
-                  {{ $t('auth.loginWithEmail') }}
-                </p>
-              </div>
-            </div>
-          </div>
+            menu_book
+          </span>
+          <h1 class="text-3xl font-black text-[#00535b] dark:text-teal-500">
+            إحسان
+          </h1>
         </div>
+        <h2 class="text-2xl font-bold text-on-surface">
+          {{ selectedRole ? 'تسجيل الدخول' : 'مرحباً بعودتك' }}
+        </h2>
+        <p class="text-on-surface-variant mt-1">
+          {{ selectedRole ? '' : 'اختر دورك للمتابعة' }}
+        </p>
       </div>
 
-      <!-- Student Interactive Login -->
-      <div class="p-6">
-        <div class="card-nurturing border-2 border-teal-50 bg-teal-50/30 text-center">
-          <div class="w-20 h-20 mx-auto bg-surface-bright rounded-full shadow-soft flex items-center justify-center mb-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-10 w-10 text-ochre-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          
-          <h3 class="text-2xl font-bold text-ink-900 mb-2 font-arabic">
-            {{ $t('auth.student') }}
-          </h3>
-          <p class="text-ink-600 mb-6 font-medium">
-            {{ $t('auth.enterPin') }}
-          </p>
+      <!-- Role Picker (shown when no role selected) -->
+      <div
+        v-if="!selectedRole"
+        class="bg-surface-container rounded-[2rem] p-8 shadow-lg"
+      >
+        <RolePicker @select="selectRole" />
+      </div>
 
-          <!-- Playful Pin Input Placeholder -->
+      <!-- Role-specific form -->
+      <div
+        v-else
+        class="bg-surface-container rounded-[2rem] p-8 shadow-lg"
+      >
+        <!-- Back button -->
+        <button
+          class="flex items-center gap-1 text-on-surface-variant hover:text-primary mb-6 transition-colors"
+          @click="backToRoles"
+        >
+          <span class="material-symbols-outlined text-lg">arrow_back</span>
+          <span class="text-sm">تغيير الدور</span>
+        </button>
+
+        <h3 class="text-xl font-bold text-on-surface mb-6 text-center">
+          {{ selectedRole === 'STUDENT' ? 'تسجيل دخول التلميذ' : selectedRole === 'PARENT' ? 'تسجيل دخول ولي الأمر' : 'تسجيل دخول الخبير' }}
+        </h3>
+
+        <!-- Parent / Expert: Email + Password -->
+        <form
+          v-if="selectedRole !== 'STUDENT'"
+          class="space-y-4"
+          @submit.prevent="handleEmailLogin"
+        >
+          <div>
+            <label class="block text-sm font-medium text-on-surface-variant mb-1">البريد الإلكتروني</label>
+            <input
+              v-model="email"
+              type="email"
+              dir="ltr"
+              class="w-full px-4 py-3 rounded-xl border-2 border-outline-variant bg-surface-container-lowest
+                     text-on-surface placeholder:text-on-surface-variant/40
+                     focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all
+                     font-['Inter','Tajawal'] text-start"
+              placeholder="email@example.com"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-on-surface-variant mb-1">كلمة المرور</label>
+            <input
+              v-model="password"
+              type="password"
+              dir="ltr"
+              class="w-full px-4 py-3 rounded-xl border-2 border-outline-variant bg-surface-container-lowest
+                     text-on-surface placeholder:text-on-surface-variant/40
+                     focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all
+                     font-['Inter','Tajawal'] text-start"
+              placeholder="••••••••"
+            >
+          </div>
+
+          <!-- Error message -->
           <div
-            class="flex justify-center gap-3 mb-8"
-            dir="ltr"
+            v-if="error"
+            class="bg-error/10 text-error rounded-xl px-4 py-3 text-sm font-medium text-center"
           >
-            <input
-              type="password"
-              maxlength="1"
-              class="w-14 h-16 text-center text-2xl font-bold rounded-xl border-2 border-teal-200 bg-surface-bright focus:border-teal-500 focus:ring-4 focus:ring-teal-100 outline-none transition-all text-teal-800"
-              placeholder="•"
-            >
-            <input
-              type="password"
-              maxlength="1"
-              class="w-14 h-16 text-center text-2xl font-bold rounded-xl border-2 border-teal-200 bg-surface-bright focus:border-teal-500 focus:ring-4 focus:ring-teal-100 outline-none transition-all text-teal-800"
-              placeholder="•"
-            >
-            <input
-              type="password"
-              maxlength="1"
-              class="w-14 h-16 text-center text-2xl font-bold rounded-xl border-2 border-teal-200 bg-surface-bright focus:border-teal-500 focus:ring-4 focus:ring-teal-100 outline-none transition-all text-teal-800"
-              placeholder="•"
-            >
-            <input
-              type="password"
-              maxlength="1"
-              class="w-14 h-16 text-center text-2xl font-bold rounded-xl border-2 border-teal-200 bg-surface-bright focus:border-teal-500 focus:ring-4 focus:ring-teal-100 outline-none transition-all text-teal-800"
-              placeholder="•"
-            >
+            {{ error }}
           </div>
 
-          <button class="btn-primary w-full text-lg py-4 rounded-2xl shadow-teal">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6 rtl:ms-2 ltr:me-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          <button
+            type="submit"
+            :disabled="isLoading"
+            class="w-full bg-primary text-on-primary py-3.5 rounded-xl font-bold text-lg
+                   hover:bg-primary/90 active:scale-[0.98] transition-all
+                   disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span
+              v-if="isLoading"
+              class="inline-flex items-center gap-2"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-              />
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            {{ $t('auth.login') }}
+              <span class="animate-spin material-symbols-outlined text-lg">progress_activity</span>
+              جاري الدخول...
+            </span>
+            <span v-else>تسجيل الدخول</span>
           </button>
-        </div>
+
+          <!-- Social login -->
+          <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-outline-variant" />
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-4 bg-surface-container text-on-surface-variant">أو</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-outline-variant
+                     text-on-surface font-medium hover:bg-surface-container-highest transition-all"
+            >
+              <span class="font-bold text-[#4285F4]">G</span> Google
+            </button>
+            <button
+              type="button"
+              class="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-outline-variant
+                     text-on-surface font-medium hover:bg-surface-container-highest transition-all"
+            >
+              <span class="font-bold text-[#1877F2]">f</span> Facebook
+            </button>
+          </div>
+        </form>
+
+        <!-- Student: Parent Email + PIN -->
+        <form
+          v-else
+          class="space-y-6"
+          @submit.prevent="handlePinLogin"
+        >
+          <div>
+            <label class="block text-sm font-medium text-on-surface-variant mb-1">البريد الإلكتروني لولي الأمر</label>
+            <input
+              v-model="parentEmail"
+              type="email"
+              dir="ltr"
+              class="w-full px-4 py-3 rounded-xl border-2 border-outline-variant bg-surface-container-lowest
+                     text-on-surface placeholder:text-on-surface-variant/40
+                     focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all
+                     font-['Inter','Tajawal'] text-start"
+              placeholder="parent@example.com"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-on-surface-variant mb-3 text-center">الرمز السري (٤-٦ أرقام)</label>
+            <PinInput
+              v-model="pinCode"
+              :length="6"
+            />
+          </div>
+
+          <!-- Error message -->
+          <div
+            v-if="error"
+            class="bg-error/10 text-error rounded-xl px-4 py-3 text-sm font-medium text-center"
+          >
+            {{ error }}
+          </div>
+
+          <button
+            type="submit"
+            :disabled="isLoading || pinCode.length < 4"
+            class="w-full bg-primary text-on-primary py-3.5 rounded-xl font-bold text-lg
+                   hover:bg-primary/90 active:scale-[0.98] transition-all
+                   disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span
+              v-if="isLoading"
+              class="inline-flex items-center gap-2"
+            >
+              <span class="animate-spin material-symbols-outlined text-lg">progress_activity</span>
+              جاري الدخول...
+            </span>
+            <span v-else>دخول</span>
+          </button>
+        </form>
+
+        <!-- Register link (Parent/Expert only) -->
+        <p
+          v-if="selectedRole !== 'STUDENT'"
+          class="text-center text-sm text-on-surface-variant mt-6"
+        >
+          ليس لديك حساب؟
+          <router-link
+            to="/register"
+            class="text-primary font-bold hover:underline"
+          >
+            سجل الآن
+          </router-link>
+        </p>
       </div>
     </div>
   </div>

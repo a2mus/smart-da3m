@@ -5,7 +5,11 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const startNow = () => {
+const goToRegister = () => {
+  router.push('/register')
+}
+
+const goToLogin = () => {
   router.push('/login')
 }
 </script>
@@ -28,30 +32,20 @@ const startNow = () => {
           >menu_book</span>
           <span class="text-2xl font-bold text-[#00535b] dark:text-teal-500">إحسان</span>
         </div>
-        <div class="hidden md:flex flex-row-reverse gap-8 items-center">
-          <a
-            class="text-[#00535b] dark:text-teal-400 font-bold border-b-2 border-[#00535b] dark:border-teal-400"
-            href="#"
-          >الرئيسية</a>
-          <a
-            class="text-slate-600 dark:text-slate-400 hover:text-[#8c4e35] transition-colors duration-300"
-            href="#"
-          >المميزات</a>
-          <a
-            class="text-slate-600 dark:text-slate-400 hover:text-[#8c4e35] transition-colors duration-300"
-            href="#"
-          >كيف نعمل</a>
-          <a
-            class="text-slate-600 dark:text-slate-400 hover:text-[#8c4e35] transition-colors duration-300"
-            href="#"
-          >من نحن</a>
+        <div class="hidden md:flex flex-row-reverse gap-3 items-center">
+          <button 
+            class="bg-primary text-on-primary px-6 py-2.5 rounded-xl font-bold scale-95 active:opacity-80 transition-transform hover:bg-primary-container"
+            @click="goToRegister"
+          >
+            سجل الآن
+          </button>
+          <button 
+            class="border-2 border-primary text-primary px-6 py-2.5 rounded-xl font-bold scale-95 active:opacity-80 transition-transform hover:bg-primary/5"
+            @click="goToLogin"
+          >
+            تسجيل الدخول
+          </button>
         </div>
-        <button 
-          class="bg-primary text-on-primary px-6 py-2.5 rounded-xl font-bold scale-95 active:opacity-80 transition-transform hover:bg-primary-container"
-          @click="startNow"
-        >
-          ابدأ الآن
-        </button>
       </nav>
     </header>
 
@@ -156,7 +150,7 @@ const startNow = () => {
             </p>
             <button 
               class="bg-secondary text-on-secondary px-12 py-6 rounded-3xl text-2xl font-bold shadow-2xl hover:scale-105 active:scale-95 transition-all"
-              @click="startNow"
+              @click="goToRegister"
             >
               سجل الآن مجاناً
             </button>
