@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { mockUiState } from '@/services/mockUiState';
-import JourneyNode from '@/components/student/JourneyNode.vue';
-import JourneyPathSvg from '@/components/student/JourneyPathSvg.vue';
-import { useRouter } from 'vue-router';
+import JourneyNode from '@/components/student/JourneyNode.vue'
+import JourneyPathSvg from '@/components/student/JourneyPathSvg.vue'
+import { useRouter } from 'vue-router'
+import { useMockUiStore } from '@/stores/mockUiStore'
 
 const router = useRouter();
+const mockStore = useMockUiStore();
 const journey = mockUiState.journey;
+
+const changeRole = () => {
+  mockStore.clearSession()
+  router.push('/mock-auth')
+}
 
 // Calculate alignment based on index to create a zigzag map layout
 const getAlignmentClass = (index: number) => {
@@ -164,6 +171,19 @@ const getAlignmentClass = (index: number) => {
         </div>
       </section>
     </main>
+
+    <!-- Change Role floating button -->
+    <div class="fixed bottom-24 start-1/2 -translate-x-1/2 z-40 lg:hidden">
+      <button
+        class="bg-surface-container-high text-on-surface-variant px-5 py-2.5 rounded-2xl text-sm font-medium
+               border border-outline-variant shadow-lg hover:bg-surface-container-highest
+               active:scale-95 transition-all flex items-center gap-2"
+        @click="changeRole"
+      >
+        <span class="material-symbols-outlined text-lg">swap_horiz</span>
+        تغيير الدور
+      </button>
+    </div>
 
     <!-- BottomNavBar (Mobile/Tablet) -->
     <nav class="fixed bottom-0 start-0 w-full z-50 flex lg:hidden flex-row-reverse justify-around items-end px-4 md:px-10 bg-surface-bright/90 dark:bg-stone-800/90 backdrop-blur-2xl rounded-t-[3rem] pb-6 pt-4 shadow-[0_-15px_40px_-10px_rgba(0,0,0,0.08)]">

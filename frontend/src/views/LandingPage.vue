@@ -6,7 +6,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const startNow = () => {
-  router.push('/login')
+  router.push('/mock-auth')
 }
 </script>
 

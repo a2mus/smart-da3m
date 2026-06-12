@@ -2,11 +2,18 @@
 import ParentNotificationsList from '@/components/parent/ParentNotificationsList.vue'
 import { useRouter } from 'vue-router'
 import { mockUiState } from '@/services/mockUiState';
+import { useMockUiStore } from '@/stores/mockUiStore'
 
 const router = useRouter()
+const mockStore = useMockUiStore()
 
 const goToAnalytics = () => {
   router.push('/parent/analytics')
+}
+
+const changeRole = () => {
+  mockStore.clearSession()
+  router.push('/mock-auth')
 }
 </script>
 
@@ -130,6 +137,19 @@ const goToAnalytics = () => {
       <!-- Recent Activities via new Component -->
       <ParentNotificationsList />
     </main>
+
+    <!-- Change Role floating button -->
+    <div class="fixed bottom-24 start-1/2 -translate-x-1/2 z-40">
+      <button
+        class="bg-surface-container-high text-on-surface-variant px-5 py-2.5 rounded-2xl text-sm font-medium
+               border border-outline-variant shadow-lg hover:bg-surface-container-highest
+               active:scale-95 transition-all flex items-center gap-2"
+        @click="changeRole"
+      >
+        <span class="material-symbols-outlined text-lg">swap_horiz</span>
+        تغيير الدور
+      </button>
+    </div>
 
     <!-- BottomNavBar -->
     <nav class="fixed bottom-0 start-0 w-full flex flex-row-reverse justify-around items-center px-4 pb-6 pt-3 bg-[#faf9f6]/80 dark:bg-stone-900/80 backdrop-blur-xl z-50 rounded-t-3xl shadow-[0_-4px_40px_rgba(0,109,119,0.06)] max-w-lg mx-auto end-0">

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw, NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useMockUiStore } from '@/stores/mockUiStore'
 import type { UserRole } from '@/types/auth'
 
 declare module 'vue-router' {
@@ -8,6 +9,7 @@ declare module 'vue-router' {
     public?: boolean
     guestOnly?: boolean
     requiresAuth?: boolean
+    requiresMockAuth?: boolean
     allowedRoles?: UserRole[]
   }
 }
@@ -110,22 +112,28 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true }
   },
   {
+    path: '/mock-auth',
+    name: 'MockAuth',
+    component: () => import('@/views/MockAuth.vue'),
+    meta: { public: true }
+  },
+  {
     path: '/parent-dashboard',
     name: 'StitchParentDashboard',
     component: () => import('@/views/ParentDashboard.vue'),
-    meta: { public: true }
+    meta: { requiresMockAuth: true }
   },
   {
     path: '/parent/analytics',
     name: 'StitchAnalyticsView',
     component: () => import('@/views/AnalyticsView.vue'),
-    meta: { public: true }
+    meta: { requiresMockAuth: true }
   },
   {
     path: '/student/journey',
     name: 'StitchStudentJourney',
     component: () => import('@/views/StudentJourney.vue'),
-    meta: { public: true }
+    meta: { requiresMockAuth: true }
   },
   // 404
   {
@@ -155,6 +163,7 @@ router.beforeEach(async (
   next: NavigationGuardNext
 ) => {
   const authStore = useAuthStore()
+  const mockStore = useMockUiStore()
 
   // Initialize auth on first navigation
   if (!authInitialized) {
@@ -163,7 +172,20 @@ router.beforeEach(async (
   }
 
   const isAuthenticated = authStore.isAuthenticated
+  const isMockAuth = mockStore.isMockAuthenticated
   const userRole = authStore.userRole
+
+  // ── Mock Auth Guard ──
+  // If route requires mock auth and user is not mock-authenticated, redirect to mock-auth
+  if (to.meta.requiresMockAuth && !isMockAuth) {
+    return next({ name: 'MockAuth' })
+  }
+
+  // If user is mock-authenticated and tries to go to /mock-auth, redirect to their dashboard
+  if (to.name === 'MockAuth' && isMockAuth) {
+    const redirect = mockStore.activeRoleRedirect
+    if (redirect) return next({ name: redirect })
+  }
 
   // Handle public routes
   if (to.meta.public) {

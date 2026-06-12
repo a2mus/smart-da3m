@@ -2,9 +2,16 @@
 import StudentFocusChart from '@/components/parent/StudentFocusChart.vue'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
+import { useMockUiStore } from '@/stores/mockUiStore'
 
 const router = useRouter()
+const mockStore = useMockUiStore()
 const showDrawer = ref(false)
+
+const changeRole = () => {
+  mockStore.clearSession()
+  router.push('/mock-auth')
+}
 
 const openDrawer = () => {
     showDrawer.value = true
@@ -180,6 +187,19 @@ const closeDrawer = () => {
         </div>
       </div>
     </main>
+
+    <!-- Change Role floating button -->
+    <div class="fixed bottom-8 start-1/2 -translate-x-1/2 z-40">
+      <button
+        class="bg-surface-container-high text-on-surface-variant px-5 py-2.5 rounded-2xl text-sm font-medium
+               border border-outline-variant shadow-lg hover:bg-surface-container-highest
+               active:scale-95 transition-all flex items-center gap-2"
+        @click="changeRole"
+      >
+        <span class="material-symbols-outlined text-lg">swap_horiz</span>
+        تغيير الدور
+      </button>
+    </div>
   </div>
 </template>
 
