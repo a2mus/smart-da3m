@@ -47,11 +47,11 @@ const selectChild = async (childId: string) => {
 
 const getMasteryColor = (level: string) => {
   switch (level) {
-    case 'MASTERED': return 'bg-green-500'
-    case 'PROFICIENT': return 'bg-blue-500'
-    case 'FAMILIAR': return 'bg-yellow-500'
-    case 'ATTEMPTED': return 'bg-orange-500'
-    default: return 'bg-gray-300'
+    case 'MASTERED': return 'bg-mint-500'
+    case 'PROFICIENT': return 'bg-teal-500'
+    case 'FAMILIAR': return 'bg-amber-500'
+    case 'ATTEMPTED': return 'bg-ochre-500'
+    default: return 'bg-ink-300'
   }
 }
 
@@ -81,11 +81,11 @@ onMounted(fetchChildren)
 </script>
 
 <template>
-  <div class="min-h-screen bg-warm-50">
+  <div class="min-h-screen bg-ink-50">
     <!-- Mobile-First Header -->
-    <div class="bg-white shadow-sm sticky top-0 z-10">
+    <div class="bg-surface shadow-sm sticky top-0 z-10">
       <div class="max-w-lg mx-auto px-4 py-4">
-        <h1 class="text-xl font-bold text-primary-700">{{ t('parent.dashboard') }}</h1>
+        <h1 class="text-xl font-bold text-teal-700">{{ t('parent.dashboard') }}</h1>
         
         <!-- Child Selector -->
         <div v-if="children.length > 1" class="mt-3 flex gap-2 overflow-x-auto pb-2">
@@ -96,17 +96,17 @@ onMounted(fetchChildren)
             :class="[
               'flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-colors',
               selectedChildId === child.child_id
-                ? 'bg-primary-500 text-white'
-                : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
+                ? 'bg-teal-500 text-on-primary'
+                : 'bg-ink-100 text-ink-700 hover:bg-ink-200'
             ]"
           >
-            <span class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-sm">
+            <span class="w-8 h-8 bg-surface/20 rounded-full flex items-center justify-center text-sm">
               {{ child.name.charAt(0) }}
             </span>
             <span class="text-sm font-medium">{{ child.name }}</span>
             <span
               v-if="child.needs_attention"
-              class="w-2 h-2 bg-red-500 rounded-full"
+              class="w-2 h-2 bg-rose-500 rounded-full"
             ></span>
           </button>
         </div>
@@ -117,17 +117,17 @@ onMounted(fetchChildren)
     <div class="max-w-lg mx-auto px-4 py-6">
       <!-- Loading -->
       <div v-if="loading" class="text-center py-12">
-        <div class="animate-spin inline-block w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full"></div>
-        <p class="mt-3 text-warm-600">{{ t('common.loading') }}</p>
+        <div class="animate-spin inline-block w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full"></div>
+        <p class="mt-3 text-ink-600">{{ t('common.loading') }}</p>
       </div>
 
       <!-- Error -->
-      <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4">
+      <div v-else-if="error" class="bg-rose-50 border border-rose-200 text-rose-600 px-4 py-3 rounded-xl mb-4">
         {{ error }}
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="!childData" class="text-center py-12 text-warm-600">
+      <div v-else-if="!childData" class="text-center py-12 text-ink-600">
         <div class="text-6xl mb-4">👨‍👩‍👧</div>
         <p class="text-lg">{{ t('parent.noChildren') }}</p>
       </div>
@@ -135,11 +135,11 @@ onMounted(fetchChildren)
       <!-- Dashboard Content -->
       <div v-else class="space-y-6">
         <!-- Welcome & Summary -->
-        <div class="bg-white rounded-2xl p-5 shadow-soft">
-          <h2 class="text-lg font-bold text-warm-800 mb-2">
+        <div class="bg-surface rounded-2xl p-5 shadow-soft">
+          <h2 class="text-lg font-bold text-ink-800 mb-2">
             {{ t('parent.hello', { name: childData.name }) }}
           </h2>
-          <p class="text-warm-600 text-sm leading-relaxed">
+          <p class="text-ink-600 text-sm leading-relaxed">
             {{ childData.summary }}
           </p>
           
@@ -147,12 +147,12 @@ onMounted(fetchChildren)
           <div class="mt-4 flex items-center gap-3">
             <div class="flex-1">
               <div class="flex justify-between text-sm mb-1">
-                <span class="text-warm-600">{{ t('parent.overallProgress') }}</span>
-                <span class="font-semibold text-primary-600">{{ Math.round(childData.overall_progress) }}%</span>
+                <span class="text-ink-600">{{ t('parent.overallProgress') }}</span>
+                <span class="font-semibold text-teal-600">{{ Math.round(childData.overall_progress) }}%</span>
               </div>
-              <div class="h-2 bg-warm-200 rounded-full overflow-hidden">
+              <div class="h-2 bg-ink-200 rounded-full overflow-hidden">
                 <div 
-                  class="h-full bg-primary-500 rounded-full transition-all duration-500"
+                  class="h-full bg-teal-500 rounded-full transition-all duration-500"
                   :style="{ width: `${childData.overall_progress}%` }"
                 ></div>
               </div>
@@ -161,8 +161,8 @@ onMounted(fetchChildren)
         </div>
 
         <!-- Radar Chart -->
-        <div class="bg-white rounded-2xl p-5 shadow-soft">
-          <h3 class="text-lg font-bold text-warm-800 mb-4">{{ t('parent.subjectBalance') }}</h3>
+        <div class="bg-surface rounded-2xl p-5 shadow-soft">
+          <h3 class="text-lg font-bold text-ink-800 mb-4">{{ t('parent.subjectBalance') }}</h3>
           <SubjectRadarChart 
             :subjects="childData.subjects"
             class="w-full"
@@ -170,23 +170,23 @@ onMounted(fetchChildren)
         </div>
 
         <!-- Subject Breakdown -->
-        <div class="bg-white rounded-2xl p-5 shadow-soft">
-          <h3 class="text-lg font-bold text-warm-800 mb-4">{{ t('parent.subjects') }}</h3>
+        <div class="bg-surface rounded-2xl p-5 shadow-soft">
+          <h3 class="text-lg font-bold text-ink-800 mb-4">{{ t('parent.subjects') }}</h3>
           <div class="space-y-3">
             <div
               v-for="subject in childData.subjects"
               :key="subject.competency_id"
-              class="flex items-center gap-3 p-3 bg-warm-50 rounded-xl"
+              class="flex items-center gap-3 p-3 bg-ink-50 rounded-xl"
             >
               <div 
                 :class="['w-3 h-3 rounded-full', getMasteryColor(subject.mastery_level)]"
               ></div>
               <div class="flex-1">
                 <div class="flex justify-between items-center">
-                  <span class="font-medium text-warm-800">{{ subject.name }}</span>
-                  <span class="text-sm text-warm-600">{{ subject.score }}%</span>
+                  <span class="font-medium text-ink-800">{{ subject.name }}</span>
+                  <span class="text-sm text-ink-600">{{ subject.score }}%</span>
                 </div>
-                <div class="text-xs text-warm-500 capitalize">
+                <div class="text-xs text-ink-500 capitalize">
                   {{ t(`mastery.${subject.mastery_level.toLowerCase()}`) }}
                 </div>
               </div>
@@ -195,8 +195,8 @@ onMounted(fetchChildren)
         </div>
 
         <!-- Recommendations -->
-        <div v-if="childData.recommendations.length > 0" class="bg-white rounded-2xl p-5 shadow-soft">
-          <h3 class="text-lg font-bold text-warm-800 mb-4">{{ t('parent.recommendations') }}</h3>
+        <div v-if="childData.recommendations.length > 0" class="bg-surface rounded-2xl p-5 shadow-soft">
+          <h3 class="text-lg font-bold text-ink-800 mb-4">{{ t('parent.recommendations') }}</h3>
           <div class="space-y-3">
             <InsightCard
               v-for="(rec, index) in childData.recommendations"
@@ -210,17 +210,17 @@ onMounted(fetchChildren)
         </div>
 
         <!-- Recent Activities -->
-        <div v-if="childData.recent_activities.length > 0" class="bg-white rounded-2xl p-5 shadow-soft">
-          <h3 class="text-lg font-bold text-warm-800 mb-4">{{ t('parent.recentActivities') }}</h3>
+        <div v-if="childData.recent_activities.length > 0" class="bg-surface rounded-2xl p-5 shadow-soft">
+          <h3 class="text-lg font-bold text-ink-800 mb-4">{{ t('parent.recentActivities') }}</h3>
           <div class="grid grid-cols-2 gap-3">
             <div
               v-for="activity in childData.recent_activities.slice(0, 4)"
               :key="activity.timestamp"
-              class="p-3 bg-warm-50 rounded-xl"
+              class="p-3 bg-ink-50 rounded-xl"
             >
               <div class="text-2xl mb-1">{{ getActivityIcon(activity.type) }}</div>
-              <div class="text-sm font-medium text-warm-800 line-clamp-2">{{ activity.title }}</div>
-              <div class="text-xs text-warm-500 mt-1">{{ formatRelativeTime(activity.timestamp) }}</div>
+              <div class="text-sm font-medium text-ink-800 line-clamp-2">{{ activity.title }}</div>
+              <div class="text-xs text-ink-500 mt-1">{{ formatRelativeTime(activity.timestamp) }}</div>
             </div>
           </div>
         </div>
