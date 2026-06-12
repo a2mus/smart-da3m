@@ -63,6 +63,15 @@ const routes: RouteRecordRaw[] = [
       allowedRoles: ['PARENT']
     }
   },
+  {
+    path: '/parent/alerts',
+    name: 'ParentAlerts',
+    component: () => import('@/views/parent/Alerts.vue'),
+    meta: {
+      requiresAuth: true,
+      allowedRoles: ['PARENT']
+    }
+  },
   // Expert Routes
   {
     path: '/expert',
