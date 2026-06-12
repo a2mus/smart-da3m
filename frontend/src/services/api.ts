@@ -107,6 +107,23 @@ export const authApi = {
     api.post('/auth/register/student', { parent_id: parentId, pin_code: pinCode }),
 }
 
+// Diagnostic API
+export const diagnosticApi = {
+  startSession: (moduleId: string) =>
+    api.post('/diagnostic/start', { module_id: moduleId }),
+
+  submitAnswer: (sessionId: string, questionId: string, answer: string | number, responseTimeMs: number) =>
+    api.post('/diagnostic/answer', {
+      session_id: sessionId,
+      question_id: questionId,
+      answer,
+      response_time_ms: responseTimeMs,
+    }),
+
+  getResults: (sessionId: string) =>
+    api.get(`/diagnostic/${sessionId}/results`),
+}
+
 // Generic API methods
 export const http = {
   get: <T>(url: string, config?: AxiosRequestConfig) => api.get<T>(url, config),

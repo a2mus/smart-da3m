@@ -196,6 +196,96 @@ class QuestionSelector:
         return available[0]
 
 
+class MultiArmBanditSelector:
+    """
+    Multi-arm bandit question selection (Thompson Sampling).
+
+    Balances exploration (trying new question types) vs exploitation
+    (using proven-effective questions for this student profile).
+    Inspired by EvidenceB's approach.
+    """
+
+    def __init__(self):
+        # Track successes/failures per question for Thompson Sampling
+        self.question_stats: Dict[str, Dict[str, int]] = {}
+
+    def record_outcome(self, question_id: str, is_correct: bool) -> None:
+        """Record the outcome of a question for future selection."""
+        if question_id not in self.question_stats:
+            self.question_stats[question_id] = {"success": 0, "total": 0}
+        self.question_stats[question_id]["total"] += 1
+        if is_correct:
+            self.question_stats[question_id]["success"] += 1
+
+    def select_next_question(
+        self,
+        questions: List[Dict[str, Any]],
+        answered_question_ids: List[str],
+        current_mastery: float,
+        target_misconceptions: List[str],
+        exploration_weight: float = 0.3,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Select question using Thompson Sampling with exploration bonus.
+
+        Args:
+            questions: Available questions
+            answered_question_ids: IDs of already answered questions
+            current_mastery: Current BKT P(learned) value
+            target_misconceptions: Misconceptions to target
+            exploration_weight: Weight given to exploration vs exploitation
+
+        Returns:
+            Selected question or None
+        """
+        import random
+
+        available = [
+            q for q in questions if q.get("id") not in answered_question_ids
+        ]
+
+        if not available:
+            return None
+
+        # Target difficulty based on mastery
+        target_difficulty = min(10, max(1, int(current_mastery * 10) + 1))
+
+        def score_question(q: Dict[str, Any]) -> float:
+            score = 0.0
+
+            # Exploitation: use historical performance for this question
+            qid = q.get("id", "")
+            if qid in self.question_stats:
+                stats = self.question_stats[qid]
+                if stats["total"] > 0:
+                    success_rate = stats["success"] / stats["total"]
+                    score += success_rate * 30
+
+            # Difficulty match
+            q_difficulty = q.get("difficulty_level", 5)
+            difficulty_diff = abs(q_difficulty - target_difficulty)
+            score -= difficulty_diff * 8
+
+            # Misconception targeting
+            q_misconception = q.get("target_misconception_id")
+            if q_misconception and q_misconception in target_misconceptions:
+                score += 40
+
+            # Exploration bonus: boost rarely-used questions
+            total_uses = self.question_stats.get(qid, {}).get("total", 0)
+            exploration_bonus = exploration_weight * (1.0 / (1.0 + total_uses))
+            score += exploration_bonus * 20
+
+            # Random noise for Thompson Sampling effect
+            score += random.uniform(-5, 5)
+
+            return score
+
+        # Select highest scoring question
+        available.sort(key=score_question, reverse=True)
+        return available[0]
+
+
 class RemediationGroup:
     """
     Assigns students to remediation groups based on diagnostic performance.
