@@ -45,7 +45,7 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/student/remediation',
+    path: '/student/remediation/:competencyId',
     name: 'RemediationSession',
     component: () => import('@/views/student/RemediationSession.vue'),
     meta: {
