@@ -1,114 +1,63 @@
-import api from './api'
-
-export interface HeatmapFilters {
-  student_ids?: string[]
-  competency_ids?: string[]
-  class_id?: string
-  grade_level?: string
-  subject?: string
-}
-
 export interface HeatmapCell {
   student_id: string
+  student_name: string
   competency_id: string
   mastery_level: string
-  p_learned: number
-  color: string
   score: number
 }
 
-export interface StudentRow {
-  id: string
-  name: string
-  grade_level: string
-}
-
 export interface HeatmapResponse {
-  students: StudentRow[]
+  students: { id: string; name: string; grade_level: string }[]
   competencies: string[]
   cells: HeatmapCell[]
-  total_students: number
-  total_competencies: number
 }
 
 export interface StudentGroup {
-  group_id: string
-  name: string
+  group_name: string
   student_count: number
-  student_ids: string[]
-  criteria: Record<string, any>
+  competency: string
   recommended_action: string
-}
-
-export interface AutoGroupResponse {
-  groups: StudentGroup[]
-  total_groups: number
-  group_by: string
 }
 
 export interface MetricsResponse {
   gap_reduction_rate: number
-  mastery_speed: number
+  mastery_speed_days: number
   retention_rate: number
-  effort_vs_results: number
   resilience_score: number
-  total_students: number
-  total_assessments: number
 }
 
-export interface ExportRequest {
-  format: 'csv' | 'pdf'
-  report_type: 'heatmap' | 'remediation_card' | 'full_report'
-  filters?: HeatmapFilters
-  student_ids?: string[]
+const mockHeatmap: HeatmapResponse = {
+  students: [
+    { id: 's1', name: 'أحمد', grade_level: 'السنة 4' },
+    { id: 's2', name: 'فاطمة', grade_level: 'السنة 5' },
+    { id: 's3', name: 'يوسف', grade_level: 'السنة 4' },
+    { id: 's4', name: 'مريم', grade_level: 'السنة 5' },
+  ],
+  competencies: ['الكسور', 'الضرب', 'الهندسة', 'القراءة', 'الإملاء'],
+  cells: [
+    { student_id: 's1', student_name: 'أحمد', competency_id: 'الكسور', mastery_level: 'PROFICIENT', score: 85 },
+    { student_id: 's1', student_name: 'أحمد', competency_id: 'الضرب', mastery_level: 'MASTERED', score: 95 },
+    { student_id: 's1', student_name: 'أحمد', competency_id: 'الهندسة', mastery_level: 'FAMILIAR', score: 62 },
+    { student_id: 's2', student_name: 'فاطمة', competency_id: 'الكسور', mastery_level: 'MASTERED', score: 98 },
+    { student_id: 's2', student_name: 'فاطمة', competency_id: 'الضرب', mastery_level: 'MASTERED', score: 92 },
+  ],
 }
 
-export interface ExportResponse {
-  success: boolean
-  file_path: string
-  format: string
-  report_type: string
-  generated_at: string
+const mockGroups: StudentGroup[] = [
+  { group_name: 'المجموعة أ — إتقان', student_count: 12, competency: 'الضرب', recommended_action: 'أنشطة إثراء' },
+  { group_name: 'المجموعة ب — إتقان جزئي', student_count: 18, competency: 'الكسور', recommended_action: 'تقوية مستهدفة' },
+  { group_name: 'المجموعة ج — يحتاج دعماً', student_count: 8, competency: 'الإملاء', recommended_action: 'دعم مكثف' },
+]
+
+const mockMetrics: MetricsResponse = {
+  gap_reduction_rate: 42,
+  mastery_speed_days: 14,
+  retention_rate: 73,
+  resilience_score: 3.2,
 }
 
-class AnalyticsService {
-  async getHeatmap(filters: HeatmapFilters = {}): Promise<HeatmapResponse> {
-    const response = await api.post<HeatmapResponse>('/analytics/heatmap', filters)
-    return response.data
-  }
-
-  async autoGroup(
-    filters: HeatmapFilters = {},
-    groupBy: 'competency' | 'error_type' = 'competency'
-  ): Promise<AutoGroupResponse> {
-    const response = await api.post<AutoGroupResponse>(
-      `/analytics/auto-group?group_by=${groupBy}`,
-      filters
-    )
-    return response.data
-  }
-
-  async getMetrics(
-    classId?: string,
-    startDate?: string,
-    endDate?: string
-  ): Promise<MetricsResponse> {
-    const params = new URLSearchParams()
-    if (classId) params.append('class_id', classId)
-    if (startDate) params.append('start_date', startDate)
-    if (endDate) params.append('end_date', endDate)
-
-    const response = await api.get<MetricsResponse>(
-      `/analytics/metrics?${params.toString()}`
-    )
-    return response.data
-  }
-
-  async exportReport(request: ExportRequest): Promise<ExportResponse> {
-    const response = await api.post<ExportResponse>('/analytics/export', request)
-    return response.data
-  }
+export const analyticsService = {
+  async getHeatmap(): Promise<HeatmapResponse> { return mockHeatmap },
+  async getStudentGroups(): Promise<StudentGroup[]> { return mockGroups },
+  async getMetrics(): Promise<MetricsResponse> { return mockMetrics },
 }
-
-export const analyticsService = new AnalyticsService()
-export default analyticsService
