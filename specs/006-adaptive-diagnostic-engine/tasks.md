@@ -1,24 +1,24 @@
-# Tasks: Adaptive Diagnostic Engine
+# Tasks: Adaptive Diagnostic Engine — Frontend Integration
 
-**Input**: `specs/006-adaptive-diagnostic-engine/`
-**Backend**: Diagnostic engine, API, models, and tests already exist
+**Input**: Design documents from `/specs/006-adaptive-diagnostic-engine/`
+**Prerequisites**: spec.md
+**Organization**: 2 phases — Component fixes then integration
 
-## Phase 1: Frontend Components
+## Phase 1: Fix Design Tokens (Foundation)
 
-- [ ] T001 Create DiagnosticQuestion component (question display + answer buttons) in `frontend/src/components/student/DiagnosticQuestion.vue`
-- [ ] T002 Create DiagnosticProgress component (progress bar + question counter) in `frontend/src/components/student/DiagnosticProgress.vue`
-- [ ] T003 Create DiagnosticResults component (mastery, errors, group) in `frontend/src/components/student/DiagnosticResults.vue`
+- [x] T001 Fix Tailwind tokens in DiagnosticRunner.vue: replace warm- → ink-, primary- → teal-, bg-white → bg-surface, text-white → text-on-primary, bg-surface-bright → bg-surface-container, etc. in `frontend/src/components/student/DiagnosticRunner.vue`
+- [x] T002 Fix Tailwind tokens in PassportAssessment.vue: same token replacements in `frontend/src/components/student/PassportAssessment.vue`
+- [x] T003 Fix Tailwind tokens in KnowledgeAtom.vue: same token replacements in `frontend/src/components/student/KnowledgeAtom.vue`
+- [x] T004 Fix Tailwind tokens in CompetencyHeatmap.vue: replace warm- → ink-, primary- → teal-, etc. in `frontend/src/components/expert/CompetencyHeatmap.vue` (per standing fix pattern)
 
-## Phase 2: API Integration
+## Phase 2: Integration & Features
 
-- [ ] T004 Add diagnostic API calls to api service in `frontend/src/services/api.ts`
-- [ ] T005 Wire up DiagnosticSession.vue with start→answer→results flow in `frontend/src/views/student/DiagnosticSession.vue`
+- [x] T005 Integrate DiagnosticRunner into DiagnosticSession.vue: replace stub with full DiagnosticRunner component, pass moduleId from route params in `frontend/src/views/student/DiagnosticSession.vue`
+- [x] T006 Add error classification feedback display in DiagnosticRunner: show Arabic message after incorrect answers (RESOURCE/PROCESS/INCIDENTAL) in `frontend/src/components/student/DiagnosticRunner.vue`
+- [x] T007 Add group placement (A/B/C) display in results screen with Arabic descriptions in `frontend/src/components/student/DiagnosticRunner.vue`
+- [x] T008 Add feedback animation/transition after answer submission in `frontend/src/components/student/DiagnosticRunner.vue`
 
-## Phase 3: Backend Enhancement
+## Phase 3: Verification
 
-- [ ] T006 Add MultiArmBandit question selector to diagnostic_engine.py in `backend/app/services/diagnostic_engine.py`
-
-## Phase 4: Verification
-
-- [ ] T007 Verify TypeScript build with new components
-- [ ] T008 Run existing backend diagnostic tests
+- [x] T009 Build check — verify no ESLint errors, no banned Tailwind classes
+- [x] T010 Verify DiagnosticSession renders DiagnosticRunner with proper route params

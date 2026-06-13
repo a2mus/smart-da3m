@@ -36,7 +36,7 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/student/diagnostic',
+    path: '/student/diagnostic/:moduleId',
     name: 'DiagnosticSession',
     component: () => import('@/views/student/DiagnosticSession.vue'),
     meta: {

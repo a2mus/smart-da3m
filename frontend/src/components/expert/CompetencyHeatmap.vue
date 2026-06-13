@@ -91,7 +91,7 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
         >
           <!-- Student Name -->
           <div
-            class="w-40 flex-shrink-0 p-3 font-medium text-ink-800 sticky left-0 z-10 bg-white cursor-pointer hover:text-teal-600"
+            class="w-40 flex-shrink-0 p-3 font-medium text-ink-800 sticky left-0 z-10 bg-surface cursor-pointer hover:text-teal-600"
             @click="emit('student-click', row.student.id)"
           >
             <div class="text-sm">{{ row.student.name }}</div>
@@ -160,6 +160,6 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
 }
 
 .heatmap-container {
-  @apply rounded-xl border border-ink-200 bg-white;
+  @apply rounded-xl border border-ink-200 bg-surface;
 }
 </style>
