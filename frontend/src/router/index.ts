@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw, NavigationGuardNext, RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useMockUiStore } from '@/stores/mockUiStore'
 import type { UserRole } from '@/types/auth'
 
 declare module 'vue-router' {
@@ -122,7 +121,6 @@ router.beforeEach(async (
   next: NavigationGuardNext
 ) => {
   const authStore = useAuthStore()
-  const mockStore = useMockUiStore()
 
   if (!authInitialized) {
     await authStore.initAuth()
@@ -130,7 +128,6 @@ router.beforeEach(async (
   }
 
   const isAuthenticated = authStore.isAuthenticated
-  const isMockAuth = mockStore.isMockAuthenticated
   const userRole = authStore.userRole
   // ── Guest-only routes: redirect authenticated users to their dashboard ──
   if (to.meta.guestOnly && isAuthenticated) {

@@ -44,9 +44,24 @@ const getMasteryLabel = (masteryLevel?: string) => {
   return t(`mastery.${masteryLevel.toLowerCase()}`)
 }
 
+const getCellBgColor = (masteryLevel: string) => {
+  switch (masteryLevel.toUpperCase()) {
+    case 'MASTERED':
+      return '#86efac'
+    case 'PROFICIENT':
+      return '#d1fae5'
+    case 'FAMILIAR':
+      return '#fef9c3'
+    case 'ATTEMPTED':
+      return '#fef3c7'
+    default:
+      return '#fee2e2'
+  }
+}
+
 const getCellTooltip = (cell: HeatmapCell | null) => {
   if (!cell) return t('analytics.noData')
-  return `${getMasteryLabel(cell.mastery_level)} (${Math.round(cell.p_learned * 100)}%)`
+  return `${getMasteryLabel(cell.mastery_level)} (${Math.round(cell.score)}%)`
 }
 </script>
 
@@ -124,7 +139,7 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
             <div
               v-if="cell"
               class="h-12 rounded-lg flex items-center justify-center cursor-pointer transition-all hover:scale-105 hover:shadow-md"
-              :style="{ backgroundColor: cell.color }"
+              :style="{ backgroundColor: getCellBgColor(cell.mastery_level) }"
               :title="getCellTooltip(cell)"
               @click="emit('cell-click', cell)"
             >
