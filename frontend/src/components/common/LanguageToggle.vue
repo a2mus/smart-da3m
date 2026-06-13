@@ -15,9 +15,9 @@ const toggleLanguage = () => {
 
 <template>
   <button
-    @click="toggleLanguage"
     class="flex items-center gap-2 px-4 py-2 rounded-soft bg-warm-100 hover:bg-warm-200 transition-colors touch-target"
     :aria-label="isArabic ? 'Switch to French' : 'Passer en arabe'"
+    @click="toggleLanguage"
   >
     <span class="text-lg">{{ isArabic ? '🇫🇷' : '🇸🇦' }}</span>
     <span class="font-medium text-warm-700">

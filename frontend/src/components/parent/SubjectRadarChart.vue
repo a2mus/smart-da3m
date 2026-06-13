@@ -13,6 +13,10 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const emit = defineEmits<{
+  (e: 'select-subject', subject: Subject): void
+}>()
+
 const processedSubjects = computed(() => {
   // Limit to 6 subjects for readability
   const limited = props.subjects.slice(0, 6)
@@ -76,18 +80,30 @@ const averageScore = computed(() => {
 </script>
 
 <template>
-  <div data-testid="radar-chart" class="relative" aria-label="Subject progress radar chart">
+  <div
+    data-testid="radar-chart"
+    class="relative"
+    aria-label="Subject progress radar chart"
+  >
     <!-- Empty State -->
-    <div v-if="processedSubjects.length === 0" data-testid="empty-state" class="text-center py-8 text-warm-500">
+    <div
+      v-if="processedSubjects.length === 0"
+      data-testid="empty-state"
+      class="text-center py-8 text-warm-500"
+    >
       {{ $t('parent.noData') }}
     </div>
 
     <!-- Chart -->
-    <div v-else class="flex flex-col items-center">
+    <div
+      v-else
+      class="flex flex-col items-center"
+    >
       <svg 
         data-testid="chart-svg"
         viewBox="0 0 300 300" 
         class="w-full max-w-[300px] h-auto"
+        role="img"
       >
         <!-- Background circles (grid) -->
         <g data-testid="grid-circles">
@@ -140,6 +156,8 @@ const averageScore = computed(() => {
             r="4"
             :fill="getScoreColor(subject.normalizedScore)"
             data-testid="subject-point"
+            class="cursor-pointer"
+            @click="emit('select-subject', subject)"
           />
         </g>
 
@@ -163,15 +181,15 @@ const averageScore = computed(() => {
       <!-- Legend -->
       <div class="flex flex-wrap justify-center gap-4 mt-4 text-xs">
         <div class="flex items-center gap-1">
-          <div class="w-3 h-3 rounded-full bg-green-500"></div>
+          <div class="w-3 h-3 rounded-full bg-green-500" />
           <span class="text-warm-600">{{ $t('mastery.mastered') }}</span>
         </div>
         <div class="flex items-center gap-1">
-          <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+          <div class="w-3 h-3 rounded-full bg-blue-500" />
           <span class="text-warm-600">{{ $t('mastery.proficient') }}</span>
         </div>
         <div class="flex items-center gap-1">
-          <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+          <div class="w-3 h-3 rounded-full bg-yellow-500" />
           <span class="text-warm-600">{{ $t('mastery.familiar') }}</span>
         </div>
       </div>

@@ -76,12 +76,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function loginWithPin(pinCode: string) {
+  async function loginWithPin(parentEmail: string, pinCode: string) {
     isLoading.value = true
     error.value = null
 
     try {
-      const response = await authApi.loginWithPin(pinCode)
+      const response = await authApi.loginWithPin(parentEmail, pinCode)
       const { access_token, refresh_token } = response.data
 
       token.value = access_token

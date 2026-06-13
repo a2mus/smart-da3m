@@ -85,8 +85,8 @@ export const authApi = {
     api.post('/auth/login/email', { email, password }),
 
   // PIN login (for students)
-  loginWithPin: (pinCode: string) =>
-    api.post('/auth/login/pin', { pin_code: pinCode }),
+  loginWithPin: (parentEmail: string, pinCode: string) =>
+    api.post('/auth/login/pin', { parent_email: parentEmail, pin_code: pinCode }),
 
   // Refresh access token
   refreshToken: (refreshToken: string) =>

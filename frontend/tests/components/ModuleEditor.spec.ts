@@ -77,7 +77,7 @@ describe('ModuleEditor', () => {
     it('validates required fields', async () => {
       wrapper = mountComponent({ mode: 'create' })
       const submitButton = wrapper.find('[data-testid="submit-button"]')
-      await submitButton.trigger('click')
+      await wrapper.find('form').trigger('submit.prevent')
       await wrapper.vm.$nextTick()
       expect(wrapper.findAll('.error-message').length).toBeGreaterThan(0)
     })

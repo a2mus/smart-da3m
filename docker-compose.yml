@@ -111,13 +111,13 @@ services:
     environment:
       - NODE_ENV=development
       - VITE_API_URL=http://localhost:8001
-    command: sh -c "npm install -g pnpm && pnpm install && pnpm dev --host"
+    command: sh -c "npm install -g pnpm && pnpm install && pnpm dev"
     depends_on:
       - backend
     networks:
       - ihsane-network
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:5173 || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5173 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -9,8 +9,13 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:e2e": "playwright test",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
-    "format": "prettier --write src/"
+    "lint": "eslint . --fix",
+    "lint:design": "stylelint 'src/**/*.{vue,css}' && eslint .",
+    "lint:design:fix": "stylelint 'src/**/*.{vue,css}' --fix && eslint . --fix",
+    "audit:a11y": "node src/scripts/audit-a11y.js",
+    "audit:full": "npm run lint:design && npm run audit:a11y",
+    "format": "prettier --write src/",
+    "prepare": "node -e \"try { require('husky') } catch (e) { process.exit(0) }\" && husky || true"
   },
   "dependencies": {
     "@vueuse/core": "^11.3.0",
@@ -24,22 +29,34 @@
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.1",
     "@playwright/test": "^1.49.1",
     "@types/node": "^22.10.2",
+    "@typescript-eslint/parser": "^8.58.2",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/test-utils": "^2.4.6",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.17.0",
+    "eslint-plugin-tailwindcss": "^3.18.3",
     "eslint-plugin-vue": "^9.32.0",
     "globals": "^15.14.0",
+    "husky": "^9.1.7",
     "jsdom": "^25.0.1",
+    "lint-staged": "^16.4.0",
     "postcss": "^8.4.49",
+    "postcss-html": "^1.8.1",
     "prettier": "^3.4.2",
+    "stylelint": "^17.7.0",
+    "stylelint-config-html": "^1.1.0",
+    "stylelint-config-standard": "^40.0.0",
+    "stylelint-plugin-logical-css": "^2.1.0",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.6.3",
+    "typescript-eslint": "^8.58.2",
     "vite": "^6.0.5",
     "vite-plugin-pwa": "^0.21.1",
     "vitest": "^2.1.8",
+    "vue-eslint-parser": "^10.4.0",
     "vue-tsc": "^2.2.0"
   }
 }

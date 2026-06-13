@@ -61,7 +61,7 @@
     scroll-behavior: smooth;
   }
 
-  /* Soft background - no pure white per ui-spec §1.1 */
+  /* Soft background - no pure #faf9f6 per ui-spec §1.1 */
   body {
     @apply bg-surface text-ink-800;
   }
@@ -90,7 +90,7 @@
 
   /* Primary action — deep teal */
   .btn-primary {
-    @apply bg-teal-700 hover:bg-teal-600 active:scale-95 text-white
+    @apply bg-teal-700 hover:bg-teal-600 active:scale-95 text-on-primary
            px-6 py-3 rounded-xl font-semibold transition-all duration-200
            min-h-touch min-w-[2.5rem] flex items-center justify-center gap-2
            focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2
@@ -107,7 +107,7 @@
 
   /* Danger — soft rose per ui-spec §1.1 */
   .btn-danger {
-    @apply bg-rose-500 hover:bg-rose-600 active:scale-95 text-white
+    @apply bg-rose-500 hover:bg-rose-600 active:scale-95 text-on-primary
            px-6 py-3 rounded-xl font-semibold transition-all duration-200
            min-h-touch min-w-[2.5rem] flex items-center justify-center gap-2
            focus-visible:ring-2 focus-visible:ring-rose-300 focus-visible:ring-offset-2;
@@ -119,7 +119,7 @@
 
   .input-soft {
     @apply w-full px-4 py-3 rounded-xl
-           bg-white border border-ink-200
+           bg-surface-bright border border-ink-200
            focus:border-teal-400 focus:ring-2 focus:ring-teal-100
            transition-all outline-none
            placeholder:text-ink-400
@@ -136,14 +136,14 @@
 
   /* Standard soft card */
   .card-soft {
-    @apply bg-white rounded-2xl
+    @apply bg-surface-bright rounded-2xl
            shadow-[0_4px_20px_rgba(0,0,0,0.05)]
            p-5 transition-all duration-300;
   }
 
   /* Asymmetric nurturing card for insight modules */
   .card-nurturing {
-    background: white;
+    background: #faf9f6;
     border-radius: 2rem 0.75rem 2rem 0.75rem;
     box-shadow: 0 10px 30px rgba(140, 78, 53, 0.08);
     @apply p-5 transition-all duration-300;
@@ -178,7 +178,9 @@
 
   /* Safe area for mobile notches */
   .safe-area-inset {
+    /* stylelint-disable-next-line logical-css/require-logical-properties -- physical-override: safe-area insets are device-physical */
     padding-left:  env(safe-area-inset-left);
+    /* stylelint-disable-next-line logical-css/require-logical-properties -- physical-override: safe-area insets are device-physical */
     padding-right: env(safe-area-inset-right);
   }
 

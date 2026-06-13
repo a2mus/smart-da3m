@@ -91,56 +91,98 @@ onMounted(() => fetchModules())
         <h1 class="text-2xl font-bold text-primary-700">
           {{ t('expert.modules') }}
         </h1>
-        <button @click="showCreateModal = true" class="btn-primary flex items-center gap-2">
+        <button
+          class="btn-primary flex items-center gap-2"
+          @click="showCreateModal = true"
+        >
           <span>+</span>
           {{ t('expert.createModule') }}
         </button>
       </div>
 
       <!-- Error Message -->
-      <div v-if="error" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4">
+      <div
+        v-if="error"
+        class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4"
+      >
         {{ error }}
       </div>
 
       <!-- Loading State -->
-      <div v-if="loading" class="text-center py-12">
-        <div class="animate-spin inline-block w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full"></div>
-        <p class="mt-2 text-warm-600">{{ t('common.loading') }}</p>
+      <div
+        v-if="loading"
+        class="text-center py-12"
+      >
+        <div class="animate-spin inline-block w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full" />
+        <p class="mt-2 text-warm-600">
+          {{ t('common.loading') }}
+        </p>
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="filteredModules.length === 0" class="text-center py-12 text-warm-600">
-        <p class="text-lg">{{ t('expert.noModules') }}</p>
-        <p class="text-sm mt-1">{{ t('expert.createFirstModule') }}</p>
+      <div
+        v-else-if="filteredModules.length === 0"
+        class="text-center py-12 text-warm-600"
+      >
+        <p class="text-lg">
+          {{ t('expert.noModules') }}
+        </p>
+        <p class="text-sm mt-1">
+          {{ t('expert.createFirstModule') }}
+        </p>
       </div>
 
       <!-- Modules Grid -->
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div v-for="module in filteredModules" :key="module.id"
-          class="bg-warm-50 rounded-xl p-5 hover:shadow-md transition-shadow border-2 border-transparent hover:border-primary-200">
+      <div
+        v-else
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+      >
+        <div
+          v-for="module in filteredModules"
+          :key="module.id"
+          class="bg-warm-50 rounded-xl p-5 hover:shadow-md transition-shadow border-2 border-transparent hover:border-primary-200"
+        >
           <div class="flex justify-between items-start mb-3">
-            <span :class="[
-              'px-2 py-1 text-xs font-medium rounded-full',
-              module.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-            ]">
+            <span
+              :class="[
+                'px-2 py-1 text-xs font-medium rounded-full',
+                module.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+              ]"
+            >
               {{ module.status === 'PUBLISHED' ? t('expert.published') : t('expert.draft') }}
             </span>
             <div class="flex gap-1">
-              <button @click="handleEditModule(module)"
+              <button
                 class="p-1.5 text-warm-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                :title="t('expert.edit')">✎</button>
-              <button @click="handleDeleteModule(module.id)"
+                :title="t('expert.edit')"
+                @click="handleEditModule(module)"
+              >
+                ✎
+              </button>
+              <button
                 class="p-1.5 text-warm-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                :title="t('expert.delete')">🗑</button>
+                :title="t('expert.delete')"
+                @click="handleDeleteModule(module.id)"
+              >
+                🗑
+              </button>
             </div>
           </div>
-          <h3 class="font-semibold text-warm-800 mb-1">{{ module.subject }}</h3>
-          <p class="text-sm text-warm-600 mb-2">{{ module.grade_level }}</p>
-          <p class="text-sm text-warm-500 mb-3">{{ module.domain }}</p>
+          <h3 class="font-semibold text-warm-800 mb-1">
+            {{ module.subject }}
+          </h3>
+          <p class="text-sm text-warm-600 mb-2">
+            {{ module.grade_level }}
+          </p>
+          <p class="text-sm text-warm-500 mb-3">
+            {{ module.domain }}
+          </p>
           <div class="flex items-center justify-between">
             <code class="text-xs bg-warm-100 px-2 py-1 rounded text-warm-600">{{ module.competency_id }}</code>
-            <button @click="handleManageQuestions(module.id)"
-              class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+            <button
+              class="text-sm text-primary-600 hover:text-primary-700 font-medium"
+              @click="handleManageQuestions(module.id)"
+            >
               {{ t('expert.manageQuestions') }} →
             </button>
           </div>
@@ -149,18 +191,33 @@ onMounted(() => fetchModules())
     </div>
 
     <!-- Create Module Modal -->
-    <div v-if="showCreateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-      @click.self="closeModals">
+    <div
+      v-if="showCreateModal"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+      @click.self="closeModals"
+    >
       <div class="w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <ModuleEditor mode="create" @save="handleCreateModule" @cancel="closeModals" />
+        <ModuleEditor
+          mode="create"
+          @save="handleCreateModule"
+          @cancel="closeModals"
+        />
       </div>
     </div>
 
     <!-- Edit Module Modal -->
-    <div v-if="showEditModal && selectedModule" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-      @click.self="closeModals">
+    <div
+      v-if="showEditModal && selectedModule"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+      @click.self="closeModals"
+    >
       <div class="w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <ModuleEditor mode="edit" :module="selectedModule" @update="handleUpdateModule" @cancel="closeModals" />
+        <ModuleEditor
+          mode="edit"
+          :module="selectedModule"
+          @update="handleUpdateModule"
+          @cancel="closeModals"
+        />
       </div>
     </div>
   </div>

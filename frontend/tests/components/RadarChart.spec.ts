@@ -178,12 +178,12 @@ describe('SubjectRadarChart', () => {
 
       const polygon = wrapper.find('[data-testid="radar-polygon"]')
       const fill = polygon.attributes('fill')
-      expect(fill).toContain('green') || expect(fill).toContain('22c55e')
+      expect(fill).toMatch(/green|22c55e/i)
     })
 
-    it('uses yellow color for medium scores (50-79)', () => {
+    it('uses yellow color for medium scores (40-59)', () => {
       const subjects = [
-        { name: 'Math', score: 65, mastery_level: 'FAMILIAR' },
+        { name: 'Math', score: 45, mastery_level: 'FAMILIAR' },
       ]
 
       const wrapper = mount(SubjectRadarChart, {
@@ -193,7 +193,7 @@ describe('SubjectRadarChart', () => {
 
       const polygon = wrapper.find('[data-testid="radar-polygon"]')
       const fill = polygon.attributes('fill')
-      expect(fill).toContain('yellow') || expect(fill).toContain('eab308')
+      expect(fill).toMatch(/yellow|eab308/i)
     })
 
     it('uses red color for low scores (<50)', () => {
@@ -208,7 +208,7 @@ describe('SubjectRadarChart', () => {
 
       const polygon = wrapper.find('[data-testid="radar-polygon"]')
       const fill = polygon.attributes('fill')
-      expect(fill).toContain('red') || expect(fill).toContain('ef4444')
+      expect(fill).toMatch(/red|ef4444/i)
     })
   })
 

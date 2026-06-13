@@ -13,11 +13,12 @@ declare module 'vue-router' {
 }
 
 const routes: RouteRecordRaw[] = [
+  // ── Public Routes ──
   {
     path: '/',
-    name: 'Home',
-    component: () => import('@/views/Home.vue'),
-    meta: { public: true }
+    name: 'LandingPage',
+    component: () => import('@/views/LandingPage.vue'),
+    meta: { public: true, guestOnly: true }
   },
   {
     path: '/login',
@@ -25,82 +26,70 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/Login.vue'),
     meta: { public: true, guestOnly: true }
   },
-  // Student Routes
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/Register.vue'),
+    meta: { public: true, guestOnly: true }
+  },
+  // ── Student Routes ──
   {
     path: '/student',
     name: 'StudentDashboard',
     component: () => import('@/views/student/Dashboard.vue'),
-    meta: {
-      requiresAuth: true,
-      allowedRoles: ['STUDENT']
-    }
+    meta: { requiresAuth: true, allowedRoles: ['STUDENT'] }
   },
   {
     path: '/student/diagnostic',
     name: 'DiagnosticSession',
     component: () => import('@/views/student/DiagnosticSession.vue'),
-    meta: {
-      requiresAuth: true,
-      allowedRoles: ['STUDENT']
-    }
+    meta: { requiresAuth: true, allowedRoles: ['STUDENT'] }
   },
   {
     path: '/student/remediation',
     name: 'RemediationSession',
     component: () => import('@/views/student/RemediationSession.vue'),
-    meta: {
-      requiresAuth: true,
-      allowedRoles: ['STUDENT']
-    }
+    meta: { requiresAuth: true, allowedRoles: ['STUDENT'] }
   },
-  // Parent Routes
+  // ── Parent Routes ──
   {
     path: '/parent',
     name: 'ParentDashboard',
     component: () => import('@/views/parent/Dashboard.vue'),
-    meta: {
-      requiresAuth: true,
-      allowedRoles: ['PARENT']
-    }
+    meta: { requiresAuth: true, allowedRoles: ['PARENT'] }
   },
-  // Expert Routes
+  {
+    path: '/parent/analytics',
+    name: 'ParentAnalytics',
+    component: () => import('@/views/parent/Analytics.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['PARENT'] }
+  },
+  // ── Expert Routes ──
   {
     path: '/expert',
     name: 'ExpertDashboard',
     component: () => import('@/views/expert/Dashboard.vue'),
-    meta: {
-      requiresAuth: true,
-      allowedRoles: ['EXPERT']
-    }
+    meta: { requiresAuth: true, allowedRoles: ['EXPERT'] }
   },
   {
     path: '/expert/modules',
     name: 'ModuleList',
     component: () => import('@/views/expert/ModuleList.vue'),
-    meta: {
-      requiresAuth: true,
-      allowedRoles: ['EXPERT']
-    }
+    meta: { requiresAuth: true, allowedRoles: ['EXPERT'] }
   },
   {
     path: '/expert/modules/:id/edit',
     name: 'ModuleEditor',
     component: () => import('@/views/expert/ModuleEditor.vue'),
-    meta: {
-      requiresAuth: true,
-      allowedRoles: ['EXPERT']
-    }
+    meta: { requiresAuth: true, allowedRoles: ['EXPERT'] }
   },
   {
     path: '/expert/analytics',
     name: 'ExpertAnalytics',
     component: () => import('@/views/expert/Analytics.vue'),
-    meta: {
-      requiresAuth: true,
-      allowedRoles: ['EXPERT']
-    }
+    meta: { requiresAuth: true, allowedRoles: ['EXPERT'] }
   },
-  // 404
+  // ── 404 ──
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
@@ -113,15 +102,12 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior() {
-    // Always scroll to top on navigation
     return { top: 0 }
   }
 })
 
-// Track if auth has been initialized
 let authInitialized = false
 
-// Navigation guards
 router.beforeEach(async (
   to: RouteLocationNormalized,
   _from: RouteLocationNormalized,
@@ -129,7 +115,6 @@ router.beforeEach(async (
 ) => {
   const authStore = useAuthStore()
 
-  // Initialize auth on first navigation
   if (!authInitialized) {
     await authStore.initAuth()
     authInitialized = true
@@ -138,28 +123,25 @@ router.beforeEach(async (
   const isAuthenticated = authStore.isAuthenticated
   const userRole = authStore.userRole
 
-  // Handle public routes
+  // ── Guest-only routes: redirect authenticated users to their dashboard ──
+  if (to.meta.guestOnly && isAuthenticated) {
+    const redirectRoute = authStore.getDefaultRouteForRole()
+    return next({ name: redirectRoute })
+  }
+
+  // ── Public routes: allow all ──
   if (to.meta.public) {
-    // If guest-only route and user is authenticated, redirect to appropriate dashboard
-    if (to.meta.guestOnly && isAuthenticated) {
-      const redirectRoute = authStore.getDefaultRouteForRole()
-      return next({ name: redirectRoute })
-    }
     return next()
   }
 
-  // Check authentication
+  // ── Protected routes ──
   if (to.meta.requiresAuth && !isAuthenticated) {
-    return next({
-      name: 'Login',
-      query: { redirect: to.fullPath }
-    })
+    return next({ name: 'Login', query: { redirect: to.fullPath } })
   }
 
-  // Check role-based access
+  // ── Role-based access ──
   if (to.meta.allowedRoles && userRole) {
     if (!to.meta.allowedRoles.includes(userRole)) {
-      // User doesn't have permission, redirect to their dashboard
       const redirectRoute = authStore.getDefaultRouteForRole()
       return next({ name: redirectRoute })
     }
@@ -168,9 +150,7 @@ router.beforeEach(async (
   next()
 })
 
-// After navigation hook for analytics/tracking
 router.afterEach((to) => {
-  // Update page title
   const appName = 'Ihsane'
   document.title = to.meta.title ? `${to.meta.title} | ${appName}` : appName
 })
