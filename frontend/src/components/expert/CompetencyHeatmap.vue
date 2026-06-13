@@ -54,11 +54,11 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
   <div class="competency-heatmap">
     <!-- Loading State -->
     <div v-if="loading" class="flex items-center justify-center py-12">
-      <div class="animate-spin w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full"></div>
+      <div class="animate-spin w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full"></div>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="!data || data.students.length === 0" class="text-center py-12 text-warm-600">
+    <div v-else-if="!data || data.students.length === 0" class="text-center py-12 text-ink-600">
       <p class="text-lg">{{ t('analytics.noDataAvailable') }}</p>
       <p class="text-sm mt-1">{{ t('analytics.selectFilters') }}</p>
     </div>
@@ -67,16 +67,16 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
     <div v-else class="heatmap-container overflow-x-auto">
       <div class="min-w-max">
         <!-- Header Row -->
-        <div class="flex border-b-2 border-warm-200">
+        <div class="flex border-b-2 border-ink-200">
           <!-- Student Name Header -->
-          <div class="w-40 flex-shrink-0 p-3 font-semibold text-warm-700 bg-warm-50 sticky left-0 z-10">
+          <div class="w-40 flex-shrink-0 p-3 font-semibold text-ink-700 bg-ink-50 sticky left-0 z-10">
             {{ t('analytics.student') }}
           </div>
           <!-- Competency Headers -->
           <div
             v-for="competency in data.competencies"
             :key="competency"
-            class="w-24 flex-shrink-0 p-3 text-center text-xs font-medium text-warm-700 bg-warm-50 border-l border-warm-200"
+            class="w-24 flex-shrink-0 p-3 text-center text-xs font-medium text-ink-700 bg-ink-50 border-l border-ink-200"
             :title="competency"
           >
             <span class="truncate block">{{ competency }}</span>
@@ -87,22 +87,22 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
         <div
           v-for="row in heatmapMatrix"
           :key="row.student.id"
-          class="flex border-b border-warm-100 hover:bg-warm-50/50"
+          class="flex border-b border-ink-100 hover:bg-ink-50/50"
         >
           <!-- Student Name -->
           <div
-            class="w-40 flex-shrink-0 p-3 font-medium text-warm-800 sticky left-0 z-10 bg-white cursor-pointer hover:text-primary-600"
+            class="w-40 flex-shrink-0 p-3 font-medium text-ink-800 sticky left-0 z-10 bg-white cursor-pointer hover:text-teal-600"
             @click="emit('student-click', row.student.id)"
           >
             <div class="text-sm">{{ row.student.name }}</div>
-            <div class="text-xs text-warm-500">{{ row.student.grade_level }}</div>
+            <div class="text-xs text-ink-500">{{ row.student.grade_level }}</div>
           </div>
 
           <!-- Competency Cells -->
           <div
             v-for="(cell, index) in row.cells"
             :key="`${row.student.id}-${data.competencies[index]}`"
-            class="w-24 flex-shrink-0 p-2 border-l border-warm-100"
+            class="w-24 flex-shrink-0 p-2 border-l border-ink-100"
           >
             <div
               v-if="cell"
@@ -111,16 +111,16 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
               :title="getCellTooltip(cell)"
               @click="emit('cell-click', cell)"
             >
-              <span class="text-xs font-semibold text-warm-800">
+              <span class="text-xs font-semibold text-ink-800">
                 {{ Math.round(cell.score) }}%
               </span>
             </div>
             <div
               v-else
-              class="h-12 rounded-lg bg-warm-100 flex items-center justify-center"
+              class="h-12 rounded-lg bg-ink-100 flex items-center justify-center"
               :title="getCellTooltip(null)"
             >
-              <span class="text-warm-400">-</span>
+              <span class="text-ink-400">-</span>
             </div>
           </div>
         </div>
@@ -129,26 +129,26 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
 
     <!-- Legend -->
     <div v-if="data && data.students.length > 0" class="mt-6 flex flex-wrap items-center gap-4 text-sm">
-      <span class="font-medium text-warm-700">{{ t('analytics.legend') }}:</span>
+      <span class="font-medium text-ink-700">{{ t('analytics.legend') }}:</span>
       <div class="flex items-center gap-2">
         <div class="w-4 h-4 rounded" style="background-color: #86efac;"></div>
-        <span class="text-warm-600">{{ t('mastery.mastered') }}</span>
+        <span class="text-ink-600">{{ t('mastery.mastered') }}</span>
       </div>
       <div class="flex items-center gap-2">
         <div class="w-4 h-4 rounded" style="background-color: #d1fae5;"></div>
-        <span class="text-warm-600">{{ t('mastery.proficient') }}</span>
+        <span class="text-ink-600">{{ t('mastery.proficient') }}</span>
       </div>
       <div class="flex items-center gap-2">
         <div class="w-4 h-4 rounded" style="background-color: #fef9c3;"></div>
-        <span class="text-warm-600">{{ t('mastery.familiar') }}</span>
+        <span class="text-ink-600">{{ t('mastery.familiar') }}</span>
       </div>
       <div class="flex items-center gap-2">
         <div class="w-4 h-4 rounded" style="background-color: #fef3c7;"></div>
-        <span class="text-warm-600">{{ t('mastery.attempted') }}</span>
+        <span class="text-ink-600">{{ t('mastery.attempted') }}</span>
       </div>
       <div class="flex items-center gap-2">
         <div class="w-4 h-4 rounded" style="background-color: #fee2e2;"></div>
-        <span class="text-warm-600">{{ t('mastery.not_started') }}</span>
+        <span class="text-ink-600">{{ t('mastery.not_started') }}</span>
       </div>
     </div>
   </div>
@@ -160,6 +160,6 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
 }
 
 .heatmap-container {
-  @apply rounded-xl border border-warm-200 bg-white;
+  @apply rounded-xl border border-ink-200 bg-white;
 }
 </style>
