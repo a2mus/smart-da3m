@@ -67,13 +67,13 @@ const handleComplete = () => {
         {{ atomIcon }}
       </div>
       <div class="flex-1">
-        <span class="text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
+        <span class="text-xs font-medium text-teal-600 bg-teal-50 px-2 py-1 rounded-full">
           {{ atomTypeLabel }}
         </span>
-        <h2 class="text-xl font-bold text-warm-800 mt-2">
+        <h2 class="text-xl font-bold text-ink-800 mt-2">
           {{ atom.content.title }}
         </h2>
-        <p class="text-warm-600 mt-1">
+        <p class="text-ink-600 mt-1">
           {{ atom.content.description }}
         </p>
       </div>
@@ -91,7 +91,7 @@ const handleComplete = () => {
       class="mb-6"
       @click="handleInteraction"
     >
-      <div class="aspect-video bg-warm-100 rounded-xl flex items-center justify-center">
+      <div class="aspect-video bg-ink-100 rounded-xl flex items-center justify-center">
         <div class="text-6xl">
           ▶️
         </div>
@@ -101,21 +101,21 @@ const handleComplete = () => {
     <!-- Interactive Content for SIMULATION -->
     <div
       v-if="atom.remediation_type === 'SIMULATION'"
-      class="mb-6 p-6 bg-warm-50 rounded-xl"
+      class="mb-6 p-6 bg-ink-50 rounded-xl"
       @click="handleInteraction"
     >
       <div class="flex justify-center gap-4">
-        <div class="w-16 h-16 bg-primary-200 rounded-lg flex items-center justify-center text-2xl cursor-pointer hover:bg-primary-300 transition-colors">
+        <div class="w-16 h-16 bg-teal-200 rounded-lg flex items-center justify-center text-2xl cursor-pointer hover:bg-teal-300 transition-colors">
           🟢
         </div>
-        <div class="w-16 h-16 bg-warm-200 rounded-lg flex items-center justify-center text-2xl cursor-pointer hover:bg-warm-300 transition-colors">
+        <div class="w-16 h-16 bg-ink-200 rounded-lg flex items-center justify-center text-2xl cursor-pointer hover:bg-ink-300 transition-colors">
           🔵
         </div>
-        <div class="w-16 h-16 bg-warm-200 rounded-lg flex items-center justify-center text-2xl cursor-pointer hover:bg-warm-300 transition-colors">
+        <div class="w-16 h-16 bg-ink-200 rounded-lg flex items-center justify-center text-2xl cursor-pointer hover:bg-ink-300 transition-colors">
           🟡
         </div>
       </div>
-      <p class="text-center text-warm-600 mt-4">
+      <p class="text-center text-ink-600 mt-4">
         {{ t('remediation.dragToInteract') }}
       </p>
     </div>
@@ -123,20 +123,20 @@ const handleComplete = () => {
     <!-- Mind Map Content -->
     <div
       v-if="atom.remediation_type === 'MIND_MAP'"
-      class="mb-6 p-6 bg-warm-50 rounded-xl"
+      class="mb-6 p-6 bg-ink-50 rounded-xl"
       @click="handleInteraction"
     >
       <div class="flex flex-wrap justify-center gap-3">
-        <div class="px-4 py-2 bg-primary-500 text-on-primary rounded-full text-sm">
+        <div class="px-4 py-2 bg-teal-500 text-on-primary rounded-full text-sm">
           {{ t('remediation.mainConcept') }}
         </div>
-        <div class="px-4 py-2 bg-primary-200 text-primary-800 rounded-full text-sm">
+        <div class="px-4 py-2 bg-teal-200 text-teal-800 rounded-full text-sm">
           {{ t('remediation.subConcept1') }}
         </div>
-        <div class="px-4 py-2 bg-primary-200 text-primary-800 rounded-full text-sm">
+        <div class="px-4 py-2 bg-teal-200 text-teal-800 rounded-full text-sm">
           {{ t('remediation.subConcept2') }}
         </div>
-        <div class="px-4 py-2 bg-warm-200 text-warm-700 rounded-full text-sm">
+        <div class="px-4 py-2 bg-ink-200 text-ink-700 rounded-full text-sm">
           {{ t('remediation.related') }}
         </div>
       </div>
@@ -144,13 +144,13 @@ const handleComplete = () => {
 
     <!-- Progress -->
     <div class="mb-6">
-      <div class="flex justify-between text-sm text-warm-600 mb-1">
+      <div class="flex justify-between text-sm text-ink-600 mb-1">
         <span>{{ t('remediation.pathwayProgress') }}</span>
         <span>{{ Math.round(progressPercent) }}%</span>
       </div>
-      <div class="h-2 bg-warm-200 rounded-full overflow-hidden">
+      <div class="h-2 bg-ink-200 rounded-full overflow-hidden">
         <div
-          class="h-full bg-primary-500 rounded-full transition-all duration-500"
+          class="h-full bg-teal-500 rounded-full transition-all duration-500"
           :style="{ width: `${progressPercent}%` }"
         />
       </div>
@@ -159,14 +159,14 @@ const handleComplete = () => {
     <!-- Complete Button -->
     <button
       v-if="!isCompleted"
-      class="w-full py-4 bg-primary-500 hover:bg-primary-600 text-on-primary font-semibold rounded-xl transition-colors"
+      class="w-full py-4 bg-teal-500 hover:bg-teal-600 text-on-primary font-semibold rounded-xl transition-colors"
       @click="handleComplete"
     >
       {{ t('remediation.markComplete') }}
     </button>
     <div
       v-else
-      class="w-full py-4 bg-green-100 text-green-700 font-semibold rounded-xl text-center"
+      class="w-full py-4 bg-mint-100 text-green-700 font-semibold rounded-xl text-center"
     >
       {{ t('remediation.completed') }} ✓
     </div>

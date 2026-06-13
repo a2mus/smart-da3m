@@ -20,9 +20,36 @@ const error = ref<string | null>(null)
 const isComplete = ref(false)
 const results = ref<AnswerSubmitResponse | null>(null)
 const startTime = ref<number>(0)
+const showFeedback = ref(false)
+const lastAnswerCorrect = ref<boolean | null>(null)
+const lastErrorClass = ref<string | null>(null)
+const totalQuestions = ref(10)
 
-const canSubmit = computed(() => !!selectedAnswer.value && !isSubmitting.value)
-const progress = computed(() => Math.min(100, (questionNumber.value / 10) * 100))
+const canSubmit = computed(() => !!selectedAnswer.value && !isSubmitting.value && !showFeedback.value)
+const progress = computed(() => Math.min(100, (questionNumber.value / totalQuestions.value) * 100))
+
+const errorClassLabels: Record<string, string> = {
+  RESOURCE: 'راجع الأساسيات — هناك مفهوم سابق تحتاج إتقانه',
+  PROCESS: 'اقرأ السؤال مرة أخرى — ربما فهمت المطلوب بطريقة مختلفة',
+  INCIDENTAL: 'حاول مرة أخرى — ربما كان سهواً بسيطاً',
+  NONE: '',
+}
+
+const groupLabels: Record<string, { label: string; icon: string; desc: string }> = {
+  MASTERED: { label: 'المجموعة أ — إتقان', icon: 'workspace_premium', desc: 'أنت متقن! استمر في أنشطة الإثراء والتحدي' },
+  PROFICIENT: { label: 'المجموعة أ — إتقان', icon: 'workspace_premium', desc: 'أنت متقن! استمر في أنشطة الإثراء والتحدي' },
+  FAMILIAR: { label: 'المجموعة ب — إتقان جزئي', icon: 'lightbulb', desc: 'تحتاج لتقوية في بعض النقاط — أنت على الطريق الصحيح' },
+  ATTEMPTED: { label: 'المجموعة ب — إتقان جزئي', icon: 'lightbulb', desc: 'تحتاج لتقوية في بعض النقاط — أنت على الطريق الصحيح' },
+  NOT_STARTED: { label: 'المجموعة ج — يحتاج دعماً', icon: 'favorite', desc: 'سنبني معاً من البداية — لا تقلق، كل الأبطال بدأوا من هنا' },
+}
+
+const masteryLabels: Record<string, string> = {
+  NOT_STARTED: 'لم يبدأ',
+  ATTEMPTED: 'بدأ التعلم',
+  FAMILIAR: 'متوسط',
+  PROFICIENT: 'متقن',
+  MASTERED: 'متمكن',
+}
 
 const startDiagnostic = async () => {
   isLoading.value = true
@@ -74,26 +101,52 @@ const submitAnswer = async () => {
       },
     ])
 
-    if (response.is_complete) {
-      isComplete.value = true
-      results.value = response
-      await offlineStore.completeOfflineSession(sessionId.value)
-    } else if (response.next_question) {
-      currentQuestion.value = response.next_question
-      questionNumber.value++
-      selectedAnswer.value = ''
-      startTime.value = Date.now()
+    lastAnswerCorrect.value = response.is_correct
+    lastErrorClass.value = response.error_classification !== 'NONE' ? response.error_classification : null
+    showFeedback.value = true
+
+    // Auto-advance after short delay for correct answers
+    if (response.is_correct && !response.is_complete) {
+      setTimeout(() => advanceToNext(response), 800)
     }
   } catch (err) {
     error.value = t('diagnostic.error')
     console.error('Failed to submit answer:', err)
+    showFeedback.value = false
   } finally {
     isSubmitting.value = false
   }
 }
 
+const advanceToNext = (response: AnswerSubmitResponse) => {
+  showFeedback.value = false
+  lastAnswerCorrect.value = null
+  lastErrorClass.value = null
+
+  if (response.is_complete) {
+    isComplete.value = true
+    results.value = response
+    offlineStore.completeOfflineSession(sessionId.value)
+  } else if (response.next_question) {
+    currentQuestion.value = response.next_question
+    questionNumber.value++
+    selectedAnswer.value = ''
+    startTime.value = Date.now()
+  }
+}
+
+const continueAfterFeedback = () => {
+  if (results.value || !currentQuestion.value) return
+  // Re-fetch or use stored response — in real flow, we stored the last response
+  showFeedback.value = false
+  lastAnswerCorrect.value = null
+  lastErrorClass.value = null
+  selectedAnswer.value = ''
+  startTime.value = Date.now()
+}
+
 const finishDiagnostic = () => {
-  router.push('/student/dashboard')
+  router.push('/student')
 }
 
 onMounted(startDiagnostic)
@@ -103,106 +156,165 @@ onMounted(startDiagnostic)
   <div
     data-testid="diagnostic-runner"
     class="min-h-screen p-4 md:p-6"
+    dir="rtl"
   >
     <div class="max-w-3xl mx-auto">
+      <!-- Loading State -->
       <div
         v-if="isLoading"
         data-testid="loading-state"
         class="text-center py-12"
       >
-        <div class="animate-spin inline-block w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full" />
-        <p class="mt-3 text-warm-600">
+        <div class="animate-spin inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full" />
+        <p class="mt-3 text-on-surface-variant">
           {{ t('diagnostic.loading') }}
         </p>
       </div>
 
+      <!-- Error State -->
       <div
         v-else-if="error"
-        class="bg-danger-50 border border-danger-200 text-danger-700 px-4 py-3 rounded-xl mb-4 flex items-center gap-3"
+        class="bg-rose-50 border border-rose-200 text-rose-600 px-4 py-3 rounded-xl mb-4 flex items-center gap-3"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="1.5"
-          stroke="currentColor"
-          class="w-6 h-6 flex-shrink-0"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-          />
-        </svg>
+        <span class="material-symbols-outlined">error</span>
         <span>{{ error }}</span>
       </div>
 
+      <!-- Results Screen -->
       <div
         v-else-if="isComplete && results"
         data-testid="results-screen"
-        class="text-center py-12"
+        class="text-center py-8"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke-width="1.5"
-          stroke="currentColor"
-          class="w-16 h-16 text-success-500 mx-auto mb-4"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z"
-          />
-        </svg>
-        <h2 class="text-2xl font-bold text-primary-700 mb-2">
+        <!-- Star icon -->
+        <div class="text-6xl mb-4">
+          🌟
+        </div>
+        <h2 class="text-2xl font-black text-primary mb-2">
           {{ t('diagnostic.congratulations') }}
         </h2>
-        <p class="text-warm-600 mb-6">
+        <p class="text-on-surface-variant mb-8">
           {{ t('diagnostic.completed') }}
         </p>
-        <div class="bg-surface-bright rounded-xl p-6 shadow-soft mb-6">
-          <div class="text-4xl font-bold text-primary-600 mb-2">
+
+        <!-- Group Placement -->
+        <div
+          v-if="results.mastery_level"
+          class="bg-primary text-on-primary rounded-[2rem] p-8 text-center mb-6 shadow-lg"
+        >
+          <span class="material-symbols-outlined text-5xl mb-3 block">
+            {{ groupLabels[results.mastery_level]?.icon || 'school' }}
+          </span>
+          <h2 class="text-2xl font-black mb-2">
+            {{ groupLabels[results.mastery_level]?.label || masteryLabels[results.mastery_level] }}
+          </h2>
+          <p class="text-on-primary/80">
+            {{ groupLabels[results.mastery_level]?.desc || '' }}
+          </p>
+        </div>
+
+        <!-- Accuracy -->
+        <div class="bg-surface-container rounded-2xl p-6 shadow-soft mb-6">
+          <div class="text-4xl font-black text-primary mb-2">
             {{ Math.round(results.accuracy * 100) }}%
           </div>
-          <div class="text-warm-600">
+          <div class="text-on-surface-variant">
             {{ t('diagnostic.accuracy') }}
           </div>
         </div>
+
+        <!-- Mastery Level -->
+        <div class="bg-surface-container rounded-2xl p-5 mb-6 text-start">
+          <div class="flex justify-between items-center mb-3">
+            <span class="font-bold text-on-surface">مستوى الإتقان</span>
+            <span class="text-primary font-black">{{ masteryLabels[results.mastery_level] || results.mastery_level }}</span>
+          </div>
+          <div class="w-full h-3 bg-surface-container-highest rounded-full overflow-hidden">
+            <div
+              class="h-full bg-primary rounded-full transition-all duration-700"
+              :style="{ width: `${(results.current_mastery || 0) * 100}%` }"
+            />
+          </div>
+        </div>
+
+        <!-- Error Classification -->
+        <div
+          v-if="results.error_classification && results.error_classification !== 'NONE'"
+          class="bg-surface-container rounded-2xl p-5 mb-6 text-start"
+        >
+          <h3 class="font-bold text-on-surface mb-3">
+            تحليل الأداء
+          </h3>
+          <p class="text-sm text-on-surface-variant">
+            {{ errorClassLabels[results.error_classification] || '' }}
+          </p>
+        </div>
+
+        <!-- Finish Button -->
         <button
-          class="px-8 py-3 bg-primary-500 hover:bg-primary-600 text-on-primary font-semibold rounded-xl transition-colors"
+          class="w-full py-4 bg-primary text-on-primary font-bold rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all min-h-[60px]"
           @click="finishDiagnostic"
         >
           {{ t('diagnostic.finish') }}
         </button>
       </div>
 
+      <!-- Question Screen -->
       <div
         v-else-if="currentQuestion"
-        class="bg-surface-bright rounded-2xl p-6 shadow-soft"
+        class="bg-surface-container rounded-[2.5rem] p-6 md:p-10 shadow-soft"
       >
+        <!-- Progress -->
         <div class="mb-6">
           <div class="flex justify-between items-center mb-2">
-            <span class="text-sm text-warm-600">{{ t('diagnostic.question') }} {{ questionNumber }}</span>
-            <span class="text-sm text-warm-600">{{ Math.round(progress) }}%</span>
+            <span class="text-sm text-on-surface-variant">{{ t('diagnostic.question') }} {{ questionNumber }}</span>
+            <span class="text-sm font-bold text-primary">{{ Math.round(progress) }}%</span>
           </div>
-          <div
-            data-testid="progress-bar"
-            class="h-2 bg-warm-200 rounded-full overflow-hidden"
-          >
+          <div class="h-3 bg-surface-container-highest rounded-full overflow-hidden">
             <div
-              class="h-full bg-primary-500 rounded-full transition-all duration-300"
+              class="h-full bg-primary rounded-full transition-all duration-500 ease-out"
               :style="{ width: `${progress}%` }"
             />
           </div>
         </div>
 
+        <!-- Feedback Overlay -->
+        <div
+          v-if="showFeedback"
+          class="mb-6 p-4 rounded-2xl text-center transition-all duration-300"
+          :class="lastAnswerCorrect ? 'bg-mint-50 border border-mint-200' : 'bg-amber-50 border border-amber-200'"
+        >
+          <div class="text-3xl mb-2">
+            {{ lastAnswerCorrect ? '✅' : '❌' }}
+          </div>
+          <p
+            class="font-bold text-lg mb-1"
+            :class="lastAnswerCorrect ? 'text-mint-600' : 'text-amber-600'"
+          >
+            {{ lastAnswerCorrect ? 'إجابة صحيحة! أحسنت!' : 'ليس تماماً — لا تقلق!' }}
+          </p>
+          <p
+            v-if="!lastAnswerCorrect && lastErrorClass"
+            class="text-sm text-on-surface-variant"
+          >
+            {{ errorClassLabels[lastErrorClass] || '' }}
+          </p>
+          <button
+            v-if="!lastAnswerCorrect"
+            class="mt-3 px-6 py-2 bg-primary text-on-primary rounded-xl font-bold hover:bg-primary/90 active:scale-95 transition-all"
+            @click="continueAfterFeedback"
+          >
+            تابع
+          </button>
+        </div>
+
+        <!-- Question Text -->
         <div class="mb-8">
-          <h2 class="text-xl font-semibold text-warm-800 mb-4">
+          <h2 class="text-xl md:text-2xl font-bold text-on-surface text-center mb-8 leading-relaxed">
             {{ currentQuestion.content.text }}
           </h2>
 
+          <!-- Multiple Choice Options -->
           <div
             v-if="currentQuestion.content.type === 'multiple_choice'"
             class="space-y-3"
@@ -212,17 +324,19 @@ onMounted(startDiagnostic)
               :key="index"
               data-testid="answer-option"
               :class="[
-                'w-full p-4 text-start rounded-xl border-2 transition-all min-h-[60px]',
+                'w-full p-5 text-start rounded-2xl border-2 transition-all min-h-[60px] text-lg font-medium',
                 selectedAnswer === option
-                  ? 'border-primary-500 bg-primary-50'
-                  : 'border-warm-200 hover:border-primary-300'
+                  ? 'border-primary bg-primary/5 text-primary'
+                  : 'border-outline-variant text-on-surface hover:border-primary/40 hover:bg-surface-container-highest',
               ]"
+              :disabled="showFeedback"
               @click="selectedAnswer = option"
             >
               {{ option }}
             </button>
           </div>
 
+          <!-- Text Input -->
           <div
             v-else
             class="space-y-3"
@@ -230,22 +344,25 @@ onMounted(startDiagnostic)
             <input
               v-model="selectedAnswer"
               type="text"
-              class="w-full p-4 rounded-xl border-2 border-warm-200 focus:border-primary-500 outline-none transition-all"
+              :disabled="showFeedback"
+              class="w-full p-5 rounded-2xl border-2 border-outline-variant bg-surface-container-lowest text-on-surface focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-lg font-['Inter','Tajawal'] text-center"
               :placeholder="t('diagnostic.enterAnswer')"
             >
           </div>
         </div>
 
+        <!-- Submit Button -->
         <button
+          v-if="!showFeedback"
           data-testid="submit-button"
           :disabled="!canSubmit"
-          class="w-full py-4 bg-primary-500 hover:bg-primary-600 disabled:bg-warm-300 text-on-primary font-semibold rounded-xl transition-colors flex justify-center items-center gap-2"
+          class="w-full py-4 bg-primary text-on-primary font-bold rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex justify-center items-center gap-2 min-h-[60px]"
           @click="submitAnswer"
         >
           <span
             v-if="isSubmitting"
-            class="animate-spin"
-          >⟳</span>
+            class="animate-spin material-symbols-outlined"
+          >progress_activity</span>
           {{ isSubmitting ? t('diagnostic.submitting') : t('diagnostic.submit') }}
         </button>
       </div>

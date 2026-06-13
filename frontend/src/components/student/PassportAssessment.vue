@@ -100,8 +100,8 @@ onMounted(loadQuestions)
         v-if="isLoading"
         class="text-center py-12"
       >
-        <div class="animate-spin inline-block w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full" />
-        <p class="mt-3 text-warm-600">
+        <div class="animate-spin inline-block w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full" />
+        <p class="mt-3 text-ink-600">
           {{ t('passport.loading') }}
         </p>
       </div>
@@ -109,7 +109,7 @@ onMounted(loadQuestions)
       <!-- Error -->
       <div
         v-else-if="error"
-        class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4"
+        class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl mb-4"
       >
         {{ error }}
       </div>
@@ -130,7 +130,7 @@ onMounted(loadQuestions)
           <h2 class="text-3xl font-bold text-green-600 mb-2">
             {{ t('passport.congratulations') }}
           </h2>
-          <p class="text-warm-600">
+          <p class="text-ink-600">
             {{ results.message }}
           </p>
         </div>
@@ -143,10 +143,10 @@ onMounted(loadQuestions)
           <div class="text-7xl mb-4">
             💪
           </div>
-          <h2 class="text-2xl font-bold text-warm-700 mb-2">
+          <h2 class="text-2xl font-bold text-ink-700 mb-2">
             {{ t('passport.keepTrying') }}
           </h2>
-          <p class="text-warm-600">
+          <p class="text-ink-600">
             {{ results.message }}
           </p>
         </div>
@@ -154,42 +154,42 @@ onMounted(loadQuestions)
         <!-- Results Card -->
         <div class="bg-surface-bright rounded-2xl p-6 shadow-soft mb-6 text-start">
           <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="text-center p-4 bg-warm-50 rounded-xl">
+            <div class="text-center p-4 bg-ink-50 rounded-xl">
               <div
                 class="text-3xl font-bold"
-                :class="results.passed ? 'text-green-600' : 'text-warm-600'"
+                :class="results.passed ? 'text-green-600' : 'text-ink-600'"
               >
                 {{ Math.round(results.accuracy * 100) }}%
               </div>
-              <div class="text-sm text-warm-600">
+              <div class="text-sm text-ink-600">
                 {{ t('passport.accuracy') }}
               </div>
             </div>
-            <div class="text-center p-4 bg-warm-50 rounded-xl">
-              <div class="text-3xl font-bold text-primary-600">
+            <div class="text-center p-4 bg-ink-50 rounded-xl">
+              <div class="text-3xl font-bold text-teal-600">
                 {{ results.correct_count }}/{{ results.total_questions }}
               </div>
-              <div class="text-sm text-warm-600">
+              <div class="text-sm text-ink-600">
                 {{ t('passport.questions') }}
               </div>
             </div>
           </div>
 
-          <div class="border-t border-warm-200 pt-4">
+          <div class="border-t border-ink-200 pt-4">
             <div class="flex justify-between items-center mb-2">
-              <span class="text-warm-600">{{ t('passport.previousLevel') }}</span>
+              <span class="text-ink-600">{{ t('passport.previousLevel') }}</span>
               <span class="font-medium">{{ results.previous_mastery_level }}</span>
             </div>
             <div class="flex justify-between items-center">
-              <span class="text-warm-600">{{ t('passport.newLevel') }}</span>
-              <span class="font-bold text-primary-600">{{ results.new_mastery_level }}</span>
+              <span class="text-ink-600">{{ t('passport.newLevel') }}</span>
+              <span class="font-bold text-teal-600">{{ results.new_mastery_level }}</span>
             </div>
           </div>
 
           <!-- Badge Earned -->
           <div
             v-if="results.badge_earned"
-            class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-center"
+            class="mt-4 p-4 bg-amber-50 border border-yellow-200 rounded-xl text-center"
           >
             <div class="text-2xl mb-1">
               ⭐
@@ -204,13 +204,13 @@ onMounted(loadQuestions)
         <div class="flex gap-3 justify-center">
           <button
             v-if="!results.passed"
-            class="px-6 py-3 bg-warm-200 hover:bg-warm-300 text-warm-700 font-semibold rounded-xl transition-colors"
+            class="px-6 py-3 bg-ink-200 hover:bg-ink-300 text-ink-700 font-semibold rounded-xl transition-colors"
             @click="retryAssessment"
           >
             {{ t('passport.retry') }}
           </button>
           <button
-            class="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-on-primary font-semibold rounded-xl transition-colors"
+            class="px-6 py-3 bg-teal-500 hover:bg-teal-600 text-on-primary font-semibold rounded-xl transition-colors"
             @click="finishAssessment"
           >
             {{ t('passport.finish') }}
@@ -226,26 +226,26 @@ onMounted(loadQuestions)
         <!-- Header -->
         <div class="mb-6">
           <div class="flex justify-between items-center mb-2">
-            <span class="text-sm text-warm-600">{{ t('passport.question') }} {{ currentIndex + 1 }} {{ t('passport.of') }} {{ questions.length }}</span>
-            <span class="text-sm text-warm-600">{{ Math.round(progress) }}%</span>
+            <span class="text-sm text-ink-600">{{ t('passport.question') }} {{ currentIndex + 1 }} {{ t('passport.of') }} {{ questions.length }}</span>
+            <span class="text-sm text-ink-600">{{ Math.round(progress) }}%</span>
           </div>
-          <div class="h-2 bg-warm-200 rounded-full overflow-hidden">
+          <div class="h-2 bg-ink-200 rounded-full overflow-hidden">
             <div
-              class="h-full bg-primary-500 rounded-full transition-all duration-300"
+              class="h-full bg-teal-500 rounded-full transition-all duration-300"
               :style="{ width: `${progress}%` }"
             />
           </div>
         </div>
 
         <!-- Passport Badge -->
-        <div class="flex items-center gap-2 mb-6 p-3 bg-yellow-50 rounded-xl">
+        <div class="flex items-center gap-2 mb-6 p-3 bg-amber-50 rounded-xl">
           <span class="text-2xl">🛂</span>
           <span class="font-semibold text-yellow-700">{{ t('passport.assessmentBadge') }}</span>
         </div>
 
         <!-- Question -->
         <div class="mb-8">
-          <h2 class="text-xl font-semibold text-warm-800 mb-4">
+          <h2 class="text-xl font-semibold text-ink-800 mb-4">
             {{ currentQuestion.content.text }}
           </h2>
 
@@ -260,8 +260,8 @@ onMounted(loadQuestions)
               :class="[
                 'w-full p-4 text-start rounded-xl border-2 transition-all min-h-[60px]',
                 selectedAnswer === option
-                  ? 'border-primary-500 bg-primary-50'
-                  : 'border-warm-200 hover:border-primary-300'
+                  ? 'border-teal-500 bg-teal-50'
+                  : 'border-ink-200 hover:border-teal-300'
               ]"
               @click="selectedAnswer = option"
             >
@@ -277,7 +277,7 @@ onMounted(loadQuestions)
             <input
               v-model="selectedAnswer"
               type="text"
-              class="w-full p-4 rounded-xl border-2 border-warm-200 focus:border-primary-500 outline-none transition-all"
+              class="w-full p-4 rounded-xl border-2 border-ink-200 focus:border-teal-500 outline-none transition-all"
               :placeholder="t('passport.enterAnswer')"
             >
           </div>
@@ -286,7 +286,7 @@ onMounted(loadQuestions)
         <!-- Submit -->
         <button
           :disabled="!canSubmit || isSubmitting"
-          class="w-full py-4 bg-primary-500 hover:bg-primary-600 disabled:bg-warm-300 text-on-primary font-semibold rounded-xl transition-colors flex justify-center items-center gap-2"
+          class="w-full py-4 bg-teal-500 hover:bg-teal-600 disabled:bg-ink-300 text-on-primary font-semibold rounded-xl transition-colors flex justify-center items-center gap-2"
           @click="submitAnswer"
         >
           <span
