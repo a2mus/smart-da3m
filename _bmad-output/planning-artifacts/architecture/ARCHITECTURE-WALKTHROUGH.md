@@ -219,30 +219,49 @@ Le parent reçoit des **notifications en temps réel** (pas besoin de rafraîchi
 
 ---
 
-## Les organisations (multi-établissement)
+## Les organisations (établissements + familles indépendantes)
 
-La plateforme peut héberger **plusieurs établissements** sur la même instance :
+La plateforme accueille **deux types d'organisation** :
 
-- Chaque établissement a ses propres élèves, parents, pédagogues et contenus
+### Établissements scolaires
+- Chaque école a ses propres élèves, parents, pédagogues et contenus
 - Les données d'un établissement sont **complètement isolées** des autres
-- Des contenus partagés (templates, ressources communes) peuvent être mis à disposition par la plateforme
+- Un pédagogue peut superviser **plusieurs écoles**
+- Un parent peut avoir des enfants dans **différentes écoles**
+
+### Familles indépendantes
+- Un parent peut s'inscrire **sans école** — la plateforme crée un "foyer" virtuel
+- Le parent crée les comptes de ses enfants et choisit le niveau scolaire
+- L'enfant passe les diagnostics et reçoit des remédiations comme dans une école
+- **Qui valide les parcours ?** La plateforme dispose d'un **pool de pédagogues de plateforme** qui valident les propositions pour les familles indépendantes
 
 ```mermaid
 graph TB
     PLATFORM["Plateforme Ihsane"]
-    ORG1["Établissement A<br/>Ses élèves, pédagogues,<br/>contenus, données"]
-    ORG2["Établissement B<br/>Ses élèves, pédagogues,<br/>contenus, données"]
-    ORG3["Établissement C<br/>..."]
+    ORG1["Établissement A<br/>élèves, pédagogues,<br/>contenus"]
+    ORG2["Établissement B<br/>élèves, pédagogues,<br/>contenus"]
+    HOUSE1["Foyer indépendant<br/>parent + enfants<br/>inscrits sans école"]
+    HOUSE2["Foyer indépendant<br/>..."]
     SHARED["Contenus partagés<br/>(templates communs)"]
+    POOL["Pool de pédagogues<br/>de la plateforme"]
 
     PLATFORM --> ORG1
     PLATFORM --> ORG2
-    PLATFORM --> ORG3
+    PLATFORM --> HOUSE1
+    PLATFORM --> HOUSE2
     PLATFORM --> SHARED
+    PLATFORM --> POOL
     SHARED -.->|lecture seule| ORG1
     SHARED -.->|lecture seule| ORG2
-    SHARED -.->|lecture seule| ORG3
+    SHARED -.->|lecture seule| HOUSE1
+    SHARED -.->|lecture seule| HOUSE2
+    POOL -.->|valide les parcours| HOUSE1
+    POOL -.->|valide les parcours| HOUSE2
+    POOL -.->|peut aussi aider| ORG1
+    POOL -.->|peut aussi aider| ORG2
 ```
+
+> **Isolation :** Les données personnelles (sessions, réponses, parcours, maîtrise) sont **toujours** limitées à l'organisation. Aucune fuite possible entre établissements ou foyers.
 
 ---
 

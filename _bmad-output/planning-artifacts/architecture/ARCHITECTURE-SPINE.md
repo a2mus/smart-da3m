@@ -4,7 +4,7 @@ type: architecture-spine
 purpose: build-substrate
 altitude: feature
 paradigm: 'layered + domain-driven (API → Service → Engine → Repository)'
-scope: 'Full-stack educational platform: diagnostic assessment, gap detection, AI-assisted remediation, multi-role monitoring'
+scope: 'Full-stack educational platform: diagnostic assessment, gap detection, AI-assisted remediation, multi-role monitoring. Hybrid tenant model: school organizations + independent household families.'
 status: draft
 created: '2026-07-14'
 updated: '2026-07-14'
@@ -111,18 +111,25 @@ Abandonment triggers: notification to Expert AND Parent. Expert can adjust or re
 
   The LLM is never in the synchronous request path. All LLM calls go through Celery via **LiteLLM** (configurable gateway: base URL + API key in settings, provider swappable via config). For testing, a default model is fixed from existing subscriptions. If the LLM is unavailable, the deterministic selection alone produces a valid (if less nuanced) proposal.
 
-### AD-4 — Multi-Tenant Isolation via Organization Entity
+### AD-4 — Hybrid Multi-Tenant: Schools + Households, All via Organization Entity
 
 - **Binds:** all
-- **Prevents:** Data leakage between organizations, query omissions, cross-tenant content pollution
+- **Prevents:** Data leakage between organizations, query omissions, cross-tenant content pollution, blocking independent families from using the platform
 - **Rule:**
-  - An `Organization` entity is the tenant boundary.
-  - **User ↔ Organization is a many-to-many relationship** via an `OrganizationMember` association table (`user_id`, `organization_id`, `role`). This is because **experts can be assigned to or supervise multiple schools**. Students and parents belong to exactly one organization; experts can belong to several.
+  - An `Organization` entity is the tenant boundary. It has a `type` field: `SCHOOL` or `HOUSEHOLD`.
+    - **`SCHOOL`** — a traditional school organization. Onboards its pédagogues (experts) and students. Parents are linked through their children.
+    - **`HOUSEHOLD`** — auto-created when an independent parent self-registers. The parent is the admin. No school involvement. The parent creates child accounts and selects a curriculum level.
+  - **All roles are many-to-many with organizations** via an `OrganizationMember` association table (`user_id`, `organization_id`, `role`):
+    - **Students**: typically one org (their school, or a household). Can be enrolled in a school AND have a household if an independent parent also has a school-enrolled child.
+    - **Parents**: multiple orgs — one per child's school, plus their own household if they registered independently.
+    - **Experts**: multiple orgs — the schools they supervise, plus the system org if they are a **platform-level pedagogue**.
+  - **Platform-level pedagogue pool**: experts flagged `is_platform_pedagogue = True` belong to the system org. They review remediation proposals for independent (household-mode) students. When a household student's path enters `PROPOSED`, the validation queue routes to the platform pool, not a school-specific queue. See **AD-2** and **AD-3**.
   - Domain models (`Module`, `Question`, `KnowledgeAtom`, `DiagnosticSession`, `RemediationPath`, `PedagogicalAlert`) carry an `organization_id` foreign key (non-nullable) — they belong to exactly one org.
-  - The JWT token carries a list of `(organization_id, role)` pairs for the user. On each request, the active organization is selected (via header `X-Organization-Id` or query param). Tenant filtering is enforced at the **middleware layer**, injected into the repository layer as a mandatory query filter. Individual services/engines never apply tenant filtering themselves — it is automatic and inescapable.
-  - An expert switching organizations re-scopes all queries to the selected org. The frontend provides an org switcher in the Expert UI.
-  - Shared/global content (validated knowledge atoms, remediation templates, tests/modules) is owned by a reserved system organization and explicitly marked `is_shared = True`. All tenants can read shared content. Tenants cannot write to shared content.
+  - The JWT token carries a list of `(organization_id, role)` pairs for the user. On each request, the active organization is selected (via header `X-Organization-Id`). Tenant filtering is enforced at the **middleware layer**, injected into the repository layer as a mandatory query filter. Individual services/engines never apply tenant filtering themselves — it is automatic and inescapable.
+  - The frontend provides an **org switcher** for users who belong to multiple orgs (experts switching schools, parents with children in different schools, independent parents switching between household and school views).
+  - Shared/global content (validated knowledge atoms, remediation templates, tests/modules) is owned by the system org and marked `is_shared = True`. All tenants can read. Only system-org experts can write.
   - Personal data (sessions, answers, remediation paths, mastery profiles, alerts) is **always tenant-scoped and never shareable** — no `is_shared` flag, no cross-tenant access under any circumstance.
+  - **Proposal routing rule** (links to AD-2, AD-3): `PROPOSED` paths for a student in a `SCHOOL` org → that school's expert queue. `PROPOSED` paths for a student in a `HOUSEHOLD` org → platform pedagogue pool queue.
 
 ### AD-5 — Push Notifications via Server-Sent Events (SSE)
 

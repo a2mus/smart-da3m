@@ -66,16 +66,16 @@ The platform is converging to V1 (pilot launch). The MVP is already implemented 
   - **intent:** Students can continue diagnostic and remediation work during connectivity drops, with answers and completions queued and synced on reconnect.
   - **success:** A module fetched once is available offline; offline-captured events are delivered after reconnection with no silent drops. FR-29..FR-30. Governed by **AD-6** (write-behind Dexie for students, online-first for experts/parents).
 
-- **CAP-12: Multi-Tenant Isolation**
-  - **intent:** The platform can host multiple organizations (establishments) on the same deployment with complete data isolation between tenants, while allowing experts to supervise multiple schools.
-  - **success:** A user in Organization A cannot read or write Organization B's data; every query is automatically tenant-filtered via middleware. An expert assigned to multiple schools can switch between them via an org switcher. Governed by **AD-4**.
+- **CAP-12: Hybrid Multi-Tenant — Schools + Households**
+  - **intent:** The platform can host school organizations and independent household families on the same deployment, with complete data isolation. Parents can have children in different schools. A platform-level pedagogue pool reviews remediation proposals for independent families.
+  - **success:** A school org's data is isolated from other schools. An independent parent self-registers and gets a household org, creates child accounts, and the AI proposal routes to the platform pedagogue pool. A parent with children in two schools sees each child's data scoped to their school. Governed by **AD-4**.
 
 ## Constraints
 
 - **AD-1 — Database is the single source of truth.** No engine may hold domain state in memory between calls. Engines are pure functions. Rules out in-memory state caches, dual ownership.
 - **AD-2 — Remediation path lifecycle is an explicit state machine.** DIAGNOSED → PROPOSED → VALIDATED → IN_PROGRESS → COMPLETED, with ABANDONED and PASSPORT_TESTING branches. Transitions enforced in the service layer. Rules out direct status manipulation from API layer, skipping the expert validation gate.
 - **AD-3 — Hybrid AI for remediation proposals.** Deterministic atom selection + LLM augmentation + expert validation. LLM is never in the synchronous request path; all LLM calls go through Celery. Rules out pure-LLM unpredictability and pure-deterministic rigidity.
-- **AD-4 — Multi-tenant isolation via Organization entity.** User ↔ Organization is many-to-many via `OrganizationMember` (experts can supervise multiple schools; students/parents belong to one). Every tenant-scoped model carries `organization_id`. Tenant filtering is automatic via middleware (active org from `X-Organization-Id` header). Rules out cross-tenant data leakage, ad-hoc per-query filtering.
+- **AD-4 — Hybrid multi-tenant: schools + households.** Organization has `type` (`SCHOOL` or `HOUSEHOLD`). Independent parents self-register → auto-created household org. All roles are many-to-many via `OrganizationMember` (parents can have children in different schools; experts can supervise multiple schools). Platform-level pedagogue pool handles expert validation for household students. Every tenant-scoped model carries `organization_id`. Tenant filtering is automatic via middleware. Rules out cross-tenant data leakage, blocking independent families.
 - **AD-5 — Push notifications via SSE.** Server-Sent Events over `/api/v1/events/stream`, backed by Redis Pub/Sub per tenant. Rules out polling-based notification delivery.
 - **AD-6 — Offline-first for students, online-first for experts and parents.** Dexie write-behind buffer for student answers/atom completions; online required for expert authoring/validation and parent mutations. Rules out full offline for all roles, unnecessary online requirement for students.
 - **AD-7 — Core domain loop is the organizing principle.** Every feature maps to a stage: AUTHOR → DIAGNOSE → DETECT → PROPOSE → VALIDATE → REMEDIATE → ASSESS → MASTER. Rules out features that don't attach to the loop.
