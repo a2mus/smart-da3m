@@ -122,13 +122,16 @@ The platform is converging to V1 (pilot launch). The MVP is already implemented 
 
 ## Open Questions
 
-- **OQ-2 (launch-blocker):** How are Year 1–2 children (pre-literate) onboarded and rostered to a parent and a class? Assumed: parent creates child accounts + PIN.
 - **OQ-4:** Pedagogical-alert trigger thresholds — how many failures, over what window, map to INFO vs WARNING vs CRITICAL?
 - **OQ-5:** Mastery-level BKT thresholds (e.g., P(learned) >= 0.95 -> Mastered) and the delay rule for "Mastered" verification.
-- **OQ-7 (launch-blocker):** Pilot school selection and onboarding (1–2 Algerian schools) — no school onboarded yet; content not loaded.
 - **OQ-8:** Performance targets unverified on real hardware — < 3s on 3G, < 200ms API P95, bundle < 200KB.
-- **OQ-9:** AI-assisted authoring guardrails — curriculum-alignment validation, hallucinated-competency prevention, bilingual AR/FR quality, and which LLM provider/hosting (data-residency implications under privacy constraints).
+- **OQ-9:** AI-assisted authoring guardrails — curriculum-alignment validation, hallucinated-competency prevention, bilingual AR/FR quality.
 - **OQ-10:** Verify against code whether spaced re-surfacing (FR-16) is actually implemented; if absent, it belongs in "not yet built."
-- **OQ-Arch-1:** LLM provider for remediation proposals (AD-3) — OpenAI, Anthropic, or local model? Must comply with child-data residency constraints.
-- **OQ-Arch-2:** Content isolation for multi-tenant (AD-4) — can all organizations see shared platform content, or does each org have its own content library?
-- **OQ-Arch-3:** WebSocket vs SSE confirmed as SSE (AD-5) — verify FastAPI SSE support and Caddy proxy configuration.
+
+## Resolved Questions
+
+- **OQ-2 RESOLVED:** Parent creates child accounts + PIN.
+- **OQ-7 RESOLVED:** Pilot school onboarding is a logistics/partnership task (not technical): (1) select 1–2 Algerian primary schools, (2) onboard their pédagogues as Expert accounts in their Organization, (3) ensure Y1–2 Arabic + Math content is authored/imported/AI-drafted. Multi-tenant architecture (AD-4) supports this from day one.
+- **OQ-Arch-1 RESOLVED:** LiteLLM as the LLM gateway. Configurable base URL + API key in settings. For testing, fix a default model from existing subscriptions. Provider is swappable via config change.
+- **OQ-Arch-2 RESOLVED:** Shared content (validated knowledge atoms, remediation templates, tests/modules) is platform-level with `is_shared=True` — all orgs can read. Personal data (sessions, answers, paths, mastery, alerts) is strictly tenant-scoped, never shareable.
+- **OQ-Arch-3 RESOLVED:** SSE confirmed viable with FastAPI + Caddy. Add `sse-starlette` dependency; exclude SSE endpoint from Caddy's `encode gzip zstd` block (compression buffers streaming). Caddy reverse_proxy handles long-lived connections by default.

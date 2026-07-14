@@ -109,7 +109,7 @@ Abandonment triggers: notification to Expert AND Parent. Expert can adjust or re
   2. **LLM augmentation** — An async Celery task sends the gap profile + selected atoms to an LLM. The LLM may reorder, annotate with pedagogical justification, suggest additional focus areas, or generate supplementary content. Response is stored, never streamed directly to user.
   3. **Expert validation** — The proposal (with AI justification) enters `PROPOSED` state. The Expert reviews, approves, or rejects (triggering regeneration with feedback context).
 
-  The LLM is never in the synchronous request path. All LLM calls go through Celery. If the LLM is unavailable, the deterministic selection alone produces a valid (if less nuanced) proposal.
+  The LLM is never in the synchronous request path. All LLM calls go through Celery via **LiteLLM** (configurable gateway: base URL + API key in settings, provider swappable via config). For testing, a default model is fixed from existing subscriptions. If the LLM is unavailable, the deterministic selection alone produces a valid (if less nuanced) proposal.
 
 ### AD-4 — Multi-Tenant Isolation via Organization Entity
 
@@ -119,7 +119,8 @@ Abandonment triggers: notification to Expert AND Parent. Expert can adjust or re
   - An `Organization` entity is the tenant boundary. Every `User`, `Module`, `Question`, `KnowledgeAtom`, `DiagnosticSession`, `RemediationPath`, and `PedagogicalAlert` belongs to exactly one Organization.
   - Every model that holds tenant-scoped data carries an `organization_id` foreign key (non-nullable).
   - Tenant filtering is enforced at the **middleware layer** (extracted from JWT claims), injected into the repository layer as a mandatory query filter. Individual services/engines never apply tenant filtering themselves — it is automatic and inescapable.
-  - Shared/global content (e.g., platform-wide atom templates) is owned by a reserved system organization and explicitly marked `is_shared = True`. Tenants can read shared content but never write to it.
+  - Shared/global content (validated knowledge atoms, remediation templates, tests/modules) is owned by a reserved system organization and explicitly marked `is_shared = True`. All tenants can read shared content. Tenants cannot write to shared content.
+  - Personal data (sessions, answers, remediation paths, mastery profiles, alerts) is **always tenant-scoped and never shareable** — no `is_shared` flag, no cross-tenant access under any circumstance.
 
 ### AD-5 — Push Notifications via Server-Sent Events (SSE)
 
@@ -127,7 +128,7 @@ Abandonment triggers: notification to Expert AND Parent. Expert can adjust or re
 - **Prevents:** Stale dashboards, missed pedagogical alerts, delayed Expert action on proposals
 - **Rule:**
   - Real-time notifications use SSE (Server-Sent Events) over `/api/v1/events/stream`.
-  - SSE is chosen over WebSocket because the notification flow is **one-directional** (server → client). SSE is simpler, works through HTTP/2 and reverse proxies (Caddy) without upgrade negotiation, and auto-reconnects natively.
+  - SSE is chosen over WebSocket because the notification flow is **one-directional** (server → client). SSE is simpler, works through HTTP/2 and reverse proxies (Caddy) without upgrade negotiation, and auto-reconnects natively. **Verified:** FastAPI supports SSE via `sse-starlette` (add dependency); Caddy's `reverse_proxy` handles long-lived connections by default. Exclude the SSE endpoint from Caddy's `encode gzip zstd` block (compression buffers streaming).
   - Events that trigger SSE push: proposal ready for validation, path abandoned, Passport result, pedagogical alerts (frustration, inactivity, repeated failure).
   - The backend publishes events to a Redis Pub/Sub channel per tenant. The SSE endpoint subscribes to the tenant's channel.
   - If SSE connection drops, the client falls back to polling on reconnect until the SSE stream re-establishes. Missed events are recoverable via a `GET /api/v1/alerts?since={timestamp}` endpoint.
@@ -198,6 +199,8 @@ Any proposed feature that doesn't attach to one of these stages must justify its
 | asyncpg | >= 0.30.0 |
 | Redis | >= 5.2.0 |
 | Celery | >= 5.4.0 |
+| LiteLLM | latest (LLM gateway, configurable provider) |
+| sse-starlette | latest (SSE support for FastAPI) |
 | Vue | ^3.5.13 |
 | TypeScript | ~5.6.3 |
 | Pinia | ^2.3.0 |
@@ -283,7 +286,7 @@ graph TB
 
     subgraph "Application"
         API_SRV["FastAPI<br/>uvicorn"]
-        WORKER["Celery Worker<br/>(AI proposals,<br/>notifications)"]
+        WORKER["Celery Worker<br/>(AI proposals via LiteLLM,<br/>notifications)"]
     end
 
     subgraph "Data"
@@ -324,7 +327,6 @@ graph TB
 
 | Decision | Reason it can wait |
 | --- | --- |
-| **LLM provider selection** (OpenAI, Anthropic, local) | Celery task abstraction isolates this. V1 can start with any provider; the interface is the same. |
 | **Content format for KnowledgeAtoms** (markdown, structured JSON, rich media schema) | The `content` field is currently JSON. The rendering logic is a frontend concern. The spine only requires atoms are typed (`AUDIO_VISUAL`, `SIMULATION`, `MIND_MAP`) and renderable. |
 | **Gamification / engagement mechanics** | Not part of the core loop. Can be layered on top of atom completions and Passport results without structural change. |
 | **Analytics / reporting beyond parent dashboard** | The data model supports it (all events are timestamped, all states are tracked). Reporting views are additive, not structural. |
