@@ -116,9 +116,11 @@ Abandonment triggers: notification to Expert AND Parent. Expert can adjust or re
 - **Binds:** all
 - **Prevents:** Data leakage between organizations, query omissions, cross-tenant content pollution
 - **Rule:**
-  - An `Organization` entity is the tenant boundary. Every `User`, `Module`, `Question`, `KnowledgeAtom`, `DiagnosticSession`, `RemediationPath`, and `PedagogicalAlert` belongs to exactly one Organization.
-  - Every model that holds tenant-scoped data carries an `organization_id` foreign key (non-nullable).
-  - Tenant filtering is enforced at the **middleware layer** (extracted from JWT claims), injected into the repository layer as a mandatory query filter. Individual services/engines never apply tenant filtering themselves — it is automatic and inescapable.
+  - An `Organization` entity is the tenant boundary.
+  - **User ↔ Organization is a many-to-many relationship** via an `OrganizationMember` association table (`user_id`, `organization_id`, `role`). This is because **experts can be assigned to or supervise multiple schools**. Students and parents belong to exactly one organization; experts can belong to several.
+  - Domain models (`Module`, `Question`, `KnowledgeAtom`, `DiagnosticSession`, `RemediationPath`, `PedagogicalAlert`) carry an `organization_id` foreign key (non-nullable) — they belong to exactly one org.
+  - The JWT token carries a list of `(organization_id, role)` pairs for the user. On each request, the active organization is selected (via header `X-Organization-Id` or query param). Tenant filtering is enforced at the **middleware layer**, injected into the repository layer as a mandatory query filter. Individual services/engines never apply tenant filtering themselves — it is automatic and inescapable.
+  - An expert switching organizations re-scopes all queries to the selected org. The frontend provides an org switcher in the Expert UI.
   - Shared/global content (validated knowledge atoms, remediation templates, tests/modules) is owned by a reserved system organization and explicitly marked `is_shared = True`. All tenants can read shared content. Tenants cannot write to shared content.
   - Personal data (sessions, answers, remediation paths, mastery profiles, alerts) is **always tenant-scoped and never shareable** — no `is_shared` flag, no cross-tenant access under any circumstance.
 
@@ -251,8 +253,12 @@ ihsane-platform/
 
 ```mermaid
 erDiagram
-    Organization ||--o{ User : "has members"
+    Organization ||--o{ OrganizationMember : "has members"
+    User ||--o{ OrganizationMember : "belongs to"
     Organization ||--o{ Module : "owns content"
+
+    OrganizationMember }o--|| Organization : ""
+    OrganizationMember }o--|| User : ""
 
     User ||--o{ DiagnosticSession : "student takes"
     User ||--o{ RemediationPath : "student follows"
@@ -271,6 +277,8 @@ erDiagram
 
     PedagogicalAlert ||--o{ AlertRecipient : "delivered to"
 ```
+
+**Note:** `OrganizationMember` is a join table (`user_id`, `organization_id`, `role`). Students and parents have exactly one row (one org). Experts can have multiple rows (multiple orgs). The active org is selected per-request via `X-Organization-Id` header.
 
 ### Deployment Topology
 

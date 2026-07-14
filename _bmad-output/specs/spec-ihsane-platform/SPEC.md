@@ -67,15 +67,15 @@ The platform is converging to V1 (pilot launch). The MVP is already implemented 
   - **success:** A module fetched once is available offline; offline-captured events are delivered after reconnection with no silent drops. FR-29..FR-30. Governed by **AD-6** (write-behind Dexie for students, online-first for experts/parents).
 
 - **CAP-12: Multi-Tenant Isolation**
-  - **intent:** The platform can host multiple organizations (establishments) on the same deployment with complete data isolation between tenants.
-  - **success:** A user in Organization A cannot read or write Organization B's data; every query is automatically tenant-filtered via middleware. Governed by **AD-4**.
+  - **intent:** The platform can host multiple organizations (establishments) on the same deployment with complete data isolation between tenants, while allowing experts to supervise multiple schools.
+  - **success:** A user in Organization A cannot read or write Organization B's data; every query is automatically tenant-filtered via middleware. An expert assigned to multiple schools can switch between them via an org switcher. Governed by **AD-4**.
 
 ## Constraints
 
 - **AD-1 — Database is the single source of truth.** No engine may hold domain state in memory between calls. Engines are pure functions. Rules out in-memory state caches, dual ownership.
 - **AD-2 — Remediation path lifecycle is an explicit state machine.** DIAGNOSED → PROPOSED → VALIDATED → IN_PROGRESS → COMPLETED, with ABANDONED and PASSPORT_TESTING branches. Transitions enforced in the service layer. Rules out direct status manipulation from API layer, skipping the expert validation gate.
 - **AD-3 — Hybrid AI for remediation proposals.** Deterministic atom selection + LLM augmentation + expert validation. LLM is never in the synchronous request path; all LLM calls go through Celery. Rules out pure-LLM unpredictability and pure-deterministic rigidity.
-- **AD-4 — Multi-tenant isolation via Organization entity.** Every tenant-scoped model carries `organization_id`. Tenant filtering is automatic via middleware, never manual. Rules out cross-tenant data leakage, ad-hoc per-query filtering.
+- **AD-4 — Multi-tenant isolation via Organization entity.** User ↔ Organization is many-to-many via `OrganizationMember` (experts can supervise multiple schools; students/parents belong to one). Every tenant-scoped model carries `organization_id`. Tenant filtering is automatic via middleware (active org from `X-Organization-Id` header). Rules out cross-tenant data leakage, ad-hoc per-query filtering.
 - **AD-5 — Push notifications via SSE.** Server-Sent Events over `/api/v1/events/stream`, backed by Redis Pub/Sub per tenant. Rules out polling-based notification delivery.
 - **AD-6 — Offline-first for students, online-first for experts and parents.** Dexie write-behind buffer for student answers/atom completions; online required for expert authoring/validation and parent mutations. Rules out full offline for all roles, unnecessary online requirement for students.
 - **AD-7 — Core domain loop is the organizing principle.** Every feature maps to a stage: AUTHOR → DIAGNOSE → DETECT → PROPOSE → VALIDATE → REMEDIATE → ASSESS → MASTER. Rules out features that don't attach to the loop.
@@ -131,7 +131,7 @@ The platform is converging to V1 (pilot launch). The MVP is already implemented 
 ## Resolved Questions
 
 - **OQ-2 RESOLVED:** Parent creates child accounts + PIN.
-- **OQ-7 RESOLVED:** Pilot school onboarding is a logistics/partnership task (not technical): (1) select 1–2 Algerian primary schools, (2) onboard their pédagogues as Expert accounts in their Organization, (3) ensure Y1–2 Arabic + Math content is authored/imported/AI-drafted. Multi-tenant architecture (AD-4) supports this from day one.
+- **OQ-7 RESOLVED (reframed):** The platform is NOT ready for pilot. The last human acceptance test revealed dysfunctional workflows and missing content creation capability — the base of any pilot. The implementation does not match the design. The architecture spine (AD-1 through AD-7) and the UX rebuild are prerequisites before any pilot can be considered. Pilot school selection itself is logistics, but the platform must be functional and the content authoring workflow (CAP-2) must work end-to-end first.
 - **OQ-Arch-1 RESOLVED:** LiteLLM as the LLM gateway. Configurable base URL + API key in settings. For testing, fix a default model from existing subscriptions. Provider is swappable via config change.
 - **OQ-Arch-2 RESOLVED:** Shared content (validated knowledge atoms, remediation templates, tests/modules) is platform-level with `is_shared=True` — all orgs can read. Personal data (sessions, answers, paths, mastery, alerts) is strictly tenant-scoped, never shareable.
 - **OQ-Arch-3 RESOLVED:** SSE confirmed viable with FastAPI + Caddy. Add `sse-starlette` dependency; exclude SSE endpoint from Caddy's `encode gzip zstd` block (compression buffers streaming). Caddy reverse_proxy handles long-lived connections by default.
