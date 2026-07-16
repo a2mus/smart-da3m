@@ -5,9 +5,11 @@ purpose: build-substrate
 altitude: feature
 paradigm: 'layered + domain-driven (API → Service → Engine → Repository)'
 scope: 'Full-stack educational platform: diagnostic assessment, gap detection, AI-assisted remediation, multi-role monitoring. Hybrid tenant model: school organizations + independent household families.'
-status: draft
+status: final
 created: '2026-07-14'
-updated: '2026-07-14'
+updated: '2026-07-15'
+ratified: '2026-07-15'
+ratification_note: 'Ratified as-is after implementation audit. The existing codebase must conform to these 7 ADs — not the reverse. 5 of 7 ADs are violated by the current implementation; epics S1-S6 + D1-D9 address full conformance.'
 binds: [diagnostic-assessment, remediation-lifecycle, content-authoring, parent-monitoring, expert-validation, tenant-isolation]
 sources: [project-context.md]
 companions: [ARCHITECTURE-WALKTHROUGH.md]
