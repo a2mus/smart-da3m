@@ -8,6 +8,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.tenant import reset_active_organization_id, set_active_organization_id
 from app.models.alert import (
     AlertSeverity,
@@ -21,33 +22,76 @@ logger = logging.getLogger(__name__)
 
 
 class ConsecutiveFailureDetector:
-    """Detects consecutive failures of the same exercise type.
-
-    Triggers WARNING alert after 3 consecutive failures.
+    """Detects failure thresholds over window days (OQ-4).
     """
 
-    def __init__(self, threshold: int = 3):
-        self.threshold = threshold
+    def __init__(
+        self,
+        threshold: int | None = None,
+        warning_threshold: int | None = None,
+        critical_threshold: int | None = None,
+        window_days: int | None = None,
+    ):
+        if threshold is not None:
+            self.warning_threshold = warning_threshold if warning_threshold is not None else threshold
+            self.critical_threshold = critical_threshold if critical_threshold is not None else threshold
+            self.min_threshold = threshold
+        else:
+            self.warning_threshold = (
+                warning_threshold
+                if warning_threshold is not None
+                else settings.ALERT_WARNING_FAILURE_THRESHOLD
+            )
+            self.critical_threshold = (
+                critical_threshold
+                if critical_threshold is not None
+                else settings.ALERT_CRITICAL_FAILURE_THRESHOLD
+            )
+            self.min_threshold = 1
+        self.window_days = (
+            window_days
+            if window_days is not None
+            else settings.ALERT_FAILURE_WINDOW_DAYS
+        )
 
     def detect(self, answers: list[dict[str, Any]]) -> dict[str, Any]:
-        """Detect consecutive failures in answer history.
+        """Detect failure levels in answer history according to OQ-4 thresholds.
 
         Args:
-            answers: List of answer results with misconception_id
+            answers: List of answer results with timestamp and misconception_id/is_correct
 
         Returns:
-            Detection result with triggered flag and details
+            Detection result with severity, trigger_type, and context details
         """
-        if len(answers) < self.threshold:
+        if not answers:
             return {"triggered": False}
 
-        # Track consecutive failures by misconception type
+        now = datetime.now(UTC)
+        window_seconds = self.window_days * 86400
+
+        recent_answers = []
+        for ans in answers:
+            ts = ans.get("timestamp")
+            if ts:
+                if isinstance(ts, str):
+                    ts_dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                else:
+                    ts_dt = ts
+                if (now - ts_dt).total_seconds() > window_seconds:
+                    continue
+            recent_answers.append(ans)
+
+        if not recent_answers:
+            return {"triggered": False}
+
         current_streak = 0
         current_misconception = None
+        max_streak = 0
+        max_misconception = None
 
-        for answer in answers:
+        for answer in recent_answers:
             if not answer.get("is_correct"):
-                misconception = answer.get("misconception_id")
+                misconception = answer.get("misconception_id", "default_gap")
 
                 if misconception == current_misconception:
                     current_streak += 1
@@ -55,20 +99,30 @@ class ConsecutiveFailureDetector:
                     current_misconception = misconception
                     current_streak = 1
 
-                if current_streak >= self.threshold and current_misconception:
-                    return {
-                        "triggered": True,
-                        "severity": AlertSeverity.WARNING,
-                        "trigger_type": AlertTriggerType.REPEATED_FAILURE,
-                        "consecutive_failures": current_streak,
-                        "misconception_id": current_misconception,
-                    }
+                if current_streak > max_streak:
+                    max_streak = current_streak
+                    max_misconception = current_misconception
             else:
-                # Reset on correct answer
                 current_streak = 0
                 current_misconception = None
 
-        return {"triggered": False}
+        if max_streak < self.min_threshold or not max_misconception:
+            return {"triggered": False}
+
+        if max_streak >= self.critical_threshold:
+            severity = AlertSeverity.CRITICAL
+        elif max_streak >= self.warning_threshold:
+            severity = AlertSeverity.WARNING
+        else:
+            severity = AlertSeverity.INFO
+
+        return {
+            "triggered": True,
+            "severity": severity,
+            "trigger_type": AlertTriggerType.REPEATED_FAILURE,
+            "consecutive_failures": max_streak,
+            "misconception_id": max_misconception,
+        }
 
 
 class ResponsePatternDetector:
@@ -139,7 +193,7 @@ class ResponsePatternDetector:
             if answers_count < expected_count * 0.5:  # Less than 50% complete
                 return {
                     "triggered": True,
-                    "severity": AlertSeverity.WARNING,
+                    "severity": AlertSeverity.CRITICAL,
                     "trigger_type": AlertTriggerType.ABANDONMENT,
                     "elapsed_minutes": elapsed_minutes,
                     "answers_completed": answers_count,
@@ -188,8 +242,11 @@ class AlertGenerator:
     """Generates pedagogical alerts with appropriate messages and recipients.
     """
 
-    def __init__(self):
-        self._alert_cache: set = set()  # Track recent alerts to avoid duplicates
+    def __init__(self, cooldown_hours: int | None = None):
+        self._alert_cache: dict[str, datetime] = {}
+        self.cooldown_hours = (
+            cooldown_hours if cooldown_hours is not None else settings.ALERT_COOLDOWN_HOURS
+        )
 
     def generate(
         self,
@@ -197,7 +254,7 @@ class AlertGenerator:
         detection: dict[str, Any],
         existing_alert_ids: list[str] | None = None,
     ) -> dict[str, Any] | None:
-        """Generate an alert from detection result.
+        """Generate an alert from detection result with cooldown duplicate prevention.
 
         Args:
             student_id: Student UUID
@@ -210,10 +267,14 @@ class AlertGenerator:
         if not detection.get("triggered"):
             return None
 
-        # Check for duplicates
-        alert_key = f"{student_id}:{detection['trigger_type']}"
+        key_suffix = detection.get("misconception_id") or detection.get("competency_id") or ""
+        alert_key = f"{student_id}:{detection['trigger_type']}:{key_suffix}"
+        now = datetime.now(UTC)
+
         if alert_key in self._alert_cache:
-            return None
+            last_time = self._alert_cache[alert_key]
+            if (now - last_time).total_seconds() < self.cooldown_hours * 3600:
+                return None
 
         if existing_alert_ids and alert_key in [str(id) for id in existing_alert_ids]:
             return None
@@ -236,15 +297,14 @@ class AlertGenerator:
             "context_data": detection,
         }
 
-        # Cache to prevent duplicates
-        self._alert_cache.add(alert_key)
+        # Cache to prevent duplicates within cooldown window
+        self._alert_cache[alert_key] = now
 
         return alert
 
     def _generate_messages(self, detection: dict[str, Any]) -> dict[str, str]:
         """Generate appropriate messages for parent and expert."""
         trigger_type = detection["trigger_type"]
-        severity = detection["severity"]
 
         if trigger_type == AlertTriggerType.REPEATED_FAILURE:
             simplified = (
@@ -427,21 +487,29 @@ class AlertManager:
         self,
         student_id: UUID,
         competency_id: str,
+        fail_count: int = 1,
     ) -> dict[str, Any] | None:
-        """Generate alert on passport assessment failure.
+        """Generate alert on passport assessment failure according to OQ-4 rules.
 
         Args:
             student_id: Student UUID
             competency_id: Failed competency identifier
+            fail_count: Number of passport failures on this competency
 
         Returns:
             Generated alert dictionary or None
         """
+        severity = (
+            AlertSeverity.CRITICAL
+            if fail_count >= settings.ALERT_CRITICAL_PASSPORT_FAILS
+            else AlertSeverity.WARNING
+        )
         detection = {
             "triggered": True,
-            "severity": AlertSeverity.WARNING,
+            "severity": severity,
             "trigger_type": AlertTriggerType.PASSPORT_FAILED,
             "competency_id": competency_id,
+            "fail_count": fail_count,
         }
         return self.generator.generate(student_id, detection)
 

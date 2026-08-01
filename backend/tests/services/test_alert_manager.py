@@ -7,6 +7,7 @@ import pytest
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
+from app.models.alert import AlertSeverity
 from app.services.alert_manager import (
     AlertGenerator,
     ConsecutiveFailureDetector,
@@ -19,7 +20,7 @@ class TestConsecutiveFailureDetector:
     """Test suite for consecutive failure detection."""
 
     def test_detect_three_consecutive_failures(self):
-        """Test WARNING alert on 3 consecutive failures."""
+        """Test CRITICAL alert on 3 consecutive failures per OQ-4 thresholds."""
         detector = ConsecutiveFailureDetector()
 
         # Simulate 3 consecutive failures
@@ -32,13 +33,13 @@ class TestConsecutiveFailureDetector:
         result = detector.detect(answers)
 
         assert result["triggered"] is True
-        assert result["severity"] == "WARNING"
+        assert result["severity"] == AlertSeverity.CRITICAL
         assert result["trigger_type"] == "REPEATED_FAILURE"
         assert result["consecutive_failures"] == 3
         assert result["misconception_id"] == "MATH-FRAC-01"
 
     def test_no_alert_on_two_failures(self):
-        """Test no alert on only 2 consecutive failures."""
+        """Test WARNING alert on 2 consecutive failures per OQ-4 thresholds."""
         detector = ConsecutiveFailureDetector()
 
         answers = [
@@ -48,7 +49,8 @@ class TestConsecutiveFailureDetector:
 
         result = detector.detect(answers)
 
-        assert result["triggered"] is False
+        assert result["triggered"] is True
+        assert result["severity"] == AlertSeverity.WARNING
 
     def test_reset_on_success(self):
         """Test failure count resets on correct answer."""
@@ -63,7 +65,9 @@ class TestConsecutiveFailureDetector:
 
         result = detector.detect(answers)
 
-        assert result["triggered"] is False  # Only 1 failure after success
+        # Max consecutive failures after reset is 2 (before success) -> WARNING
+        assert result["triggered"] is True
+        assert result["consecutive_failures"] == 2
 
     def test_detect_different_misconceptions_separately(self):
         """Test tracking different misconception types separately."""
@@ -78,7 +82,9 @@ class TestConsecutiveFailureDetector:
 
         result = detector.detect(answers)
 
-        assert result["triggered"] is False  # No single type has 3 failures
+        # Max streak for any misconception is 2 -> WARNING
+        assert result["triggered"] is True
+        assert result["consecutive_failures"] == 2
 
 
 class TestResponsePatternDetector:
@@ -119,7 +125,7 @@ class TestResponsePatternDetector:
         assert result["triggered"] is False
 
     def test_detect_abandoned_session(self):
-        """Test WARNING alert for session abandonment."""
+        """Test CRITICAL alert for session abandonment per OQ-4 thresholds."""
         detector = ResponsePatternDetector()
 
         session = {
@@ -132,7 +138,7 @@ class TestResponsePatternDetector:
         result = detector.detect_abandonment(session)
 
         assert result["triggered"] is True
-        assert result["severity"] == "WARNING"
+        assert result["severity"] == AlertSeverity.CRITICAL
         assert result["trigger_type"] == "ABANDONMENT"
 
 

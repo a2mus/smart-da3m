@@ -1,8 +1,6 @@
-"""
-Core configuration settings for the Ihsane MVP Platform.
+"""Core configuration settings for the Ihsane MVP Platform.
 """
 
-from typing import List, Optional
 
 from pydantic_settings import BaseSettings
 
@@ -28,16 +26,23 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
+    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
     # Celery
     CELERY_BROKER_URL: str = "redis://localhost:6379/1"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/2"
 
     # LiteLLM Integration Settings
-    LLM_BASE_URL: Optional[str] = None
-    LLM_API_KEY: Optional[str] = None
+    LLM_BASE_URL: str | None = None
+    LLM_API_KEY: str | None = None
     LLM_MODEL: str = "gpt-4o-mini"
+
+    # Pedagogical Alert Threshold Settings (OQ-4)
+    ALERT_WARNING_FAILURE_THRESHOLD: int = 2
+    ALERT_CRITICAL_FAILURE_THRESHOLD: int = 3
+    ALERT_FAILURE_WINDOW_DAYS: int = 7
+    ALERT_CRITICAL_PASSPORT_FAILS: int = 2
+    ALERT_COOLDOWN_HOURS: int = 24
 
     class Config:
         env_file = ".env"
