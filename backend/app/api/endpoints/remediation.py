@@ -34,6 +34,7 @@ from app.schemas.remediation import (
     RemediationPathRequest,
     RemediationPathResponse,
     RemediationStatusResponse,
+    StartPathwayResponse,
     StateTransitionRequest,
     ValidationQueueItemResponse,
 )
@@ -129,6 +130,35 @@ async def get_remediation_pathway(
 
 
 @router.post(
+    "/pathway/{path_id}/start",
+    response_model=StartPathwayResponse,
+    summary="Start a validated remediation pathway",
+)
+async def start_remediation_pathway(
+    path_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_student),
+) -> StartPathwayResponse:
+    """Start a validated remediation pathway transitioning status from VALIDATED to IN_PROGRESS."""
+    repo = RemediationRepository(db)
+    path = await repo.get_path(path_id)
+    if not path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Remediation path not found",
+        )
+
+    updated_path = await repo.start_pathway(path_id)
+    return StartPathwayResponse(
+        id=updated_path.id,
+        competency_id=updated_path.competency_id,
+        status=updated_path.status,
+        started_at=updated_path.started_at,
+        message="Remediation pathway started successfully",
+    )
+
+
+@router.post(
     "/atoms/{atom_id}/complete",
     response_model=AtomCompleteResponse,
     summary="Mark a knowledge atom as complete",
@@ -204,6 +234,10 @@ async def complete_atom(
     total_atoms = len(result.scalars().all())
     completed_count = len(path.atoms_completed)
     progress_percent = (completed_count / total_atoms * 100) if total_atoms > 0 else 0
+
+    repo = RemediationRepository(db)
+    if completed_count >= total_atoms and total_atoms > 0:
+        await repo.complete_pathway_if_finished(path.id, total_atoms)
 
     # Check for engagement recommendation
     rec = engine.engagement_tracker.get_recommendation()

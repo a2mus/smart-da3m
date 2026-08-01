@@ -85,6 +85,11 @@ class RemediationService {
     return response.data
   }
 
+  async startPathway(pathId: string): Promise<{ id: string; competency_id: string; status: string; started_at: string; message: string }> {
+    const response = await api.post(`/remediation/pathway/${pathId}/start`)
+    return response.data
+  }
+
   async completeAtom(atomId: string, data: {
     time_spent_ms: number
     interactions_count: number

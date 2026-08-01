@@ -48,6 +48,16 @@ class RemediationPathRequest(BaseModel):
     student_group: str = Field(default="B", pattern="^[ABC]$")
 
 
+class StartPathwayResponse(BaseModel):
+    """Schema for starting a validated remediation pathway response."""
+
+    id: UUID
+    competency_id: str
+    status: RemediationPathStatus
+    started_at: datetime
+    message: str = "Remediation pathway started successfully"
+
+
 # ==================== Atom Completion Schemas ====================
 
 class AtomCompleteRequest(BaseModel):

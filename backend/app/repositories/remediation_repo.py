@@ -112,6 +112,26 @@ class RemediationRepository(BaseRepository[RemediationPath]):
         """Approve and validate a proposed remediation pathway."""
         return await self.update_path_status(path_id, RemediationPathStatus.VALIDATED)
 
+    async def start_pathway(self, path_id: UUID) -> Optional[RemediationPath]:
+        """Start a validated remediation pathway (VALIDATED -> IN_PROGRESS)."""
+        return await self.update_path_status(path_id, RemediationPathStatus.IN_PROGRESS)
+
+    async def complete_pathway_if_finished(
+        self, path_id: UUID, total_atoms_count: int
+    ) -> Optional[RemediationPath]:
+        """Auto-complete pathway if all atoms are finished (IN_PROGRESS -> COMPLETED)."""
+        path = await self.get_path(path_id)
+        if not path:
+            return None
+        completed_count = len(path.atoms_completed or [])
+        if completed_count >= total_atoms_count and total_atoms_count > 0:
+            if path.status == RemediationPathStatus.IN_PROGRESS:
+                from datetime import datetime, timezone
+                path.completed_at = datetime.now(timezone.utc)
+                await self.db.commit()
+                return await self.update_path_status(path_id, RemediationPathStatus.COMPLETED)
+        return path
+
     async def reject_proposal(
         self, path_id: UUID, feedback: str
     ) -> Optional[RemediationPath]:
