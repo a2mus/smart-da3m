@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import JSON, Column, DateTime, Enum, ForeignKey, Integer, String, Text, Uuid
+from sqlalchemy.orm import relationship
 
 from app.db.session import Base
 
@@ -44,6 +45,12 @@ class PedagogicalAlert(Base):
     __tablename__ = "pedagogical_alerts"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        Uuid(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     student_id = Column(
         Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
@@ -64,6 +71,8 @@ class PedagogicalAlert(Base):
     read_at = Column(DateTime(timezone=True), nullable=True)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
 
+    organization = relationship("Organization")
+
     def __repr__(self) -> str:
         return (
             f"<PedagogicalAlert(id={self.id}, student={self.student_id}, "
@@ -77,6 +86,12 @@ class AlertRecipient(Base):
     __tablename__ = "alert_recipients"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        Uuid(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     alert_id = Column(
         Uuid(as_uuid=True), ForeignKey("pedagogical_alerts.id", ondelete="CASCADE"), nullable=False
     )
@@ -88,6 +103,8 @@ class AlertRecipient(Base):
     delivered_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     read_at = Column(DateTime(timezone=True), nullable=True)
     dismissed_at = Column(DateTime(timezone=True), nullable=True)
+
+    organization = relationship("Organization")
 
     def __repr__(self) -> str:
         return f"<AlertRecipient(alert={self.alert_id}, user={self.user_id})>"

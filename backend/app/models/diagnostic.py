@@ -16,6 +16,7 @@ from sqlalchemy import (
     String,
     Uuid,
 )
+from sqlalchemy.orm import relationship
 
 from app.db.session import Base
 
@@ -61,6 +62,12 @@ class DiagnosticSession(Base):
     __tablename__ = "diagnostic_sessions"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        Uuid(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     student_id = Column(
         Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
@@ -78,6 +85,8 @@ class DiagnosticSession(Base):
     )
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
+    organization = relationship("Organization")
+
     def __repr__(self) -> str:
         return (
             f"<DiagnosticSession(id={self.id}, student={self.student_id}, "
@@ -91,6 +100,12 @@ class DiagnosticAnswer(Base):
     __tablename__ = "diagnostic_answers"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        Uuid(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     session_id = Column(
         Uuid(as_uuid=True),
         ForeignKey("diagnostic_sessions.id", ondelete="CASCADE"),
@@ -108,6 +123,8 @@ class DiagnosticAnswer(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
+    organization = relationship("Organization")
+
     def __repr__(self) -> str:
         return (
             f"<DiagnosticAnswer(id={self.id}, session={self.session_id}, "
@@ -121,6 +138,12 @@ class CompetencyProfile(Base):
     __tablename__ = "competency_profiles"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        Uuid(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     student_id = Column(
         Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
@@ -130,6 +153,8 @@ class CompetencyProfile(Base):
     last_assessed = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+
+    organization = relationship("Organization")
 
     def __repr__(self) -> str:
         return (

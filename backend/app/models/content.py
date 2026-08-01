@@ -6,7 +6,8 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Column, DateTime, Enum, ForeignKey, Integer, String, Text, Uuid
+from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Text, Uuid
+from sqlalchemy.orm import relationship
 
 from app.db.session import Base
 
@@ -32,6 +33,12 @@ class Module(Base):
     __tablename__ = "modules"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        Uuid(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     subject = Column(String(100), nullable=False, index=True)
     grade_level = Column(String(50), nullable=False, index=True)
     domain = Column(String(200), nullable=False)
@@ -39,6 +46,7 @@ class Module(Base):
     status = Column(
         Enum(ModuleStatus), default=ModuleStatus.DRAFT, nullable=False, index=True
     )
+    is_shared = Column(Boolean, default=False, nullable=False)
     created_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -47,6 +55,8 @@ class Module(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+    organization = relationship("Organization")
 
     def __repr__(self) -> str:
         return (
@@ -61,6 +71,12 @@ class Question(Base):
     __tablename__ = "questions"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        Uuid(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     module_id = Column(
         Uuid(as_uuid=True), ForeignKey("modules.id", ondelete="CASCADE"), nullable=False
     )
@@ -68,6 +84,7 @@ class Question(Base):
     difficulty_level = Column(Integer, nullable=False)  # 1-10 scale
     target_misconception_id = Column(String(50), nullable=True, index=True)
     estimated_time_sec = Column(Integer, nullable=False, default=60)
+    is_shared = Column(Boolean, default=False, nullable=False)
     created_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -76,6 +93,8 @@ class Question(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+    organization = relationship("Organization")
 
     def __repr__(self) -> str:
         return (
@@ -90,9 +109,16 @@ class KnowledgeAtom(Base):
     __tablename__ = "knowledge_atoms"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        Uuid(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     competency_id = Column(String(50), nullable=False, index=True)
     remediation_type = Column(Enum(RemediationType), nullable=False)
     content = Column(JSON, nullable=False)  # Title, description, media URLs, etc.
+    is_shared = Column(Boolean, default=False, nullable=False)
     created_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -101,6 +127,8 @@ class KnowledgeAtom(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+    organization = relationship("Organization")
 
     def __repr__(self) -> str:
         return (

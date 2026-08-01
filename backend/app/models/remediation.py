@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import JSON, Column, DateTime, Enum, ForeignKey, Integer, String, Uuid
+from sqlalchemy.orm import relationship
 
 from app.db.session import Base
 
@@ -26,6 +27,12 @@ class RemediationPath(Base):
     __tablename__ = "remediation_paths"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        Uuid(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     student_id = Column(
         Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
@@ -42,6 +49,8 @@ class RemediationPath(Base):
     )
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
+    organization = relationship("Organization")
+
     def __repr__(self) -> str:
         return (
             f"<RemediationPath(id={self.id}, student={self.student_id}, "
@@ -55,6 +64,12 @@ class AtomCompletion(Base):
     __tablename__ = "atom_completions"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        Uuid(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     path_id = Column(
         Uuid(as_uuid=True),
         ForeignKey("remediation_paths.id", ondelete="CASCADE"),
@@ -71,6 +86,8 @@ class AtomCompletion(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
+    organization = relationship("Organization")
+
     def __repr__(self) -> str:
         return (
             f"<AtomCompletion(id={self.id}, path={self.path_id}, "
@@ -84,6 +101,12 @@ class PassportAssessment(Base):
     __tablename__ = "passport_assessments"
 
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(
+        Uuid(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     student_id = Column(
         Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
@@ -96,6 +119,8 @@ class PassportAssessment(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    organization = relationship("Organization")
 
     def __repr__(self) -> str:
         return (
