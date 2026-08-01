@@ -157,8 +157,8 @@ export const authApi = {
   getMe: () => api.get('/auth/me'),
 
   // Register parent
-  registerParent: (email: string, password: string, language: 'AR' | 'FR' = 'AR') =>
-    api.post('/auth/register/parent', { email, password, language }),
+  registerParent: (email: string, password: string, language: 'AR' | 'FR' = 'AR', name?: string) =>
+    api.post('/auth/register/parent', { email, password, language, name }),
 
   // Register student (child)
   registerStudent: (parentId: string, pinCode: string) =>

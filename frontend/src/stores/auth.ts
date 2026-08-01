@@ -187,6 +187,22 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function registerParent(email: string, password: string, language: 'AR' | 'FR' = 'AR', name?: string) {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      await authApi.registerParent(email, password, language, name)
+      return await loginWithEmail(email, password)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } }
+      error.value = axiosError.response?.data?.detail || 'Registration failed'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   // Initialize from storage on app start
   async function initAuth() {
     const storedToken = localStorage.getItem('token')
@@ -214,6 +230,7 @@ export const useAuthStore = defineStore('auth', () => {
     canAccess,
     isOwnerOr,
     // Actions
+    registerParent,
     loginWithEmail,
     loginWithPin,
     refreshAccessToken,

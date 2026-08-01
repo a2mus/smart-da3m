@@ -291,12 +291,13 @@ async def logout():
     return {"message": "Successfully logged out"}
 
 
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/register/parent", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register_parent(
     request: ParentRegisterRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Register a new parent account."""
+    """Register a new parent account (self-registration for independent parents)."""
     result = await db.execute(select(User).where(User.email == request.email))
     if result.scalar_one_or_none():
         raise HTTPException(
@@ -314,8 +315,14 @@ async def register_parent(
     db.add(new_parent)
     await db.flush()
 
+    household_name = (
+        f"{request.name.strip()}'s Household"
+        if request.name and request.name.strip()
+        else f"{request.email}'s Household"
+    )
+
     household_org = Organization(
-        name=f"{request.email}'s Household",
+        name=household_name,
         type=OrganizationType.HOUSEHOLD,
     )
     db.add(household_org)

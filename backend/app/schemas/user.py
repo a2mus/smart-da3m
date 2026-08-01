@@ -92,6 +92,7 @@ class ParentRegisterRequest(BaseModel):
 
     email: EmailStr
     password: str = Field(..., min_length=8)
+    name: Optional[str] = None
     language: str = Field(default="AR", pattern="^(AR|FR)$")
 
 

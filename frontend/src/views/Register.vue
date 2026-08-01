@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { authApi } from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const selectedRole = ref<'PARENT' | 'EXPERT' | null>(null)
+const name = ref('')
 const email = ref('')
 const password = ref('')
 const language = ref<'AR' | 'FR'>('AR')
@@ -41,8 +43,17 @@ async function handleRegister() {
   isLoading.value = true
   error.value = null
   try {
-    await authApi.registerParent(email.value, password.value, language.value)
-    success.value = true
+    const loggedIn = await authStore.registerParent(
+      email.value,
+      password.value,
+      language.value,
+      name.value.trim() || undefined
+    )
+    if (loggedIn) {
+      router.push('/parent/dashboard')
+    } else {
+      error.value = authStore.error || 'فشلت عملية التسجيل. يرجى المحاولة مرة أخرى.'
+    }
   } catch (err: any) {
     error.value = err.response?.data?.detail || 'فشلت عملية التسجيل. يرجى المحاولة مرة أخرى.'
   } finally {
@@ -201,6 +212,19 @@ async function handleRegister() {
           <h3 class="text-xl font-bold text-on-surface mb-6 text-center">
             حساب ولي أمر جديد
           </h3>
+
+          <div>
+            <label class="block text-sm font-medium text-on-surface-variant mb-1">الاسم الكامل (اختياري)</label>
+            <input
+              v-model="name"
+              type="text"
+              class="w-full px-4 py-3 rounded-xl border-2 border-outline-variant bg-surface-container-lowest
+                     text-on-surface placeholder:text-on-surface-variant/40
+                     focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all
+                     font-['Inter','Tajawal'] text-start"
+              placeholder="مثال: أحمد محمد"
+            >
+          </div>
 
           <div>
             <label class="block text-sm font-medium text-on-surface-variant mb-1">البريد الإلكتروني</label>
