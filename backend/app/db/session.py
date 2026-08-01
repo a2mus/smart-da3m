@@ -6,6 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import declarative_base
 
 from app.core.config import settings
+from app.core.tenant import setup_tenant_query_filter
+
+# Register automatic tenant query filter event listener
+setup_tenant_query_filter()
 
 # Create async engine
 engine = create_async_engine(
