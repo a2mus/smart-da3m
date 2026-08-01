@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.endpoints import analytics, auth, content, dashboard, diagnostic, remediation
 from app.core.config import settings
+from app.core.logging_middleware import LoggingMiddleware
 from app.core.tenant import setup_tenant_query_filter
 from app.core.tenant_middleware import TenantMiddleware
 from app.db.session import engine
@@ -44,7 +45,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Tenant Middleware for multi-tenant isolation
+app.add_middleware(LoggingMiddleware)
 app.add_middleware(TenantMiddleware)
 
 # Include API routers
