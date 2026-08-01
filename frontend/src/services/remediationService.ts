@@ -58,6 +58,25 @@ export interface PassportEvaluation {
   message: string
 }
 
+export interface ValidationQueueItem {
+  id: string
+  student_id: string
+  student_name: string
+  competency_id: string
+  failed_competencies: string[]
+  selected_atoms: Array<{
+    id: string
+    competency_id: string
+    remediation_type: string
+    content: any
+  }>
+  ai_pedagogical_justification?: string
+  llm_annotations?: string
+  status: string
+  organization_id: string
+  created_at: string
+}
+
 class RemediationService {
   async getPathway(competencyId: string, studentGroup = 'B'): Promise<RemediationPath> {
     const response = await api.get(`/remediation/pathway/${competencyId}`, {
@@ -104,6 +123,21 @@ class RemediationService {
       competency_id: competencyId,
       answers,
     })
+    return response.data
+  }
+
+  async getValidationQueue(): Promise<ValidationQueueItem[]> {
+    const response = await api.get('/remediation/validation-queue')
+    return response.data
+  }
+
+  async validateProposal(pathId: string): Promise<{ id: string; status: string; message: string }> {
+    const response = await api.post(`/remediation/remediation-paths/${pathId}/validate`)
+    return response.data
+  }
+
+  async rejectProposal(pathId: string, feedback: string): Promise<{ competency_id: string; status: string }> {
+    const response = await api.post(`/remediation/remediation-paths/${pathId}/reject`, { feedback })
     return response.data
   }
 }

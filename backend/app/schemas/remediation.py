@@ -151,3 +151,30 @@ class RemediationStatusResponse(BaseModel):
     atoms_completed: List[UUID]
     progress_percent: float
     can_take_passport: bool
+
+
+class ValidationQueueItemResponse(BaseModel):
+    id: UUID
+    student_id: UUID
+    student_name: Optional[str] = "Student"
+    competency_id: str
+    failed_competencies: List[str] = Field(default_factory=list)
+    selected_atoms: List[Dict[str, Any]] = Field(default_factory=list)
+    ai_pedagogical_justification: Optional[str] = None
+    llm_annotations: Optional[str] = None
+    status: RemediationPathStatus
+    organization_id: UUID
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class RejectProposalRequest(BaseModel):
+    feedback: str = Field(..., min_length=1, max_length=1000)
+
+
+class ApproveProposalResponse(BaseModel):
+    id: UUID
+    status: RemediationPathStatus
+    message: str = "Proposal successfully validated"

@@ -79,6 +79,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, allowedRoles: ['EXPERT'] }
   },
   {
+    path: '/expert/validation',
+    name: 'ValidationQueue',
+    component: () => import('@/views/expert/ValidationQueueView.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['EXPERT'] }
+  },
+  {
     path: '/expert/modules',
     name: 'ModuleList',
     component: () => import('@/views/expert/ModuleList.vue'),

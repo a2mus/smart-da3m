@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.organization import Organization, OrganizationType
 from app.models.remediation import AtomCompletion, PassportAssessment, RemediationPath, RemediationPathStatus
 from app.repositories.base import BaseRepository
 from app.services.remediation_service import validate_transition
@@ -83,6 +84,44 @@ class RemediationRepository(BaseRepository[RemediationPath]):
             .limit(limit)
         )
         return list(result.scalars().all())
+
+    async def get_validation_queue(
+        self, organization_id: UUID, is_pedagogue_pool: bool = False
+    ) -> List[RemediationPath]:
+        """Fetch proposed remediation pathways for expert validation queue (SCHOOL vs HOUSEHOLD routing)."""
+        if is_pedagogue_pool:
+            result = await self.db.execute(
+                select(RemediationPath)
+                .join(Organization, RemediationPath.organization_id == Organization.id)
+                .where(
+                    RemediationPath.status == RemediationPathStatus.PROPOSED,
+                    Organization.type == OrganizationType.HOUSEHOLD,
+                ),
+                execution_options={"skip_tenant_filter": True},
+            )
+        else:
+            result = await self.db.execute(
+                select(RemediationPath).where(
+                    RemediationPath.status == RemediationPathStatus.PROPOSED,
+                    RemediationPath.organization_id == organization_id,
+                )
+            )
+        return list(result.scalars().all())
+
+    async def validate_proposal(self, path_id: UUID) -> Optional[RemediationPath]:
+        """Approve and validate a proposed remediation pathway."""
+        return await self.update_path_status(path_id, RemediationPathStatus.VALIDATED)
+
+    async def reject_proposal(
+        self, path_id: UUID, feedback: str
+    ) -> Optional[RemediationPath]:
+        """Reject a proposed remediation pathway with feedback, transitioning back to DIAGNOSED."""
+        path = await self.get_path(path_id)
+        if not path:
+            return None
+        path.rejection_feedback = feedback
+        await self.db.commit()
+        return await self.update_path_status(path_id, RemediationPathStatus.DIAGNOSED)
 
     # ==================== Atom Completion Operations ====================
 

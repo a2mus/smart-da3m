@@ -48,6 +48,8 @@ class RemediationPath(Base):
         nullable=False,
     )
     atoms_completed = Column(JSON, default=list)  # stored as JSON array of UUID strings
+    proposal_data = Column(JSON, nullable=True)  # stored proposal details (atoms, annotations, justification)
+    rejection_feedback = Column(String(1000), nullable=True)  # feedback provided on rejection
     current_difficulty = Column(Integer, default=5)  # Dynamic difficulty tracking
     started_at = Column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

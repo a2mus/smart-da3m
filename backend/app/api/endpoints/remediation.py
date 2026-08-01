@@ -9,9 +9,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_student, get_db
+from app.api.deps import get_current_expert, get_current_student, get_current_user, get_db
 from app.models.content import KnowledgeAtom, Question
 from app.models.diagnostic import CompetencyProfile, MasteryLevel
+from app.models.organization import Organization, OrganizationType
 from app.models.remediation import (
     AtomCompletion,
     PassportAssessment,
@@ -21,17 +22,20 @@ from app.models.remediation import (
 from app.models.user import User
 from app.repositories.remediation_repo import RemediationRepository
 from app.schemas.remediation import (
+    ApproveProposalResponse,
     AtomCompleteRequest,
     AtomCompleteResponse,
     EngagementStatusResponse,
     PassportEvaluateRequest,
     PassportEvaluateResponse,
     PassportQuestionsResponse,
+    RejectProposalRequest,
     RemediationAtom,
     RemediationPathRequest,
     RemediationPathResponse,
     RemediationStatusResponse,
     StateTransitionRequest,
+    ValidationQueueItemResponse,
 )
 from app.services.remediation_engine import RemediationEngine
 from app.services.remediation_service import validate_transition
@@ -303,6 +307,127 @@ async def transition_pathway_status(
         atoms_completed=updated_path.atoms_completed or [],
         progress_percent=progress_percent,
         can_take_passport=can_take_passport,
+    )
+
+
+@router.get(
+    "/validation-queue",
+    response_model=List[ValidationQueueItemResponse],
+    summary="Get expert validation queue for proposed remediation pathways",
+)
+async def get_validation_queue(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_expert),
+) -> List[ValidationQueueItemResponse]:
+    repo = RemediationRepository(db)
+    is_pedagogue = False
+    user_org_id = getattr(current_user, "organization_id", None)
+    if user_org_id:
+        org_res = await db.execute(select(Organization).where(Organization.id == user_org_id))
+        org = org_res.scalar_one_or_none()
+        if org and org.type == OrganizationType.HOUSEHOLD:
+            is_pedagogue = True
+
+    paths = await repo.get_validation_queue(
+        organization_id=user_org_id, is_pedagogue_pool=is_pedagogue
+    )
+
+    items = []
+    for p in paths:
+        student_name = "Student"
+        if p.student_id:
+            st_res = await db.execute(select(User).where(User.id == p.student_id))
+            st = st_res.scalar_one_or_none()
+            if st and st.full_name:
+                student_name = st.full_name
+
+        p_data = p.proposal_data or {}
+        items.append(
+            ValidationQueueItemResponse(
+                id=p.id,
+                student_id=p.student_id,
+                student_name=student_name,
+                competency_id=p.competency_id,
+                failed_competencies=[p.competency_id],
+                selected_atoms=p_data.get("atoms", []),
+                ai_pedagogical_justification=p_data.get(
+                    "ai_pedagogical_justification", "AI Generated Remediation Plan"
+                ),
+                llm_annotations=p_data.get("llm_annotations"),
+                status=p.status,
+                organization_id=p.organization_id,
+                created_at=p.started_at,
+            )
+        )
+    return items
+
+
+@router.post(
+    "/remediation-paths/{path_id}/validate",
+    response_model=ApproveProposalResponse,
+    summary="Approve a proposed remediation pathway",
+)
+async def validate_remediation_proposal(
+    path_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_expert),
+) -> ApproveProposalResponse:
+    repo = RemediationRepository(db)
+    path = await repo.get_path(path_id)
+    if not path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Remediation path not found",
+        )
+
+    updated_path = await repo.validate_proposal(path_id)
+    return ApproveProposalResponse(
+        id=updated_path.id,
+        status=updated_path.status,
+        message="Proposal successfully validated",
+    )
+
+
+@router.post(
+    "/remediation-paths/{path_id}/reject",
+    response_model=RemediationStatusResponse,
+    summary="Reject a proposed remediation pathway with feedback",
+)
+async def reject_remediation_proposal(
+    path_id: UUID,
+    reject_data: RejectProposalRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_expert),
+) -> RemediationStatusResponse:
+    repo = RemediationRepository(db)
+    path = await repo.get_path(path_id)
+    if not path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Remediation path not found",
+        )
+
+    updated_path = await repo.reject_proposal(path_id, reject_data.feedback)
+
+    result = await db.execute(
+        select(KnowledgeAtom).where(
+            KnowledgeAtom.competency_id == updated_path.competency_id
+        )
+    )
+    total_atoms = len(result.scalars().all())
+    completed_count = (
+        len(updated_path.atoms_completed) if updated_path.atoms_completed else 0
+    )
+    progress_percent = (
+        (completed_count / total_atoms * 100) if total_atoms > 0 else 0
+    )
+
+    return RemediationStatusResponse(
+        competency_id=updated_path.competency_id,
+        status=updated_path.status,
+        atoms_completed=updated_path.atoms_completed or [],
+        progress_percent=progress_percent,
+        can_take_passport=False,
     )
 
 
