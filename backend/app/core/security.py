@@ -115,9 +115,15 @@ def get_current_active_user(token: str = None) -> Optional["User"]:
     return None
 
 
-def require_expert(user: "User" = None) -> "User":
+def require_expert(user: Any = None) -> Any:
     """Dependency that requires an expert user."""
     from fastapi import HTTPException, status
-    if not user or user.role.value not in ("expert", "admin"):
+    from app.models.user import UserRole
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Expert access required")
+    
+    role_val = user.role.value if hasattr(user.role, "value") else str(user.role)
+    if role_val not in (UserRole.EXPERT.value, "EXPERT", "ADMIN"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Expert access required")
     return user

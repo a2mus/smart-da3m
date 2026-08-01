@@ -39,7 +39,7 @@ development_status:
   1-5-jwt-organization-claims-auth-flow-update: done
   1-6-self-registration-flow-for-independent-parents: done
   1-7-frontend-org-switcher-component: done
-  1-8-fix-rbac-enum-case-mismatch-analytics-auth: backlog
+  1-8-fix-rbac-enum-case-mismatch-analytics-auth: done
   epic-1-retrospective: optional
 
   epic-2: backlog
