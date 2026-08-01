@@ -19,6 +19,7 @@ from app.models.remediation import (
     RemediationPathStatus,
 )
 from app.models.user import User
+from app.repositories.remediation_repo import RemediationRepository
 from app.schemas.remediation import (
     AtomCompleteRequest,
     AtomCompleteResponse,
@@ -26,11 +27,14 @@ from app.schemas.remediation import (
     PassportEvaluateRequest,
     PassportEvaluateResponse,
     PassportQuestionsResponse,
+    RemediationAtom,
     RemediationPathRequest,
     RemediationPathResponse,
     RemediationStatusResponse,
+    StateTransitionRequest,
 )
 from app.services.remediation_engine import RemediationEngine
+from app.services.remediation_service import validate_transition
 
 router = APIRouter()
 
@@ -61,7 +65,7 @@ async def get_remediation_pathway(
         path = RemediationPath(
             student_id=current_user.id,
             competency_id=competency_id,
-            status=RemediationPathStatus.IN_PROGRESS,
+            status=RemediationPathStatus.DIAGNOSED,
             atoms_completed=[],
         )
         db.add(path)
@@ -256,6 +260,47 @@ async def get_remediation_status(
         competency_id=competency_id,
         status=path.status,
         atoms_completed=path.atoms_completed or [],
+        progress_percent=progress_percent,
+        can_take_passport=can_take_passport,
+    )
+
+
+@router.post(
+    "/pathway/{path_id}/transition",
+    response_model=RemediationStatusResponse,
+    summary="Transition remediation pathway status via state machine guard",
+)
+async def transition_pathway_status(
+    path_id: UUID,
+    transition_data: StateTransitionRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_student),
+) -> RemediationStatusResponse:
+    """Transition a remediation path's status with state machine guard enforcement."""
+    repo = RemediationRepository(db)
+    path = await repo.get_path(path_id)
+    if not path:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Remediation path not found",
+        )
+
+    updated_path = await repo.update_path_status(path_id, transition_data.target_status)
+
+    result = await db.execute(
+        select(KnowledgeAtom).where(
+            KnowledgeAtom.competency_id == updated_path.competency_id
+        )
+    )
+    total_atoms = len(result.scalars().all())
+    completed_count = len(updated_path.atoms_completed) if updated_path.atoms_completed else 0
+    progress_percent = (completed_count / total_atoms * 100) if total_atoms > 0 else 0
+    can_take_passport = progress_percent >= 50 or completed_count >= 3
+
+    return RemediationStatusResponse(
+        competency_id=updated_path.competency_id,
+        status=updated_path.status,
+        atoms_completed=updated_path.atoms_completed or [],
         progress_percent=progress_percent,
         can_take_passport=can_take_passport,
     )

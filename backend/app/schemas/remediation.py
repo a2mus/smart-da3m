@@ -128,6 +128,21 @@ class EngagementStatusResponse(BaseModel):
     message: str
 
 
+class StateTransitionRequest(BaseModel):
+    """Schema for requesting a state machine status transition."""
+
+    target_status: RemediationPathStatus
+
+
+class StateTransitionErrorDetail(BaseModel):
+    """Schema for state transition error details returned with HTTP 409 Conflict."""
+
+    code: str = "INVALID_STATE_TRANSITION"
+    message: str
+    current_status: str
+    target_status: str
+
+
 class RemediationStatusResponse(BaseModel):
     """Schema for remediation status."""
 

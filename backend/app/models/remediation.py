@@ -13,12 +13,17 @@ from app.db.session import Base
 
 
 class RemediationPathStatus(str, enum.Enum):
-    """Remediation pathway status."""
+    """Remediation pathway status machine states (AD-2)."""
 
+    DIAGNOSED = "DIAGNOSED"
+    PROPOSED = "PROPOSED"
+    VALIDATED = "VALIDATED"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
     ABANDONED = "ABANDONED"
+    PASSPORT_TESTING = "PASSPORT_TESTING"
+    MASTERED = "MASTERED"
+    RETIRED = "RETIRED"
 
 
 class RemediationPath(Base):

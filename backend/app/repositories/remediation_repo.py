@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.remediation import AtomCompletion, PassportAssessment, RemediationPath, RemediationPathStatus
 from app.repositories.base import BaseRepository
+from app.services.remediation_service import validate_transition
 
 
 class RemediationRepository(BaseRepository[RemediationPath]):
@@ -19,6 +20,22 @@ class RemediationRepository(BaseRepository[RemediationPath]):
         super().__init__(RemediationPath, db)
 
     # ==================== Remediation Path Operations ====================
+
+    async def update_path_status(
+        self, path_id: UUID, target_status: RemediationPathStatus
+    ) -> Optional[RemediationPath]:
+        """Update remediation path status after enforcing transition guard."""
+        path = await self.get_path(path_id)
+        if not path:
+            return None
+
+        # Enforce state machine guard
+        validate_transition(path.status, target_status)
+
+        path.status = target_status
+        await self.db.commit()
+        await self.db.refresh(path)
+        return path
 
     async def create_path(
         self,

@@ -50,7 +50,7 @@ development_status:
   epic-2-retrospective: optional
 
   epic-3: backlog
-  3-1-remediation-state-machine-add-missing-states-transition-guard: backlog
+  3-1-remediation-state-machine-add-missing-states-transition-guard: done
   3-2-celery-tasks-infrastructure-litellm-integration: backlog
   3-3-expert-validation-queue-workflow: backlog
   3-4-student-remediation-execution-atom-delivery-progress-tracking: backlog
