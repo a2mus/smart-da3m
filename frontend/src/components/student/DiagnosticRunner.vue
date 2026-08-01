@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { diagnosticService, type Question, type AnswerSubmitResponse } from '@/services/diagnosticService'
@@ -24,9 +24,48 @@ const showFeedback = ref(false)
 const lastAnswerCorrect = ref<boolean | null>(null)
 const lastErrorClass = ref<string | null>(null)
 const totalQuestions = ref(10)
+const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true)
+const isSyncing = ref(false)
 
 const canSubmit = computed(() => !!selectedAnswer.value && !isSubmitting.value && !showFeedback.value)
 const progress = computed(() => Math.min(100, (questionNumber.value / totalQuestions.value) * 100))
+
+const flushPendingAnswers = async () => {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) return
+  isSyncing.value = true
+  try {
+    const pending = await offlineStore.getPendingAnswers()
+    for (const item of pending) {
+      try {
+        await diagnosticService.submitAnswer({
+          session_id: item.session_id,
+          question_id: item.question_id,
+          answer: item.answer,
+          time_ms: item.time_ms || 0,
+        })
+        if (item.id) {
+          await offlineStore.markAnswerSynced(item.id)
+        }
+      } catch (e) {
+        console.warn('Failed to sync pending answer during flush:', e)
+        break
+      }
+    }
+  } catch (err) {
+    console.error('Error in flushPendingAnswers:', err)
+  } finally {
+    isSyncing.value = false
+  }
+}
+
+const handleOnline = () => {
+  isOnline.value = true
+  flushPendingAnswers()
+}
+
+const handleOffline = () => {
+  isOnline.value = false
+}
 
 const errorClassLabels: Record<string, string> = {
   RESOURCE: 'راجع الأساسيات — هناك مفهوم سابق تحتاج إتقانه',
@@ -82,36 +121,54 @@ const submitAnswer = async () => {
 
   isSubmitting.value = true
   const timeMs = Date.now() - startTime.value
+  const questionId = currentQuestion.value.id
+  const answerVal = selectedAnswer.value
+
+  let pendingId: number | null = null
+  try {
+    pendingId = await offlineStore.queueAnswer({
+      session_id: sessionId.value,
+      question_id: questionId,
+      answer: answerVal,
+      time_ms: timeMs,
+      sync_status: 'PENDING',
+    })
+  } catch (queueErr) {
+    console.error('Failed to queue answer in Dexie:', queueErr)
+  }
 
   try {
     const response = await diagnosticService.submitAnswer({
       session_id: sessionId.value,
-      question_id: currentQuestion.value.id,
-      answer: selectedAnswer.value,
+      question_id: questionId,
+      answer: answerVal,
       time_ms: timeMs,
     })
 
+    if (pendingId) {
+      await offlineStore.markAnswerSynced(pendingId)
+    }
+
     await offlineStore.updateSessionAnswers(sessionId.value, [
       {
-        question_id: currentQuestion.value.id,
-        answer: selectedAnswer.value,
+        question_id: questionId,
+        answer: answerVal,
         is_correct: response.is_correct,
         time_ms: timeMs,
         answered_at: new Date(),
       },
     ])
 
-    lastAnswerCorrect.value = response.is_correct
-    lastErrorClass.value = response.error_classification !== 'NONE' ? response.error_classification : null
-    showFeedback.value = true
+    const isCorrect = response.is_correct ?? true
+    lastAnswerCorrect.value = isCorrect
+    lastErrorClass.value = response.error_classification && response.error_classification !== 'NONE' ? response.error_classification : null
+    showFeedback.value = !response.is_complete && !isCorrect
 
-    // Auto-advance after short delay for correct answers
-    if (response.is_correct && !response.is_complete) {
-      setTimeout(() => advanceToNext(response), 800)
+    if (response.is_complete || isCorrect) {
+      advanceToNext(response)
     }
   } catch (err) {
-    error.value = t('diagnostic.error')
-    console.error('Failed to submit answer:', err)
+    console.warn('Network submission failed, answer retained in offline queue:', err)
     showFeedback.value = false
   } finally {
     isSubmitting.value = false
@@ -137,7 +194,6 @@ const advanceToNext = (response: AnswerSubmitResponse) => {
 
 const continueAfterFeedback = () => {
   if (results.value || !currentQuestion.value) return
-  // Re-fetch or use stored response — in real flow, we stored the last response
   showFeedback.value = false
   lastAnswerCorrect.value = null
   lastErrorClass.value = null
@@ -149,7 +205,20 @@ const finishDiagnostic = () => {
   router.push('/student')
 }
 
-onMounted(startDiagnostic)
+onMounted(() => {
+  startDiagnostic()
+  if (typeof window !== 'undefined') {
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+  }
+})
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('online', handleOnline)
+    window.removeEventListener('offline', handleOffline)
+  }
+})
 </script>
 
 <template>
@@ -159,6 +228,21 @@ onMounted(startDiagnostic)
     dir="rtl"
   >
     <div class="max-w-3xl mx-auto">
+      <!-- Offline / Syncing Banner -->
+      <div
+        v-if="!isOnline || isSyncing"
+        data-testid="offline-banner"
+        class="bg-secondary-container text-on-surface-variant border border-outline-variant px-4 py-2 rounded-xl mb-4 flex items-center justify-between text-sm"
+      >
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-secondary">{{ isOnline ? 'sync' : 'wifi_off' }}</span>
+          <span>{{ isOnline ? 'جاري المزامنة...' : 'أنت تفاعلي حالياً دون اتصال — سيتم حفظ إجاباتك ومزامنتها لاحقاً' }}</span>
+        </div>
+        <span
+          v-if="isSyncing"
+          class="animate-spin material-symbols-outlined text-primary"
+        >progress_activity</span>
+      </div>
       <!-- Loading State -->
       <div
         v-if="isLoading"

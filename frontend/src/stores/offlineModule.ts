@@ -33,15 +33,27 @@ export interface OfflineAnswer {
   answered_at: Date
 }
 
+export interface PendingAnswer {
+  id?: number
+  session_id: string
+  question_id: string
+  answer: string
+  time_ms?: number
+  sync_status: 'PENDING' | 'SYNCED'
+  created_at: Date
+}
+
 export class OfflineDatabase extends Dexie {
   questions!: Table<OfflineQuestion>
   sessions!: Table<OfflineSession>
+  pending_answers!: Table<PendingAnswer>
 
   constructor() {
     super('IhsaneOfflineDB')
     this.version(1).stores({
       questions: 'id, module_id, difficulty_level',
       sessions: 'id, student_id, module_id, status',
+      pending_answers: '++id, session_id, question_id, sync_status, created_at',
     })
   }
 }
@@ -86,6 +98,23 @@ class OfflineModuleStore {
 
   async markSessionSynced(sessionId: string): Promise<void> {
     await offlineDB.sessions.update(sessionId, { status: 'COMPLETED' })
+  }
+
+  async queueAnswer(answer: Omit<PendingAnswer, 'id' | 'created_at'> & { created_at?: Date }): Promise<number> {
+    const id = await offlineDB.pending_answers.add({
+      ...answer,
+      created_at: answer.created_at || new Date(),
+    })
+    return id as number
+  }
+
+  async getPendingAnswers(): Promise<PendingAnswer[]> {
+    const pending = await offlineDB.pending_answers.where('sync_status').equals('PENDING').toArray()
+    return pending.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+  }
+
+  async markAnswerSynced(id: number): Promise<void> {
+    await offlineDB.pending_answers.update(id, { sync_status: 'SYNCED' })
   }
 
   async clearCachedModule(moduleId: string): Promise<void> {

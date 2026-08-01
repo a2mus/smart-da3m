@@ -100,6 +100,7 @@ async def test_diagnostic_answer_correct_bkt_update(async_client: AsyncClient, d
 
         diag_repo_inst = MockDiagRepo.return_value
         diag_repo_inst.get_session = AsyncMock(return_value=mock_session)
+        diag_repo_inst.get_answer = AsyncMock(return_value=None)
         diag_repo_inst.get_competency_profile = AsyncMock(return_value=None)  # initial 0.5
         diag_repo_inst.update_or_create_competency_profile = AsyncMock()
         diag_repo_inst.record_answer = AsyncMock(return_value=mock_answer_rec)
@@ -175,3 +176,71 @@ async def test_diagnostic_results_endpoint(async_client: AsyncClient, db, mock_s
         assert data["mastery_level"] == "PROFICIENT"
         assert data["total_questions"] == 10
         assert data["correct_answers"] == 10
+
+
+@pytest.mark.asyncio
+async def test_diagnostic_answer_idempotency_duplicate_submission(async_client: AsyncClient, db, mock_student):
+    """Test duplicate answer submission returns 200 OK without double updating BKT or duplicate answer records."""
+    session_id = uuid4()
+    module_id = uuid4()
+    question_id = uuid4()
+
+    mock_session = MagicMock()
+    mock_session.id = session_id
+    mock_session.student_id = mock_student.id
+    mock_session.module_id = module_id
+    mock_session.status = DiagnosticSessionStatus.IN_PROGRESS
+    mock_session.organization_id = mock_student.organization_id
+
+    mock_module = MagicMock()
+    mock_module.competency_id = "MATH-C1"
+
+    mock_question = MagicMock()
+    mock_question.id = question_id
+    mock_question.content = {"correct_answer": "4"}
+    mock_question.difficulty_level = 5
+    mock_question.target_misconception_id = None
+
+    mock_existing_answer = MagicMock()
+    mock_existing_answer.question_id = question_id
+    mock_existing_answer.is_correct = 1
+    mock_existing_answer.error_classification = ErrorClassification.NONE
+
+    mock_profile = MagicMock()
+    mock_profile.p_learned = 0.75
+    mock_profile.mastery_level = MasteryLevel.PROFICIENT
+
+    with patch("app.api.endpoints.diagnostic.DiagnosticRepository") as MockDiagRepo, \
+         patch("app.api.endpoints.diagnostic.ContentRepository") as MockContentRepo, \
+         patch("app.api.endpoints.diagnostic.get_current_student", return_value=mock_student):
+
+        diag_repo_inst = MockDiagRepo.return_value
+        diag_repo_inst.get_session = AsyncMock(return_value=mock_session)
+        diag_repo_inst.get_answer = AsyncMock(return_value=mock_existing_answer)
+        diag_repo_inst.get_competency_profile = AsyncMock(return_value=mock_profile)
+        diag_repo_inst.get_session_answers = AsyncMock(return_value=[mock_existing_answer])
+        diag_repo_inst.update_or_create_competency_profile = AsyncMock()
+        diag_repo_inst.record_answer = AsyncMock()
+
+        content_repo_inst = MockContentRepo.return_value
+        content_repo_inst.get_question = AsyncMock(return_value=mock_question)
+        content_repo_inst.get_module = AsyncMock(return_value=mock_module)
+        content_repo_inst.list_module_questions = AsyncMock(return_value=[mock_question])
+
+        response = await async_client.post(
+            "/api/v1/diagnostic/answer",
+            json={
+                "session_id": str(session_id),
+                "question_id": str(question_id),
+                "answer": "4",
+                "time_ms": 10000,
+            },
+            headers={"Authorization": f"Bearer test-token-{mock_student.id}"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["is_correct"] is True
+        assert data["error_classification"] == "NONE"
+        diag_repo_inst.update_or_create_competency_profile.assert_not_called()
+        diag_repo_inst.record_answer.assert_not_called()

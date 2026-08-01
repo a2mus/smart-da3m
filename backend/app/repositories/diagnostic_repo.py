@@ -76,6 +76,18 @@ class DiagnosticRepository(BaseRepository[DiagnosticSession]):
 
     # ==================== Diagnostic Answer ====================
 
+    async def get_answer(
+        self, session_id: UUID, question_id: UUID
+    ) -> Optional[DiagnosticAnswer]:
+        """Get an existing answer recorded for a (session_id, question_id) pair."""
+        result = await self.db.execute(
+            select(DiagnosticAnswer).where(
+                DiagnosticAnswer.session_id == session_id,
+                DiagnosticAnswer.question_id == question_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def record_answer(
         self,
         session_id: UUID,

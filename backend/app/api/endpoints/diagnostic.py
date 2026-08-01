@@ -116,6 +116,81 @@ async def submit_answer(
             detail="Question not found",
         )
 
+    existing_answer = await diag_repo.get_answer(answer_data.session_id, answer_data.question_id)
+    if existing_answer:
+        is_correct = bool(existing_answer.is_correct)
+        error_classification_val = (
+            existing_answer.error_classification.value
+            if hasattr(existing_answer.error_classification, "value")
+            else str(existing_answer.error_classification)
+        )
+        module = await content_repo.get_module(session.module_id)
+        competency_id = module.competency_id if module else "C1"
+        profile = await diag_repo.get_competency_profile(current_user.id, competency_id)
+        current_p_learned = profile.p_learned if profile else 0.5
+        mastery_level_val = (
+            profile.mastery_level.value if profile and hasattr(profile.mastery_level, "value") else "FAMILIAR"
+        )
+        answers = await diag_repo.get_session_answers(answer_data.session_id)
+        engine = DiagnosticEngine()
+        is_complete = engine.is_session_complete(
+            answers_count=len(answers),
+            current_p_learned=current_p_learned,
+        )
+        if not is_complete:
+            answered_ids = [str(a.question_id) for a in answers]
+            module_questions = await content_repo.list_module_questions(session.module_id)
+            questions_dicts = [
+                {
+                    "id": str(q.id),
+                    "content": q.content,
+                    "difficulty_level": q.difficulty_level,
+                    "target_misconception_id": q.target_misconception_id,
+                    "estimated_time_sec": q.estimated_time_sec,
+                    "_question_obj": q,
+                }
+                for q in module_questions
+            ]
+            selected_dict = engine.question_selector.select_next_question(
+                questions=questions_dicts,
+                answered_question_ids=answered_ids,
+                current_mastery=current_p_learned,
+                target_misconceptions=[question.target_misconception_id] if question.target_misconception_id else [],
+            )
+            if not selected_dict:
+                is_complete = True
+            else:
+                next_q = selected_dict["_question_obj"]
+                return AnswerSubmitResponse(
+                    is_correct=is_correct,
+                    error_classification=ErrorClassification(error_classification_val),
+                    current_mastery=current_p_learned,
+                    mastery_level=mastery_level_val,
+                    next_question={
+                        "id": str(next_q.id),
+                        "content": next_q.content,
+                        "difficulty_level": next_q.difficulty_level,
+                        "estimated_time_sec": next_q.estimated_time_sec,
+                    },
+                    is_complete=False,
+                )
+        if is_complete:
+            correct_count = sum(a.is_correct for a in answers)
+            eval_results = engine.evaluate_session_results(
+                session_id=session.id,
+                final_p_learned=current_p_learned,
+                correct_count=correct_count,
+                total_count=len(answers),
+            )
+            return AnswerSubmitResponse(
+                is_correct=is_correct,
+                error_classification=ErrorClassification(error_classification_val),
+                current_mastery=eval_results["mastery_probability"],
+                mastery_level=eval_results["mastery_level"],
+                next_question=None,
+                is_complete=True,
+            )
+
     correct_answer = question.content.get("correct_answer", "")
     is_correct = answer_data.answer.strip().lower() == correct_answer.strip().lower()
 
