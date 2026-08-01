@@ -1,0 +1,105 @@
+# generated: 2026-08-01T01:50:00Z
+# last_updated: 2026-08-01T01:50:00Z
+# project: Ihsane Platform
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+generated: 2026-08-01T01:50:00Z
+last_updated: 2026-08-01T01:50:00Z
+project: Ihsane Platform
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  epic-1: backlog
+  1-1-axios-snake-camel-transform-frontend-http-boundary: backlog
+  1-2-organization-organizationmember-models-migrations: backlog
+  1-3-add-organization-id-fk-to-all-tenant-scoped-models: backlog
+  1-4-tenant-middleware-automatic-query-filtering: backlog
+  1-5-jwt-organization-claims-auth-flow-update: backlog
+  1-6-self-registration-flow-for-independent-parents: backlog
+  1-7-frontend-org-switcher-component: backlog
+  1-8-fix-rbac-enum-case-mismatch-analytics-auth: backlog
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-create-backend-engines-layer-extract-stateless-domain-logic: backlog
+  2-2-create-backend-repositories-layer-centralize-db-access: backlog
+  2-3-wire-diagnostic-endpoint-to-engine-kill-hardcoded-mastery: backlog
+  2-4-structured-json-logging-middleware: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-remediation-state-machine-add-missing-states-transition-guard: backlog
+  3-2-celery-tasks-infrastructure-litellm-integration: backlog
+  3-3-expert-validation-queue-workflow: backlog
+  3-4-student-remediation-execution-atom-delivery-progress-tracking: backlog
+  3-5-spaced-re-surfacing-of-failed-items-fr-16: backlog
+  3-6-passport-competency-task-wire-orphaned-component: backlog
+  3-7-frontend-remediationstore-remediation-session-views: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-sse-endpoint-sse-starlette-integration: backlog
+  4-2-wire-alertmanager-into-production-code-paths: backlog
+  4-3-alert-trigger-thresholds-resolve-oq-4: backlog
+  4-4-frontend-usesse-composable-alertstore: backlog
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-dexie-write-behind-buffer-for-student-answers: backlog
+  5-2-backend-sync-endpoint-for-offline-sessions: backlog
+  5-3-pre-fetch-questions-into-dexie-connectivity-detection: backlog
+  5-4-useofflinesync-composable: backlog
+  epic-5-retrospective: optional
+
+  epic-6: backlog
+  6-1-expert-module-crud-via-repository-layer: backlog
+  6-2-question-bank-knowledge-atom-management: backlog
+  6-3-bulk-import-with-per-row-validation: backlog
+  6-4-ai-assisted-content-drafting-fr-8a: backlog
+  epic-6-retrospective: optional
+
+  epic-7: backlog
+  7-1-audio-read-aloud-for-question-text-fr-8b: backlog
+  7-2-image-choice-item-type-fr-8c: backlog
+  epic-7-retrospective: optional
+
+  epic-8: backlog
+  8-1-real-dashboard-api-replace-mock-dashboardservice: backlog
+  8-2-subject-strength-radar-chart-with-vue-chartjs: backlog
+  8-3-smart-insight-messages-zero-raw-scores: backlog
+  8-4-daily-reinforcement-recommendation: backlog
+  epic-8-retrospective: optional
+
+  epic-9: backlog
+  9-1-real-competency-heatmap-data: backlog
+  9-2-auto-grouping-into-remediation-groups: backlog
+  9-3-report-export-pdf-csv-wire-orphaned-exporter: backlog
+  9-4-printable-remediation-cards: backlog
+  epic-9-retrospective: optional
+
+  epic-10: backlog
+  10-1-extract-all-hardcoded-strings-into-i18n-keys: backlog
+  10-2-rtl-ltr-compliance-verification-lint-enforcement: backlog
+  epic-10-retrospective: optional
