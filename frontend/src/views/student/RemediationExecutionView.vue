@@ -37,7 +37,7 @@
 
       <!-- Loading & Error States -->
       <div
-        v-if="loading"
+        v-if="remediationStore.loading"
         class="text-center py-12"
       >
         <p class="text-on-surface-variant">
@@ -46,10 +46,10 @@
       </div>
 
       <div
-        v-else-if="error"
+        v-else-if="remediationStore.error"
         class="rounded-xl bg-error-container p-4 text-error mb-6"
       >
-        {{ error }}
+        {{ remediationStore.error }}
       </div>
 
       <!-- Start Pathway Prompt (VALIDATED state) -->
@@ -64,11 +64,11 @@
           انقر فوق زر البدء لبدء الكبسولات التعليمية المخصصة.
         </p>
         <button
-          :disabled="actionLoading"
+          :disabled="remediationStore.actionLoading"
           class="rounded-xl bg-primary px-8 py-3 font-medium text-on-primary shadow-sm hover:opacity-90 transition-opacity"
           @click="startPathway"
         >
-          {{ actionLoading ? 'جاري البدء...' : 'ابدأ مسار المعالجة الآن' }}
+          {{ remediationStore.actionLoading ? 'جاري البدء...' : 'ابدأ مسار المعالجة الآن' }}
         </button>
       </div>
 
@@ -108,15 +108,15 @@
           </div>
 
           <h2 class="text-xl font-bold text-on-surface mb-3">
-            {{ currentAtom.content.title || 'كبسولة تعليمية' }}
+            {{ currentAtom.content?.title || 'كبسولة تعليمية' }}
           </h2>
           <p class="text-on-surface-variant text-sm mb-6 leading-relaxed">
-            {{ currentAtom.content.description }}
+            {{ currentAtom.content?.description }}
           </p>
 
           <!-- Media / Audio Visual Content -->
           <div
-            v-if="currentAtom.content.media_url"
+            v-if="currentAtom.content?.media_url"
             class="mb-6 rounded-xl overflow-hidden bg-surface-container p-4"
           >
             <a
@@ -131,11 +131,11 @@
           <!-- Atom Complete Button -->
           <div class="flex justify-end mt-8">
             <button
-              :disabled="actionLoading"
+              :disabled="remediationStore.actionLoading"
               class="rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-on-primary hover:opacity-90 transition-opacity"
               @click="handleCompleteAtom"
             >
-              {{ actionLoading ? 'جاري التسجيل...' : 'إكمال الكبسولة والانتقال للبعد التالي' }}
+              {{ remediationStore.actionLoading ? 'جاري التسجيل...' : 'إكمال الكبسولة والانتقال للبعد التالي' }}
             </button>
           </div>
         </div>
@@ -164,26 +164,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { remediationService, type RemediationPath, type KnowledgeAtom } from '@/services/remediationService'
+import { useRemediationStore } from '@/stores/remediationStore'
+import type { KnowledgeAtom } from '@/services/remediationService'
 
 const route = useRoute()
+const remediationStore = useRemediationStore()
+
 const competencyId = computed(() => (route.params.competencyId as string) || '')
 
-const pathway = ref<RemediationPath | null>(null)
-const loading = ref(true)
-const actionLoading = ref(false)
-const error = ref('')
-
-const currentAtomIndex = ref(0)
-
-const currentAtom = computed<KnowledgeAtom | null>(() => {
-  if (!pathway.value || !pathway.value.atoms || pathway.value.atoms.length === 0) return null
-  return pathway.value.atoms[currentAtomIndex.value] || null
-})
-
-const progressPercent = computed(() => pathway.value?.progress_percent || 0)
+const pathway = computed(() => remediationStore.pathway)
+const currentAtomIndex = computed(() => remediationStore.currentAtomIndex)
+const currentAtom = computed<KnowledgeAtom | null>(() => remediationStore.currentAtom)
+const progressPercent = computed(() => remediationStore.progressPercent)
 
 const pathStatusText = computed(() => {
   if (!pathway.value) return ''
@@ -206,7 +200,7 @@ const statusBadgeClass = computed(() => {
 })
 
 function isAtomCompleted(atomId: string): boolean {
-  return pathway.value?.atoms_completed?.includes(atomId) || false
+  return remediationStore.isAtomCompleted(atomId)
 }
 
 function getRemediationTypeName(type: string): string {
@@ -219,54 +213,36 @@ function getRemediationTypeName(type: string): string {
 }
 
 async function loadPathway() {
-  loading.value = true
-  error.value = ''
-  try {
-    pathway.value = await remediationService.getPathway(competencyId.value)
-    // Adjust current index to first uncompleted atom
-    if (pathway.value && pathway.value.atoms) {
-      const firstUncompleted = pathway.value.atoms.findIndex(a => !isAtomCompleted(a.id))
-      if (firstUncompleted !== -1) {
-        currentAtomIndex.value = firstUncompleted
-      }
+  if (competencyId.value) {
+    try {
+      await remediationStore.fetchPathway(competencyId.value)
+    } catch {
+      // Handled in store.error
     }
-  } catch (err: any) {
-    error.value = err.response?.data?.detail || 'تعذر تحميل مسار المعالجة'
-  } finally {
-    loading.value = false
   }
 }
 
 async function startPathway() {
   if (!pathway.value) return
-  actionLoading.value = true
   try {
-    await remediationService.startPathway(pathway.value.id)
+    await remediationStore.startPathway(pathway.value.id)
     await loadPathway()
-  } catch (err: any) {
-    error.value = err.response?.data?.detail || 'تعذر بدء مسار المعالجة'
-  } finally {
-    actionLoading.value = false
+  } catch {
+    // Handled in store.error
   }
 }
 
 async function handleCompleteAtom() {
   if (!currentAtom.value) return
-  actionLoading.value = true
   try {
-    const res = await remediationService.completeAtom(currentAtom.value.id, {
+    await remediationStore.completeAtom(currentAtom.value.id, {
       time_spent_ms: 15000,
       interactions_count: 1,
       is_correct: true,
     })
     await loadPathway()
-    if (currentAtomIndex.value < (pathway.value?.atoms.length || 0) - 1) {
-      currentAtomIndex.value++
-    }
-  } catch (err: any) {
-    error.value = err.response?.data?.detail || 'تعذر تسجيل إكمال الكبسولة'
-  } finally {
-    actionLoading.value = false
+  } catch {
+    // Handled in store.error
   }
 }
 

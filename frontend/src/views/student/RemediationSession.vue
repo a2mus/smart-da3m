@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useRemediationStore } from '@/stores/remediationStore'
 import PathwayOverview from '@/components/student/PathwayOverview.vue'
 import type { PathwayAtom } from '@/components/student/PathwayOverview.vue'
 import PassportAssessment from '@/components/student/PassportAssessment.vue'
@@ -9,49 +10,68 @@ import type { PassportEvaluation } from '@/services/remediationService'
 
 const route = useRoute()
 const router = useRouter()
+const remediationStore = useRemediationStore()
 
-const competencyId = computed(() => route.params.competencyId as string)
+const competencyId = computed(() => (route.params.competencyId as string) || '')
 const difficulty = ref(5)
 const previousDifficulty = ref(5)
 
-// ── Mock pathway data ──
-const mockAtoms: PathwayAtom[] = [
-  { id: 'a1', title: 'مقدمة في الكسور', type: 'AUDIO_VISUAL', status: 'completed' },
-  { id: 'a2', title: 'تمثيل الكسور بالرسوم', type: 'SIMULATION', status: 'completed' },
-  { id: 'a3', title: 'مقارنة الكسور', type: 'MIND_MAP', status: 'available' },
-  { id: 'a4', title: 'جمع وطرح الكسور', type: 'SIMULATION', status: 'locked' },
-  { id: 'a5', title: 'ضرب الكسور', type: 'AUDIO_VISUAL', status: 'locked' },
-]
-
 type ViewState = 'overview' | 'atom' | 'passport' | 'results'
 const currentView = ref<ViewState>('overview')
-const selectedAtom = ref<PathwayAtom | null>(null)
+const selectedAtomId = ref<string | null>(null)
 const showEngagement = ref(false)
-const passportEvaluation = ref<PassportEvaluation | null>(null)
 
-const canTakePassport = computed(() =>
-  mockAtoms.filter(a => a.status === 'completed').length >= 3
-)
+const pathwayAtoms = computed<PathwayAtom[]>(() => {
+  if (!remediationStore.pathway || !remediationStore.pathway.atoms) return []
+  const completedIds = remediationStore.atomsCompleted
+  const atoms = remediationStore.pathway.atoms
+
+  let firstUncompletedFound = false
+  return atoms.map((atom) => {
+    const isCompleted = completedIds.includes(atom.id)
+    let status: 'completed' | 'available' | 'locked' = 'locked'
+
+    if (isCompleted) {
+      status = 'completed'
+    } else if (!firstUncompletedFound) {
+      status = 'available'
+      firstUncompletedFound = true
+    }
+
+    return {
+      id: atom.id,
+      title: atom.content?.title || 'كبسولة تعليمية',
+      type: atom.remediation_type,
+      status,
+    }
+  })
+})
+
+const selectedAtomObj = computed(() => {
+  if (!selectedAtomId.value || !remediationStore.pathway) return null
+  return remediationStore.pathway.atoms.find((a) => a.id === selectedAtomId.value) || null
+})
 
 function selectAtom(atom: PathwayAtom) {
-  selectedAtom.value = atom
+  selectedAtomId.value = atom.id
   currentView.value = 'atom'
 
-  // Simulate difficulty adjustment
   previousDifficulty.value = difficulty.value
   difficulty.value = Math.max(1, Math.min(10, difficulty.value + (atom.status === 'available' ? 1 : -1)))
-
-  // Simulate engagement detection (30% chance)
   showEngagement.value = Math.random() < 0.3
 }
 
-function completeAtom() {
-  if (selectedAtom.value) {
-    const idx = mockAtoms.findIndex(a => a.id === selectedAtom.value!.id)
-    if (idx >= 0) mockAtoms[idx].status = 'completed'
-    // Unlock next atom
-    const nextLocked = mockAtoms.find(a => a.status === 'locked')
-    if (nextLocked) nextLocked.status = 'available'
+async function handleCompleteAtom() {
+  if (selectedAtomId.value) {
+    try {
+      await remediationStore.completeAtom(selectedAtomId.value, {
+        time_spent_ms: 15000,
+        interactions_count: 1,
+        is_correct: true,
+      })
+    } catch {
+      // Error managed in store.error
+    }
   }
   currentView.value = 'overview'
   showEngagement.value = false
@@ -62,13 +82,22 @@ function startPassport() {
 }
 
 function handlePassportCompleted(evaluation: PassportEvaluation) {
-  passportEvaluation.value = evaluation
   currentView.value = 'results'
 }
 
 function goBack() {
   router.push('/student')
 }
+
+onMounted(async () => {
+  if (competencyId.value) {
+    try {
+      await remediationStore.fetchPathway(competencyId.value)
+    } catch {
+      // Error managed in store.error
+    }
+  }
+})
 </script>
 
 <template>
@@ -76,9 +105,28 @@ function goBack() {
     dir="rtl"
     class="min-h-screen bg-background px-4 py-8"
   >
+    <!-- Loading State -->
+    <div
+      v-if="remediationStore.loading"
+      class="text-center py-12"
+    >
+      <div class="animate-spin inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full" />
+      <p class="mt-3 text-on-surface-variant">
+        جاري تحميل مسار المعالجة...
+      </p>
+    </div>
+
+    <!-- Error State -->
+    <div
+      v-else-if="remediationStore.error"
+      class="max-w-lg mx-auto bg-error-container border border-error text-error px-4 py-3 rounded-xl mb-4 text-center"
+    >
+      {{ remediationStore.error }}
+    </div>
+
     <!-- Atom interaction view -->
     <div
-      v-if="currentView === 'atom' && selectedAtom"
+      v-else-if="currentView === 'atom' && selectedAtomObj"
       class="max-w-lg mx-auto"
     >
       <button
@@ -90,11 +138,14 @@ function goBack() {
 
       <div class="bg-surface-container rounded-[2.5rem] p-8 shadow-lg">
         <span class="bg-primary/10 text-primary px-4 py-1 rounded-full text-sm font-bold inline-block mb-4">
-          {{ selectedAtom.type === 'AUDIO_VISUAL' ? '🎬 سمعي بصري' : selectedAtom.type === 'SIMULATION' ? '🎮 محاكاة' : '🧠 خريطة ذهنية' }}
+          {{ selectedAtomObj.remediation_type === 'AUDIO_VISUAL' ? '🎬 سمعي بصري' : selectedAtomObj.remediation_type === 'SIMULATION' ? '🎮 محاكاة' : '🧠 خريطة ذهنية' }}
         </span>
         <h2 class="text-2xl font-black text-on-surface mb-4">
-          {{ selectedAtom.title }}
+          {{ selectedAtomObj.content?.title || 'كبسولة تعليمية' }}
         </h2>
+        <p class="text-on-surface-variant text-sm mb-6 leading-relaxed">
+          {{ selectedAtomObj.content?.description }}
+        </p>
 
         <!-- Difficulty meter -->
         <DifficultyMeter
@@ -117,19 +168,27 @@ function goBack() {
           </p>
         </div>
 
-        <!-- Mock interaction area -->
-        <div class="bg-surface-container-lowest rounded-2xl p-8 text-center mb-6 min-h-[200px] flex items-center justify-center">
-          <p class="text-on-surface-variant">
-            تفاعل مع المحتوى هنا...
-          </p>
+        <!-- Media / Audio Visual Content -->
+        <div
+          v-if="selectedAtomObj.content?.media_url"
+          class="mb-6 rounded-xl overflow-hidden bg-surface-container-lowest p-4 text-center"
+        >
+          <a
+            :href="selectedAtomObj.content.media_url"
+            target="_blank"
+            class="text-sm text-primary underline"
+          >
+            عرض المصدر / المقطع التفاعلي
+          </a>
         </div>
 
         <button
+          :disabled="remediationStore.actionLoading"
           class="w-full bg-primary text-on-primary py-4 rounded-2xl font-bold text-lg
-                 hover:bg-primary/90 active:scale-[0.98] transition-all"
-          @click="completeAtom"
+                 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50"
+          @click="handleCompleteAtom"
         >
-          أكملت التمرين ✓
+          {{ remediationStore.actionLoading ? 'جاري التسجيل...' : 'أكملت التمرين ✓' }}
         </button>
       </div>
     </div>
@@ -156,29 +215,29 @@ function goBack() {
     >
       <div
         class="w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center"
-        :class="passportEvaluation?.passed ? 'bg-tertiary-container' : 'bg-surface-container-high'"
+        :class="remediationStore.passportEvaluation?.passed ? 'bg-tertiary-container' : 'bg-surface-container-high'"
       >
         <span
           class="material-symbols-outlined text-6xl"
-          :class="passportEvaluation?.passed ? 'text-tertiary' : 'text-on-surface-variant'"
+          :class="remediationStore.passportEvaluation?.passed ? 'text-tertiary' : 'text-on-surface-variant'"
         >
-          {{ passportEvaluation?.passed ? 'workspace_premium' : 'psychology' }}
+          {{ remediationStore.passportEvaluation?.passed ? 'workspace_premium' : 'psychology' }}
         </span>
       </div>
       <h2
         class="text-3xl font-black mb-3"
-        :class="passportEvaluation?.passed ? 'text-primary' : 'text-on-surface'"
+        :class="remediationStore.passportEvaluation?.passed ? 'text-primary' : 'text-on-surface'"
       >
-        {{ passportEvaluation?.passed ? 'أحسنت! 🎉' : 'واصل المحاولة! 💪' }}
+        {{ remediationStore.passportEvaluation?.passed ? 'أحسنت! 🎉' : 'واصل المحاولة! 💪' }}
       </h2>
       <p class="text-on-surface-variant mb-2">
-        {{ passportEvaluation?.message || (passportEvaluation?.passed ? 'لقد اجتزت اختبار الجواز بنجاح' : 'لم تتجاوز اختبار الجواز هذه المرة') }}
+        {{ remediationStore.passportEvaluation?.message || (remediationStore.passportEvaluation?.passed ? 'لقد اجتزت اختبار الجواز بنجاح' : 'لم تتجاوز اختبار الجواز هذه المرة') }}
       </p>
       <p
         class="text-sm font-bold mb-8"
-        :class="passportEvaluation?.passed ? 'text-tertiary' : 'text-secondary'"
+        :class="remediationStore.passportEvaluation?.passed ? 'text-tertiary' : 'text-secondary'"
       >
-        المستوى الجديد: {{ passportEvaluation?.new_mastery_level || 'متقن' }}
+        المستوى الجديد: {{ remediationStore.passportEvaluation?.new_mastery_level || 'متقن' }}
       </p>
       <button
         class="bg-primary text-on-primary px-10 py-4 rounded-2xl font-bold text-lg
@@ -192,9 +251,9 @@ function goBack() {
     <!-- Pathway Overview (default) -->
     <div v-else>
       <PathwayOverview
-        :atoms="mockAtoms"
-        :competency-name="`الكسور — ${competencyId}`"
-        :can-take-passport="canTakePassport"
+        :atoms="pathwayAtoms"
+        :competency-name="`مسار المعالجة — ${competencyId}`"
+        :can-take-passport="remediationStore.canTakePassport"
         @select="selectAtom"
         @passport="startPassport"
       />

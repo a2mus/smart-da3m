@@ -2,11 +2,13 @@
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { remediationService, type PassportQuestion, type PassportEvaluation } from '@/services/remediationService'
+import { useRemediationStore } from '@/stores/remediationStore'
+import type { PassportEvaluation } from '@/services/remediationService'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const remediationStore = useRemediationStore()
 
 const props = defineProps<{
   competencyId?: string
@@ -19,15 +21,16 @@ const emit = defineEmits<{
 
 const activeCompetencyId = computed(() => props.competencyId || (route.params.competencyId as string) || '')
 
-const questions = ref<PassportQuestion[]>([])
+const questions = computed(() => remediationStore.passportQuestions)
 const currentIndex = ref(0)
 const answers = ref<Map<string, string>>(new Map())
 const selectedAnswer = ref('')
-const isLoading = ref(true)
-const isSubmitting = ref(false)
-const error = ref<string | null>(null)
-const results = ref<PassportEvaluation | null>(null)
 const startTime = ref<number>(Date.now())
+
+const isLoading = computed(() => remediationStore.loading)
+const isSubmitting = computed(() => remediationStore.actionLoading)
+const error = computed(() => remediationStore.error)
+const results = computed(() => remediationStore.passportEvaluation)
 
 const currentQuestion = computed(() => questions.value[currentIndex.value])
 const progress = computed(() => ((currentIndex.value + 1) / (questions.value.length || 1)) * 100)
@@ -35,17 +38,11 @@ const canSubmit = computed(() => !!selectedAnswer.value)
 
 const loadQuestions = async () => {
   if (!activeCompetencyId.value) return
-  isLoading.value = true
-  error.value = null
   try {
-    const response = await remediationService.getPassportQuestions(activeCompetencyId.value)
-    questions.value = response.questions
+    await remediationStore.fetchPassportQuestions(activeCompetencyId.value)
     startTime.value = Date.now()
   } catch (err) {
-    error.value = t('passport.error', 'تعذر تحميل أسئلة اختبار الجواز')
     console.error('Failed to load passport questions:', err)
-  } finally {
-    isLoading.value = false
   }
 }
 
@@ -65,9 +62,6 @@ const submitAnswer = async () => {
 }
 
 const submitPassport = async (finalTimeMs: number) => {
-  isSubmitting.value = true
-  error.value = null
-
   try {
     const answerArray = questions.value.map((q, index) => ({
       question_id: q.id,
@@ -75,14 +69,10 @@ const submitPassport = async (finalTimeMs: number) => {
       time_ms: index === questions.value.length - 1 ? finalTimeMs : 10000,
     }))
 
-    const evaluation = await remediationService.evaluatePassport(activeCompetencyId.value, answerArray)
-    results.value = evaluation
+    const evaluation = await remediationStore.evaluatePassport(activeCompetencyId.value, answerArray)
     emit('completed', evaluation)
   } catch (err) {
-    error.value = t('passport.submitError', 'تعذر تقييم نتائج اختبار الجواز')
     console.error('Failed to submit passport:', err)
-  } finally {
-    isSubmitting.value = false
   }
 }
 
@@ -92,7 +82,6 @@ const finishAssessment = () => {
 }
 
 const retryAssessment = () => {
-  results.value = null
   currentIndex.value = 0
   answers.value.clear()
   selectedAnswer.value = ''
