@@ -1,15 +1,14 @@
-"""
-API endpoints for remediation pathways and Passport assessments.
+"""API endpoints for remediation pathways and Passport assessments.
 """
 
-from typing import List, Optional
+from datetime import UTC
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_expert, get_current_student, get_current_user, get_db
+from app.api.deps import get_current_expert, get_current_student, get_db
 from app.models.content import KnowledgeAtom, Question
 from app.models.diagnostic import CompetencyProfile, MasteryLevel
 from app.models.organization import Organization, OrganizationType
@@ -25,21 +24,19 @@ from app.schemas.remediation import (
     ApproveProposalResponse,
     AtomCompleteRequest,
     AtomCompleteResponse,
-    EngagementStatusResponse,
     PassportEvaluateRequest,
     PassportEvaluateResponse,
     PassportQuestionsResponse,
     RejectProposalRequest,
     RemediationAtom,
-    RemediationPathRequest,
     RemediationPathResponse,
     RemediationStatusResponse,
     StartPathwayResponse,
     StateTransitionRequest,
     ValidationQueueItemResponse,
 )
+from app.services.alert_manager import AlertManager
 from app.services.remediation_engine import RemediationEngine
-from app.services.remediation_service import validate_transition
 
 router = APIRouter()
 
@@ -353,13 +350,13 @@ async def transition_pathway_status(
 
 @router.get(
     "/validation-queue",
-    response_model=List[ValidationQueueItemResponse],
+    response_model=list[ValidationQueueItemResponse],
     summary="Get expert validation queue for proposed remediation pathways",
 )
 async def get_validation_queue(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_expert),
-) -> List[ValidationQueueItemResponse]:
+) -> list[ValidationQueueItemResponse]:
     repo = RemediationRepository(db)
     is_pedagogue = False
     user_org_id = getattr(current_user, "organization_id", None)
@@ -595,7 +592,7 @@ async def evaluate_passport(
     previous_level = profile.mastery_level.value
     if evaluation["passed"]:
         profile.mastery_level = MasteryLevel.MASTERED
-    profile.last_assessed = datetime.now(timezone.utc)
+    profile.last_assessed = datetime.now(UTC)
 
     # Update or create assessment record
     assessment = PassportAssessment(
@@ -606,7 +603,7 @@ async def evaluate_passport(
         accuracy=int(evaluation["accuracy"] * 100),
         questions_answered=len(answers),
         correct_answers=evaluation["correct_count"],
-        completed_at=datetime.now(timezone.utc),
+        completed_at=datetime.now(UTC),
     )
     db.add(assessment)
 
@@ -622,28 +619,27 @@ async def evaluate_passport(
     if path:
         if evaluation["passed"]:
             path.status = RemediationPathStatus.MASTERED
-            path.completed_at = datetime.now(timezone.utc)
+            path.completed_at = datetime.now(UTC)
         else:
             path.status = RemediationPathStatus.DIAGNOSED
 
     if not evaluation["passed"]:
-        from app.models.alert import AlertSeverity, AlertTriggerType, PedagogicalAlert
-        alert = PedagogicalAlert(
-            organization_id=user_org_id,
+        alert_mgr = AlertManager()
+        gen_alert = alert_mgr.check_passport_failure(
             student_id=current_user.id,
-            trigger_type=AlertTriggerType.PASSPORT_FAILED,
-            severity=AlertSeverity.WARNING,
-            simplified_message=f"Need extra practice on competency {evaluate_data.competency_id}",
-            expert_message=f"Passport assessment failed for competency {evaluate_data.competency_id}. Tutor/Pedagogue support recommended.",
-            context_data={"competency_id": evaluate_data.competency_id, "accuracy": evaluation["accuracy"]},
-            recommended_action="Tutor/Pedagogue in-person support recommended",
+            competency_id=evaluate_data.competency_id,
         )
-        db.add(alert)
+        if gen_alert:
+            await alert_mgr.process_and_persist_alerts(
+                alerts=[gen_alert],
+                organization_id=user_org_id,
+                db=db,
+            )
 
     await db.commit()
 
     if evaluation["passed"]:
-        message = f"Congratulations! You've advanced to MASTERED level!"
+        message = "Congratulations! You've advanced to MASTERED level!"
     else:
         message = "Passport assessment not passed. Starting a new remediation cycle. Tutor/Pedagogue support recommended."
 
@@ -660,7 +656,6 @@ async def evaluate_passport(
     )
 
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 # Import for type hints
-from app.schemas.remediation import RemediationAtom

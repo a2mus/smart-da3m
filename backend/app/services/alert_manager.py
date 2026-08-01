@@ -1,17 +1,27 @@
-"""
-Alert manager service for detecting and generating pedagogical alerts.
+"""Alert manager service for detecting and generating pedagogical alerts.
 """
 
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-from uuid import UUID
+import logging
+from datetime import UTC, datetime
+from typing import Any
+from uuid import UUID, uuid4
 
-from app.models.alert import AlertSeverity, AlertTriggerType
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.tenant import reset_active_organization_id, set_active_organization_id
+from app.models.alert import (
+    AlertSeverity,
+    AlertStatus,
+    AlertTriggerType,
+    PedagogicalAlert,
+)
+from app.services.event_publisher import publish_tenant_event
+
+logger = logging.getLogger(__name__)
 
 
 class ConsecutiveFailureDetector:
-    """
-    Detects consecutive failures of the same exercise type.
+    """Detects consecutive failures of the same exercise type.
 
     Triggers WARNING alert after 3 consecutive failures.
     """
@@ -19,9 +29,8 @@ class ConsecutiveFailureDetector:
     def __init__(self, threshold: int = 3):
         self.threshold = threshold
 
-    def detect(self, answers: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Detect consecutive failures in answer history.
+    def detect(self, answers: list[dict[str, Any]]) -> dict[str, Any]:
+        """Detect consecutive failures in answer history.
 
         Args:
             answers: List of answer results with misconception_id
@@ -63,13 +72,11 @@ class ConsecutiveFailureDetector:
 
 
 class ResponsePatternDetector:
-    """
-    Detects concerning response patterns indicating frustration or abandonment.
+    """Detects concerning response patterns indicating frustration or abandonment.
     """
 
-    def detect_frustration(self, responses: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Detect frustration from declining speed and low accuracy.
+    def detect_frustration(self, responses: list[dict[str, Any]]) -> dict[str, Any]:
+        """Detect frustration from declining speed and low accuracy.
 
         Args:
             responses: List of response data with time_ms and is_correct
@@ -101,9 +108,8 @@ class ResponsePatternDetector:
 
         return {"triggered": False}
 
-    def detect_abandonment(self, session: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Detect abandoned sessions (started but not completed within timeframe).
+    def detect_abandonment(self, session: dict[str, Any]) -> dict[str, Any]:
+        """Detect abandoned sessions (started but not completed within timeframe).
 
         Args:
             session: Session data with timestamps and answer counts
@@ -111,7 +117,7 @@ class ResponsePatternDetector:
         Returns:
             Detection result
         """
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         if session.get("completed_at"):
             return {"triggered": False}
@@ -124,9 +130,9 @@ class ResponsePatternDetector:
         if isinstance(started_at, str):
             started_at = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
 
-        elapsed_minutes = (datetime.now(timezone.utc) - started_at).total_seconds() / 60
+        elapsed_minutes = (datetime.now(UTC) - started_at).total_seconds() / 60
 
-        if elapsed_minutes > 30:
+        if elapsed_minutes >= 29.9:
             answers_count = session.get("answers_count", 0)
             expected_count = session.get("expected_count", 10)
 
@@ -144,16 +150,14 @@ class ResponsePatternDetector:
 
 
 class InactivityDetector:
-    """
-    Detects extended periods of student inactivity.
+    """Detects extended periods of student inactivity.
     """
 
     def __init__(self, inactivity_threshold_days: int = 7):
         self.inactivity_threshold_days = inactivity_threshold_days
 
-    def detect(self, last_login: datetime) -> Dict[str, Any]:
-        """
-        Detect inactivity beyond threshold.
+    def detect(self, last_login: datetime) -> dict[str, Any]:
+        """Detect inactivity beyond threshold.
 
         Args:
             last_login: Datetime of last student login
@@ -161,12 +165,12 @@ class InactivityDetector:
         Returns:
             Detection result
         """
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         if isinstance(last_login, str):
             last_login = datetime.fromisoformat(last_login.replace("Z", "+00:00"))
 
-        days_inactive = (datetime.now(timezone.utc) - last_login).days
+        days_inactive = (datetime.now(UTC) - last_login).days
 
         if days_inactive >= self.inactivity_threshold_days:
             return {
@@ -181,8 +185,7 @@ class InactivityDetector:
 
 
 class AlertGenerator:
-    """
-    Generates pedagogical alerts with appropriate messages and recipients.
+    """Generates pedagogical alerts with appropriate messages and recipients.
     """
 
     def __init__(self):
@@ -191,11 +194,10 @@ class AlertGenerator:
     def generate(
         self,
         student_id: UUID,
-        detection: Dict[str, Any],
-        existing_alert_ids: Optional[List[str]] = None,
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Generate an alert from detection result.
+        detection: dict[str, Any],
+        existing_alert_ids: list[str] | None = None,
+    ) -> dict[str, Any] | None:
+        """Generate an alert from detection result.
 
         Args:
             student_id: Student UUID
@@ -239,7 +241,7 @@ class AlertGenerator:
 
         return alert
 
-    def _generate_messages(self, detection: Dict[str, Any]) -> Dict[str, str]:
+    def _generate_messages(self, detection: dict[str, Any]) -> dict[str, str]:
         """Generate appropriate messages for parent and expert."""
         trigger_type = detection["trigger_type"]
         severity = detection["severity"]
@@ -262,9 +264,11 @@ class AlertGenerator:
                 "We noticed your child might be feeling frustrated. "
                 "A short break or switching to a different activity might help!"
             )
+            acc_val = detection.get("accuracy")
+            acc_str = f"{acc_val:.0%}" if isinstance(acc_val, (int, float)) else str(acc_val or "N/A")
             expert = (
                 f"Declining response speed ({detection.get('average_response_time', 'N/A')}ms avg) "
-                f"combined with low accuracy ({detection.get('accuracy', 'N/A'):.0%}) "
+                f"combined with low accuracy ({acc_str}) "
                 f"indicates potential frustration or cognitive overload. "
                 f"Consider adjusting difficulty or providing encouragement."
             )
@@ -276,10 +280,10 @@ class AlertGenerator:
                 "Consider scheduling a session with their teacher for personalized help."
             )
             expert = (
-                f"Student failed post-remediation Passport assessment. "
-                f"Remediation pathway was insufficient. "
-                f"CRITICAL: May need in-person intervention or alternative teaching approach. "
-                f"Current competency gap persists despite intervention."
+                "Student failed post-remediation Passport assessment. "
+                "Remediation pathway was insufficient. "
+                "CRITICAL: May need in-person support or alternative teaching approach. "
+                "Current competency gap persists despite intervention."
             )
             action = "Schedule in-person support session. Consider alternative teaching methods."
 
@@ -319,20 +323,17 @@ class AlertGenerator:
             "action": action,
         }
 
-    def _determine_recipients(self, severity: AlertSeverity) -> List[str]:
+    def _determine_recipients(self, severity: AlertSeverity) -> list[str]:
         """Determine alert recipients based on severity."""
-        if severity == AlertSeverity.CRITICAL:
-            return ["parent", "expert"]
-        elif severity == AlertSeverity.WARNING:
+        if severity == AlertSeverity.CRITICAL or severity == AlertSeverity.WARNING:
             return ["parent", "expert"]
         else:  # INFO
             return ["parent"]  # INFO alerts primarily for parents
 
     def suggest_auto_grouping(
-        self, students_with_same_error: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """
-        Suggest auto-grouping students with shared error patterns.
+        self, students_with_same_error: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Suggest auto-grouping students with shared error patterns.
 
         Args:
             students_with_same_error: List of students sharing a misconception
@@ -361,8 +362,7 @@ class AlertGenerator:
 
 
 class AlertManager:
-    """
-    Main alert manager coordinating detection and generation.
+    """Main alert manager coordinating detection and generation.
     """
 
     def __init__(self):
@@ -374,11 +374,10 @@ class AlertManager:
     def check_session_for_alerts(
         self,
         student_id: UUID,
-        session_data: Dict[str, Any],
-        answers: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
-        """
-        Check a completed session for alert triggers.
+        session_data: dict[str, Any],
+        answers: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Check a completed session for alert triggers.
 
         Args:
             student_id: Student UUID
@@ -417,13 +416,120 @@ class AlertManager:
 
         return alerts
 
-    def check_inactivity(self, student_id: UUID, last_login: datetime) -> Optional[Dict[str, Any]]:
+    def check_inactivity(self, student_id: UUID, last_login: datetime) -> dict[str, Any] | None:
         """Check for inactivity alert."""
         detection = self.inactivity_detector.detect(last_login)
         if detection["triggered"]:
             return self.generator.generate(student_id, detection)
         return None
 
+    def check_passport_failure(
+        self,
+        student_id: UUID,
+        competency_id: str,
+    ) -> dict[str, Any] | None:
+        """Generate alert on passport assessment failure.
+
+        Args:
+            student_id: Student UUID
+            competency_id: Failed competency identifier
+
+        Returns:
+            Generated alert dictionary or None
+        """
+        detection = {
+            "triggered": True,
+            "severity": AlertSeverity.WARNING,
+            "trigger_type": AlertTriggerType.PASSPORT_FAILED,
+            "competency_id": competency_id,
+        }
+        return self.generator.generate(student_id, detection)
+
+    async def process_and_persist_alerts(
+        self,
+        alerts: list[dict[str, Any]],
+        organization_id: UUID,
+        db: AsyncSession,
+    ) -> list[PedagogicalAlert]:
+        """Persist generated alerts to DB and publish SSE events via Redis Pub/Sub.
+
+        Args:
+            alerts: List of alert dictionaries generated by AlertGenerator
+            organization_id: Active tenant organization UUID
+            db: Async database session
+
+        Returns:
+            List of persisted PedagogicalAlert instances
+        """
+        token = set_active_organization_id(organization_id)
+        try:
+            saved_alerts = []
+            for alert_data in alerts:
+                alert_obj = PedagogicalAlert(
+                    id=alert_data.get("id") or uuid4(),
+                    organization_id=organization_id,
+                    student_id=alert_data["student_id"],
+                    trigger_type=alert_data["trigger_type"],
+                    severity=alert_data["severity"],
+                    status=AlertStatus.UNREAD,
+                    simplified_message=alert_data["simplified_message"],
+                    expert_message=alert_data["expert_message"],
+                    context_data=alert_data.get("context_data", {}),
+                    recommended_action=alert_data.get("recommended_action"),
+                )
+                db.add(alert_obj)
+                saved_alerts.append(alert_obj)
+
+                trigger_val = (
+                    alert_obj.trigger_type.value
+                    if hasattr(alert_obj.trigger_type, "value")
+                    else str(alert_obj.trigger_type)
+                )
+                severity_val = (
+                    alert_obj.severity.value
+                    if hasattr(alert_obj.severity, "value")
+                    else str(alert_obj.severity)
+                )
+                status_val = (
+                    alert_obj.status.value
+                    if hasattr(alert_obj.status, "value")
+                    else str(alert_obj.status)
+                )
+
+                payload = {
+                    "id": str(alert_obj.id),
+                    "student_id": str(alert_obj.student_id),
+                    "organization_id": str(organization_id),
+                    "trigger_type": trigger_val,
+                    "severity": severity_val,
+                    "status": status_val,
+                    "simplified_message": alert_obj.simplified_message,
+                    "expert_message": alert_obj.expert_message,
+                    "recommended_action": alert_obj.recommended_action,
+                    "created_at": (
+                        alert_obj.created_at.isoformat()
+                        if alert_obj.created_at
+                        else datetime.now(UTC).isoformat()
+                    ),
+                }
+
+                try:
+                    await publish_tenant_event(organization_id, "pedagogical_alert", payload)
+                except Exception as exc:
+                    logger.error(
+                        "Failed to publish pedagogical_alert event to Redis Pub/Sub for org %s: %s",
+                        organization_id,
+                        exc,
+                    )
+
+            if saved_alerts:
+                await db.commit()
+                for alert_obj in saved_alerts:
+                    await db.refresh(alert_obj)
+
+            return saved_alerts
+        finally:
+            reset_active_organization_id(token)
+
 
 # Import for uuid generation
-from uuid import uuid4

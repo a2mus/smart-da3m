@@ -1,8 +1,7 @@
-"""
-API endpoints for parent dashboard.
+"""API endpoints for parent dashboard.
 """
 
-from typing import List, Optional
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -10,13 +9,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_expert, get_current_parent, get_db
-from app.models.alert import AlertRecipient, AlertStatus, PedagogicalAlert
+from app.models.alert import AlertStatus, PedagogicalAlert
 from app.models.user import User
 from app.schemas.alert import (
     AlertListResponse,
     AlertMarkReadRequest,
     AlertMarkReadResponse,
-    AlertResponse,
     ParentAlertSummary,
 )
 from app.schemas.dashboard import (
@@ -24,7 +22,6 @@ from app.schemas.dashboard import (
     ChildProgressSummary,
     ParentDashboardResponse,
 )
-from app.services.alert_manager import AlertManager
 from app.services.dashboard_service import DashboardAggregator
 
 router = APIRouter()
@@ -36,12 +33,11 @@ router = APIRouter()
     summary="Get parent dashboard overview",
 )
 async def get_dashboard_overview(
-    child_id: Optional[UUID] = Query(None, description="Filter by specific child"),
+    child_id: UUID | None = Query(None, description="Filter by specific child"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_parent),
 ) -> ParentDashboardResponse:
-    """
-    Get the parent dashboard with all children's progress data.
+    """Get the parent dashboard with all children's progress data.
 
     Returns qualitative summaries, subject progress, recent activities,
     and actionable recommendations for each child.
@@ -90,13 +86,13 @@ async def get_child_details(
 
 @router.get(
     "/children",
-    response_model=List[ChildProgressSummary],
+    response_model=list[ChildProgressSummary],
     summary="Get list of parent's children with summaries",
 )
 async def get_children_list(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_parent),
-) -> List[ChildProgressSummary]:
+) -> list[ChildProgressSummary]:
     """Get a simplified list of all children with basic progress info."""
     aggregator = DashboardAggregator(db)
 
@@ -142,6 +138,7 @@ async def get_children_list(
 )
 async def get_alerts(
     unread_only: bool = Query(False, description="Filter to unread alerts only"),
+    since: str | None = Query(None, description="Filter alerts created since ISO timestamp for reconnect recovery"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_parent),
 ) -> AlertListResponse:
@@ -159,6 +156,17 @@ async def get_alerts(
 
     if unread_only:
         query = query.where(PedagogicalAlert.status == AlertStatus.UNREAD)
+
+    if since:
+        try:
+            since_clean = since.replace(" ", "+").replace("Z", "+00:00")
+            since_dt = datetime.fromisoformat(since_clean)
+            query = query.where(PedagogicalAlert.created_at >= since_dt)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid ISO timestamp format for since query parameter",
+            )
 
     query = query.order_by(PedagogicalAlert.created_at.desc())
     result = await db.execute(query)
@@ -196,7 +204,7 @@ async def mark_alerts_read(
 
         if alert and alert.student_id in child_ids:
             alert.status = AlertStatus.READ
-            alert.read_at = datetime.now(timezone.utc)
+            alert.read_at = datetime.now(UTC)
             marked_count += 1
 
     await db.commit()
@@ -209,7 +217,7 @@ async def mark_alerts_read(
     summary="Get all alerts for experts",
 )
 async def get_expert_alerts(
-    severity: Optional[str] = Query(None),
+    severity: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_expert),
 ) -> AlertListResponse:
@@ -231,14 +239,14 @@ async def get_expert_alerts(
 
 @router.get(
     "/children/{child_id}/alerts",
-    response_model=List[ParentAlertSummary],
+    response_model=list[ParentAlertSummary],
     summary="Get alerts for a specific child",
 )
 async def get_child_alerts(
     child_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_parent),
-) -> List[ParentAlertSummary]:
+) -> list[ParentAlertSummary]:
     """Get simplified alerts for a specific child."""
     aggregator = DashboardAggregator(db)
     children = await aggregator.get_children_for_parent(current_user.id)

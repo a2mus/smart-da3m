@@ -1,9 +1,7 @@
-"""
-API endpoints for diagnostic sessions using repository layer and stateless domain engine per AD-1.
+"""API endpoints for diagnostic sessions using repository layer and stateless domain engine per AD-1.
 """
 
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -28,6 +26,7 @@ from app.schemas.diagnostic import (
     DiagnosticSessionCreate,
     StartDiagnosticResponse,
 )
+from app.services.alert_manager import AlertManager
 
 router = APIRouter()
 
@@ -165,6 +164,35 @@ async def submit_answer(
 
     answers = await diag_repo.get_session_answers(answer_data.session_id)
     answer_count = len(answers)
+
+    answers_dicts = [
+        {
+            "is_correct": bool(a.is_correct),
+            "response_time_ms": a.response_time_ms,
+            "misconception_id": getattr(a, "misconception_id", None)
+            or (question.target_misconception_id if not a.is_correct else None),
+        }
+        for a in answers
+    ]
+    session_data_dict = {
+        "started_at": session.started_at,
+        "completed_at": session.completed_at,
+        "answers_count": answer_count,
+        "expected_count": 10,
+    }
+    alert_mgr = AlertManager()
+    generated_alerts = alert_mgr.check_session_for_alerts(
+        student_id=current_user.id,
+        session_data=session_data_dict,
+        answers=answers_dicts,
+    )
+    if generated_alerts:
+        await alert_mgr.process_and_persist_alerts(
+            alerts=generated_alerts,
+            organization_id=org_id,
+            db=db,
+        )
+
     is_complete = engine.is_session_complete(
         answers_count=answer_count,
         current_p_learned=new_p_learned,
@@ -287,19 +315,19 @@ async def get_results(
         total_questions=total_questions,
         correct_answers=correct_answers,
         accuracy=eval_results["accuracy"],
-        completed_at=session.completed_at or datetime.now(timezone.utc),
+        completed_at=session.completed_at or datetime.now(UTC),
     )
 
 
 @router.get(
     "/competency-profile",
-    response_model=List[CompetencyProfileResponse],
+    response_model=list[CompetencyProfileResponse],
     summary="Get student's competency profiles",
 )
 async def get_competency_profiles(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_student),
-) -> List[CompetencyProfileResponse]:
+) -> list[CompetencyProfileResponse]:
     """Get all competency profiles for the current student."""
     diag_repo = DiagnosticRepository(db)
     profiles = await diag_repo.get_student_competencies(current_user.id)
