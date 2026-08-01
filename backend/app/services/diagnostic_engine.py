@@ -1,10 +1,19 @@
 """
-Diagnostic engine with Bayesian Knowledge Tracing (BKT) and adaptive question selection.
+Diagnostic service coordinating BKT, question selection, and evaluation.
+Delegates domain logic calculations to app.engines.diagnostic_engine and app.engines.bkt.
 """
 
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
+from app.engines.bkt import BKTParams, get_mastery_level, update_mastery
+from app.engines.diagnostic_engine import (
+    DiagnosticEngine as StatelessDiagnosticEngine,
+    ErrorClassification as StatelessErrorClassification,
+    MultiArmBanditSelector as StatelessMultiArmBanditSelector,
+    QuestionSelector as StatelessQuestionSelector,
+    RemediationGroup as StatelessRemediationGroup,
+)
 from app.models.diagnostic import (
     ErrorClassification as ErrorClassificationEnum,
     MasteryLevel,
@@ -14,203 +23,49 @@ from app.models.diagnostic import (
 
 class BayesianKnowledgeTracing:
     """
-    Bayesian Knowledge Tracing implementation.
-
-    Tracks the probability that a student has learned a competency
-    using Bayesian inference based on their answers.
+    Stateful BKT wrapper around app.engines.bkt.update_mastery.
+    Maintained for service-layer backward compatibility.
     """
 
     def __init__(
         self,
-        p_learn: float = 0.3,  # Probability of learning
-        p_guess: float = 0.2,  # Probability of guessing correctly
-        p_slip: float = 0.1,  # Probability of slipping (incorrect when known)
+        p_learn: float = 0.3,
+        p_guess: float = 0.2,
+        p_slip: float = 0.1,
     ):
-        self.p_learn = p_learn
-        self.p_guess = p_guess
-        self.p_slip = p_slip
-        self.p_learned = 0.0  # Initial probability: not learned
+        self.params = BKTParams(p_learn=p_learn, p_guess=p_guess, p_slip=p_slip)
+        self.p_learned = 0.0
 
     def update(self, is_correct: bool) -> None:
-        """
-        Update P(learned) based on student's answer using Bayes' theorem.
-
-        Args:
-            is_correct: Whether the student answered correctly
-        """
-        if is_correct:
-            # P(L|Correct) using Bayes' theorem
-            p_correct_given_learned = 1 - self.p_slip
-            p_correct_given_not_learned = self.p_guess
-
-            p_correct = (
-                self.p_learned * p_correct_given_learned
-                + (1 - self.p_learned) * p_correct_given_not_learned
-            )
-
-            self.p_learned = (
-                self.p_learned * p_correct_given_learned / p_correct
-            )
-        else:
-            # P(L|Incorrect)
-            p_incorrect_given_learned = self.p_slip
-            p_incorrect_given_not_learned = 1 - self.p_guess
-
-            p_incorrect = (
-                self.p_learned * p_incorrect_given_learned
-                + (1 - self.p_learned) * p_incorrect_given_not_learned
-            )
-
-            self.p_learned = (
-                self.p_learned * p_incorrect_given_learned / p_incorrect
-            )
-
-        # Clamp to valid probability range
-        self.p_learned = max(0.0, min(1.0, self.p_learned))
+        self.p_learned = update_mastery(self.p_learned, is_correct, self.params)
 
     def get_mastery_level(self) -> str:
-        """
-        Convert P(learned) to discrete mastery level.
-
-        Returns:
-            Mastery level string
-        """
-        p = self.p_learned
-        if p < 0.1:
-            return MasteryLevel.NOT_STARTED
-        elif p < 0.4:
-            return MasteryLevel.ATTEMPTED
-        elif p < 0.7:
-            return MasteryLevel.FAMILIAR
-        elif p < 0.9:
-            return MasteryLevel.PROFICIENT
-        else:
-            return MasteryLevel.MASTERED
+        return get_mastery_level(self.p_learned)
 
 
-class ErrorClassification:
-    """
-    Classifies student errors into categories:
-    - RESOURCE: Missing prerequisites
-    - PROCESS: Methodology misunderstanding
-    - INCIDENTAL: Carelessness
-    - NONE: Correct answer
-    """
+class ErrorClassification(StatelessErrorClassification):
+    """Adapter for ErrorClassification delegating to stateless engine."""
 
-    def classify(
-        self,
-        is_correct: bool,
-        target_misconception_id: Optional[str],
-        response_time_ms: int,
-        difficulty_level: int,
-    ) -> str:
-        """
-        Classify the error based on answer correctness and timing.
-
-        Args:
-            is_correct: Whether answer was correct
-            target_misconception_id: Misconception tag if any
-            response_time_ms: Response time in milliseconds
-            difficulty_level: Question difficulty (1-10)
-
-        Returns:
-            Error classification string
-        """
-        if is_correct:
-            return ErrorClassificationEnum.NONE
-
-        estimated_time = difficulty_level * 10000  # ~10s per difficulty level
-
-        # Very fast wrong answers suggest carelessness
-        if response_time_ms < estimated_time * 0.3:
-            return ErrorClassificationEnum.INCIDENTAL
-
-        # Wrong answers targeting specific misconceptions suggest resource gap
-        if target_misconception_id:
-            return ErrorClassificationEnum.RESOURCE
-
-        # Otherwise assume process error
-        return ErrorClassificationEnum.PROCESS
+    pass
 
 
-class QuestionSelector:
-    """
-    Adaptive question selection algorithm.
+class QuestionSelector(StatelessQuestionSelector):
+    """Adapter for QuestionSelector delegating to stateless engine."""
 
-    Selects next question based on:
-    - Current mastery level
-    - Target misconceptions to probe
-    - Difficulty progression
-    - Avoiding repetition
-    """
-
-    def select_next_question(
-        self,
-        questions: List[Dict[str, Any]],
-        answered_question_ids: List[str],
-        current_mastery: float,
-        target_misconceptions: List[str],
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Select the next question adaptively.
-
-        Args:
-            questions: Available questions
-            answered_question_ids: IDs of already answered questions
-            current_mastery: Current BKT P(learned) value
-            target_misconceptions: Misconceptions to target
-
-        Returns:
-            Selected question or None if no questions available
-        """
-        # Filter out answered questions
-        available = [
-            q for q in questions if q.get("id") not in answered_question_ids
-        ]
-
-        if not available:
-            return None
-
-        # Calculate target difficulty based on mastery
-        # Map mastery (0-1) to difficulty (1-10)
-        target_difficulty = min(10, max(1, int(current_mastery * 10) + 1))
-
-        # Score each question
-        def score_question(q: Dict[str, Any]) -> float:
-            score = 0.0
-
-            # Difficulty match score (closer is better)
-            q_difficulty = q.get("difficulty_level", 5)
-            difficulty_diff = abs(q_difficulty - target_difficulty)
-            score -= difficulty_diff * 10  # Penalty for difficulty mismatch
-
-            # Misconception targeting bonus
-            q_misconception = q.get("target_misconception_id")
-            if q_misconception and q_misconception in target_misconceptions:
-                score += 50  # Strong bonus for targeting needed misconception
-
-            return score
-
-        # Select highest scoring question
-        available.sort(key=score_question, reverse=True)
-        return available[0]
+    pass
 
 
 class MultiArmBanditSelector:
     """
-    Multi-arm bandit question selection (Thompson Sampling).
-
-    Balances exploration (trying new question types) vs exploitation
-    (using proven-effective questions for this student profile).
-    Inspired by EvidenceB's approach.
+    Adapter for MultiArmBanditSelector keeping track of session stats if needed,
+    but delegating calculations to StatelessMultiArmBanditSelector.
     """
 
     def __init__(self):
-        # Track successes/failures per question for Thompson Sampling
         self.question_stats: Dict[str, Dict[str, int]] = {}
+        self._stateless = StatelessMultiArmBanditSelector()
 
     def record_outcome(self, question_id: str, is_correct: bool) -> None:
-        """Record the outcome of a question for future selection."""
         if question_id not in self.question_stats:
             self.question_stats[question_id] = {"success": 0, "total": 0}
         self.question_stats[question_id]["total"] += 1
@@ -225,119 +80,36 @@ class MultiArmBanditSelector:
         target_misconceptions: List[str],
         exploration_weight: float = 0.3,
     ) -> Optional[Dict[str, Any]]:
-        """
-        Select question using Thompson Sampling with exploration bonus.
-
-        Args:
-            questions: Available questions
-            answered_question_ids: IDs of already answered questions
-            current_mastery: Current BKT P(learned) value
-            target_misconceptions: Misconceptions to target
-            exploration_weight: Weight given to exploration vs exploitation
-
-        Returns:
-            Selected question or None
-        """
-        import random
-
-        available = [
-            q for q in questions if q.get("id") not in answered_question_ids
-        ]
-
-        if not available:
-            return None
-
-        # Target difficulty based on mastery
-        target_difficulty = min(10, max(1, int(current_mastery * 10) + 1))
-
-        def score_question(q: Dict[str, Any]) -> float:
-            score = 0.0
-
-            # Exploitation: use historical performance for this question
-            qid = q.get("id", "")
-            if qid in self.question_stats:
-                stats = self.question_stats[qid]
-                if stats["total"] > 0:
-                    success_rate = stats["success"] / stats["total"]
-                    score += success_rate * 30
-
-            # Difficulty match
-            q_difficulty = q.get("difficulty_level", 5)
-            difficulty_diff = abs(q_difficulty - target_difficulty)
-            score -= difficulty_diff * 8
-
-            # Misconception targeting
-            q_misconception = q.get("target_misconception_id")
-            if q_misconception and q_misconception in target_misconceptions:
-                score += 40
-
-            # Exploration bonus: boost rarely-used questions
-            total_uses = self.question_stats.get(qid, {}).get("total", 0)
-            exploration_bonus = exploration_weight * (1.0 / (1.0 + total_uses))
-            score += exploration_bonus * 20
-
-            # Random noise for Thompson Sampling effect
-            score += random.uniform(-5, 5)
-
-            return score
-
-        # Select highest scoring question
-        available.sort(key=score_question, reverse=True)
-        return available[0]
+        return self._stateless.select_next_question(
+            questions=questions,
+            answered_question_ids=answered_question_ids,
+            current_mastery=current_mastery,
+            target_misconceptions=target_misconceptions,
+            question_stats=self.question_stats,
+            exploration_weight=exploration_weight,
+        )
 
 
-class RemediationGroup:
-    """
-    Assigns students to remediation groups based on diagnostic performance.
+class RemediationGroup(StatelessRemediationGroup):
+    """Adapter for RemediationGroup delegating to stateless engine."""
 
-    Groups:
-    - A: Mastery (enrichment)
-    - B: Partial mastery (targeted remediation)
-    - C: No mastery (intensive remediation)
-    """
-
-    def assign(
-        self,
-        mastery_probability: float,
-        correct_answers: int,
-        total_questions: int,
-    ) -> str:
-        """
-        Assign remediation group.
-
-        Args:
-            mastery_probability: Final BKT P(learned)
-            correct_answers: Number of correct answers
-            total_questions: Total questions answered
-
-        Returns:
-            Group assignment (A, B, or C)
-        """
-        accuracy = correct_answers / total_questions if total_questions > 0 else 0
-
-        # Group A: High mastery and good accuracy
-        if mastery_probability >= 0.75 and accuracy >= 0.7:
-            return RemediationGroupEnum.A
-
-        # Group C: Low mastery or poor accuracy
-        if mastery_probability < 0.4 or accuracy < 0.4:
-            return RemediationGroupEnum.C
-
-        # Group B: Everything else
-        return RemediationGroupEnum.B
+    pass
 
 
 class DiagnosticEngine:
     """
-    Main diagnostic engine coordinating BKT, question selection, and results.
+    Diagnostic engine service delegating to app.engines.
+    Note: For backward compatibility with tests/services expecting in-memory session tracking,
+    session dictionary storage is kept at the service level, while engine calculation is stateless.
     """
 
     def __init__(self):
         self.sessions: Dict[UUID, Dict[str, Any]] = {}
         self.bkt_models: Dict[str, BayesianKnowledgeTracing] = {}
-        self.error_classifier = ErrorClassification()
-        self.question_selector = QuestionSelector()
-        self.group_assigner = RemediationGroup()
+        self.engine = StatelessDiagnosticEngine()
+        self.error_classifier = self.engine.error_classifier
+        self.question_selector = self.engine.question_selector
+        self.group_assigner = self.engine.group_assigner
 
     def start_session(
         self,
@@ -345,7 +117,6 @@ class DiagnosticEngine:
         student_id: UUID,
         module_id: UUID,
     ) -> Dict[str, Any]:
-        """Start a new diagnostic session."""
         from datetime import datetime, timezone
 
         session = {
@@ -376,35 +147,28 @@ class DiagnosticEngine:
         response_time_ms: int,
         target_misconception_id: Optional[str],
     ) -> Dict[str, Any]:
-        """Process an answer and update BKT state."""
         session = self.sessions.get(session_id)
         if not session:
             raise ValueError(f"Session {session_id} not found")
 
-        # Classify the error
-        error_classification = self.error_classifier.classify(
+        current_p = session["bkt"].p_learned
+        result = self.engine.process_answer(
+            current_p_learned=current_p,
             is_correct=is_correct,
-            target_misconception_id=target_misconception_id,
             response_time_ms=response_time_ms,
-            difficulty_level=5,  # Default, should be passed from question
+            difficulty_level=5,
+            target_misconception_id=target_misconception_id,
         )
 
-        # Update BKT
-        session["bkt"].update(is_correct)
-
-        # Record answer
+        session["bkt"].p_learned = result["current_mastery"]
         session["answers"].append({
             "question_id": question_id,
             "is_correct": is_correct,
             "response_time_ms": response_time_ms,
-            "error_classification": error_classification,
+            "error_classification": result["error_classification"],
         })
 
-        return {
-            "error_classification": error_classification,
-            "current_mastery": session["bkt"].p_learned,
-            "mastery_level": session["bkt"].get_mastery_level(),
-        }
+        return result
 
     def is_session_complete(
         self,
@@ -412,30 +176,18 @@ class DiagnosticEngine:
         min_questions: int = 10,
         max_questions: int = 15,
     ) -> bool:
-        """Check if diagnostic session should end."""
         session = self.sessions.get(session_id)
         if not session:
             return False
 
-        num_answers = len(session["answers"])
-
-        # Minimum questions threshold
-        if num_answers < min_questions:
-            return False
-
-        # Maximum questions cap
-        if num_answers >= max_questions:
-            return True
-
-        # Converged mastery (confident in assessment)
-        bkt = session["bkt"]
-        if bkt.p_learned > 0.9 or bkt.p_learned < 0.1:
-            return True
-
-        return False
+        return self.engine.is_session_complete(
+            answers_count=len(session["answers"]),
+            current_p_learned=session["bkt"].p_learned,
+            min_questions=min_questions,
+            max_questions=max_questions,
+        )
 
     def get_results(self, session_id: UUID) -> Dict[str, Any]:
-        """Get diagnostic session results."""
         from datetime import datetime, timezone
 
         session = self.sessions.get(session_id)
@@ -444,27 +196,17 @@ class DiagnosticEngine:
 
         bkt = session["bkt"]
         answers = session["answers"]
-
         correct_count = sum(1 for a in answers if a["is_correct"])
         total_count = len(answers)
 
-        # Assign remediation group
-        recommended_group = self.group_assigner.assign(
-            mastery_probability=bkt.p_learned,
-            correct_answers=correct_count,
-            total_questions=total_count,
+        results = self.engine.evaluate_session_results(
+            session_id=session_id,
+            final_p_learned=bkt.p_learned,
+            correct_count=correct_count,
+            total_count=total_count,
         )
 
-        # Mark session complete
         session["completed_at"] = datetime.now(timezone.utc)
+        results["completed_at"] = session["completed_at"]
 
-        return {
-            "session_id": session_id,
-            "mastery_probability": bkt.p_learned,
-            "mastery_level": bkt.get_mastery_level(),
-            "recommended_group": recommended_group,
-            "total_questions": total_count,
-            "correct_answers": correct_count,
-            "accuracy": correct_count / total_count if total_count > 0 else 0,
-            "completed_at": session["completed_at"],
-        }
+        return results
