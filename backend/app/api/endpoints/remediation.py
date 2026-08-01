@@ -56,7 +56,13 @@ async def get_remediation_pathway(
     current_user: User = Depends(get_current_student),
 ) -> RemediationPathResponse:
     """Get or create a personalized remediation pathway."""
-    # Check for existing path
+    user_org_id = getattr(current_user, "organization_id", None)
+    if not user_org_id:
+        result_org = await db.execute(
+            select(Organization.id).limit(1)
+        )
+        user_org_id = result_org.scalar_one_or_none()
+
     result = await db.execute(
         select(RemediationPath).where(
             RemediationPath.student_id == current_user.id,
@@ -66,10 +72,10 @@ async def get_remediation_pathway(
     path = result.scalar_one_or_none()
 
     if not path:
-        # Create new path
         path = RemediationPath(
             student_id=current_user.id,
             competency_id=competency_id,
+            organization_id=user_org_id,
             status=RemediationPathStatus.DIAGNOSED,
             atoms_completed=[],
         )
@@ -201,6 +207,7 @@ async def complete_atom(
     completion = AtomCompletion(
         path_id=path.id,
         atom_id=atom_id,
+        organization_id=path.organization_id,
         time_spent_ms=completion_data.time_spent_ms,
         interactions_count=completion_data.interactions_count,
     )
@@ -475,18 +482,36 @@ async def get_passport_questions(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_student),
 ) -> PassportQuestionsResponse:
-    """Get questions for the Passport mastery assessment."""
+    """Get questions for the Passport mastery assessment and transition pathway to PASSPORT_TESTING."""
+    user_org_id = getattr(current_user, "organization_id", None)
+    if not user_org_id:
+        result_org = await db.execute(
+            select(Organization.id).limit(1)
+        )
+        user_org_id = result_org.scalar_one_or_none()
+
     # Create assessment record
     assessment = PassportAssessment(
         student_id=current_user.id,
         competency_id=competency_id,
+        organization_id=user_org_id,
     )
     db.add(assessment)
+
+    path_result = await db.execute(
+        select(RemediationPath).where(
+            RemediationPath.student_id == current_user.id,
+            RemediationPath.competency_id == competency_id,
+        )
+    )
+    path = path_result.scalar_one_or_none()
+    if path and path.status == RemediationPathStatus.COMPLETED:
+        path.status = RemediationPathStatus.PASSPORT_TESTING
+
     await db.commit()
     await db.refresh(assessment)
 
     # Get questions for this competency
-    # In production, would query by competency via question-competency mapping
     result = await db.execute(
         select(Question)
         .where(Question.difficulty_level.between(4, 7))
@@ -519,6 +544,13 @@ async def evaluate_passport(
     current_user: User = Depends(get_current_student),
 ) -> PassportEvaluateResponse:
     """Evaluate Passport assessment and update mastery."""
+    user_org_id = getattr(current_user, "organization_id", None)
+    if not user_org_id:
+        result_org = await db.execute(
+            select(Organization.id).limit(1)
+        )
+        user_org_id = result_org.scalar_one_or_none()
+
     # Get current competency profile
     result = await db.execute(
         select(CompetencyProfile).where(
@@ -533,6 +565,7 @@ async def evaluate_passport(
         profile = CompetencyProfile(
             student_id=current_user.id,
             competency_id=evaluate_data.competency_id,
+            organization_id=user_org_id,
             mastery_level=MasteryLevel.FAMILIAR,
             p_learned=0.5,
         )
@@ -543,9 +576,8 @@ async def evaluate_passport(
     # Check answers
     answers = []
     for ans in evaluate_data.answers:
-        # Get question to check correctness
         result = await db.execute(
-            select(Question).where(Question.id == ans.question_id)
+            select(Question).where(Question.id == UUID(ans.question_id))
         )
         question = result.scalar_one_or_none()
 
@@ -560,15 +592,16 @@ async def evaluate_passport(
         answers=answers,
     )
 
-    # Update profile
     previous_level = profile.mastery_level.value
-    profile.mastery_level = evaluation["new_mastery_level"]
+    if evaluation["passed"]:
+        profile.mastery_level = MasteryLevel.MASTERED
     profile.last_assessed = datetime.now(timezone.utc)
 
     # Update or create assessment record
     assessment = PassportAssessment(
         student_id=current_user.id,
         competency_id=evaluate_data.competency_id,
+        organization_id=user_org_id,
         passed=1 if evaluation["passed"] else 0,
         accuracy=int(evaluation["accuracy"] * 100),
         questions_answered=len(answers),
@@ -577,26 +610,42 @@ async def evaluate_passport(
     )
     db.add(assessment)
 
-    # If passed, update remediation path status
-    if evaluation["passed"]:
-        result = await db.execute(
-            select(RemediationPath).where(
-                RemediationPath.student_id == current_user.id,
-                RemediationPath.competency_id == evaluate_data.competency_id,
-            )
+    path_result = await db.execute(
+        select(RemediationPath).where(
+            RemediationPath.student_id == current_user.id,
+            RemediationPath.competency_id == evaluate_data.competency_id,
         )
-        path = result.scalar_one_or_none()
-        if path:
-            path.status = RemediationPathStatus.COMPLETED
+    )
+    path = path_result.scalar_one_or_none()
+    alert_triggered = not evaluation["passed"]
+
+    if path:
+        if evaluation["passed"]:
+            path.status = RemediationPathStatus.MASTERED
             path.completed_at = datetime.now(timezone.utc)
+        else:
+            path.status = RemediationPathStatus.DIAGNOSED
+
+    if not evaluation["passed"]:
+        from app.models.alert import AlertSeverity, AlertTriggerType, PedagogicalAlert
+        alert = PedagogicalAlert(
+            organization_id=user_org_id,
+            student_id=current_user.id,
+            trigger_type=AlertTriggerType.PASSPORT_FAILED,
+            severity=AlertSeverity.WARNING,
+            simplified_message=f"Need extra practice on competency {evaluate_data.competency_id}",
+            expert_message=f"Passport assessment failed for competency {evaluate_data.competency_id}. Tutor/Pedagogue support recommended.",
+            context_data={"competency_id": evaluate_data.competency_id, "accuracy": evaluation["accuracy"]},
+            recommended_action="Tutor/Pedagogue in-person support recommended",
+        )
+        db.add(alert)
 
     await db.commit()
 
-    # Generate message
     if evaluation["passed"]:
-        message = f"Congratulations! You've advanced to {evaluation['new_mastery_level']} level!"
+        message = f"Congratulations! You've advanced to MASTERED level!"
     else:
-        message = "Keep practicing! You'll get there."
+        message = "Passport assessment not passed. Starting a new remediation cycle. Tutor/Pedagogue support recommended."
 
     return PassportEvaluateResponse(
         passed=evaluation["passed"],
@@ -604,9 +653,9 @@ async def evaluate_passport(
         correct_count=evaluation["correct_count"],
         total_questions=evaluation["total_questions"],
         previous_mastery_level=previous_level,
-        new_mastery_level=evaluation["new_mastery_level"],
+        new_mastery_level=profile.mastery_level.value,
         badge_earned=evaluate_data.competency_id if evaluation["passed"] else None,
-        alert_triggered=evaluation["alert_triggered"],
+        alert_triggered=alert_triggered,
         message=message,
     )
 

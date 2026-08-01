@@ -3,7 +3,9 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PathwayOverview from '@/components/student/PathwayOverview.vue'
 import type { PathwayAtom } from '@/components/student/PathwayOverview.vue'
+import PassportAssessment from '@/components/student/PassportAssessment.vue'
 import DifficultyMeter from '@/components/student/DifficultyMeter.vue'
+import type { PassportEvaluation } from '@/services/remediationService'
 
 const route = useRoute()
 const router = useRouter()
@@ -25,6 +27,7 @@ type ViewState = 'overview' | 'atom' | 'passport' | 'results'
 const currentView = ref<ViewState>('overview')
 const selectedAtom = ref<PathwayAtom | null>(null)
 const showEngagement = ref(false)
+const passportEvaluation = ref<PassportEvaluation | null>(null)
 
 const canTakePassport = computed(() =>
   mockAtoms.filter(a => a.status === 'completed').length >= 3
@@ -56,10 +59,11 @@ function completeAtom() {
 
 function startPassport() {
   currentView.value = 'passport'
-  // Mock: auto-complete passport after 2s
-  setTimeout(() => {
-    currentView.value = 'results'
-  }, 2000)
+}
+
+function handlePassportCompleted(evaluation: PassportEvaluation) {
+  passportEvaluation.value = evaluation
+  currentView.value = 'results'
 }
 
 function goBack() {
@@ -130,18 +134,19 @@ function goBack() {
       </div>
     </div>
 
-    <!-- Passport assessment -->
-    <div
-      v-else-if="currentView === 'passport'"
-      class="max-w-lg mx-auto text-center pt-20"
-    >
-      <div class="animate-spin w-16 h-16 mx-auto mb-6 rounded-full border-4 border-primary border-t-transparent" />
-      <h2 class="text-2xl font-black text-primary mb-2">
-        اختبار الجواز
-      </h2>
-      <p class="text-on-surface-variant">
-        جاري تقييم مستواك...
-      </p>
+    <!-- Passport assessment component -->
+    <div v-else-if="currentView === 'passport'">
+      <button
+        class="text-on-surface-variant hover:text-primary mb-4 flex items-center gap-1 max-w-3xl mx-auto"
+        @click="currentView = 'overview'"
+      >
+        <span class="material-symbols-outlined">arrow_back</span> العودة للمسار
+      </button>
+      <PassportAssessment
+        :competency-id="competencyId"
+        @completed="handlePassportCompleted"
+        @close="currentView = 'overview'"
+      />
     </div>
 
     <!-- Results -->
@@ -149,17 +154,31 @@ function goBack() {
       v-else-if="currentView === 'results'"
       class="max-w-lg mx-auto text-center pt-12"
     >
-      <div class="w-24 h-24 mx-auto mb-6 bg-mint-100 rounded-full flex items-center justify-center">
-        <span class="material-symbols-outlined text-6xl text-mint-500">workspace_premium</span>
+      <div
+        class="w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center"
+        :class="passportEvaluation?.passed ? 'bg-tertiary-container' : 'bg-surface-container-high'"
+      >
+        <span
+          class="material-symbols-outlined text-6xl"
+          :class="passportEvaluation?.passed ? 'text-tertiary' : 'text-on-surface-variant'"
+        >
+          {{ passportEvaluation?.passed ? 'workspace_premium' : 'psychology' }}
+        </span>
       </div>
-      <h2 class="text-3xl font-black text-primary mb-3">
-        أحسنت! 🎉
+      <h2
+        class="text-3xl font-black mb-3"
+        :class="passportEvaluation?.passed ? 'text-primary' : 'text-on-surface'"
+      >
+        {{ passportEvaluation?.passed ? 'أحسنت! 🎉' : 'واصل المحاولة! 💪' }}
       </h2>
       <p class="text-on-surface-variant mb-2">
-        لقد اجتزت اختبار الجواز بنجاح
+        {{ passportEvaluation?.message || (passportEvaluation?.passed ? 'لقد اجتزت اختبار الجواز بنجاح' : 'لم تتجاوز اختبار الجواز هذه المرة') }}
       </p>
-      <p class="text-sm text-mint-600 font-bold mb-8">
-        المستوى الجديد: متقن
+      <p
+        class="text-sm font-bold mb-8"
+        :class="passportEvaluation?.passed ? 'text-tertiary' : 'text-secondary'"
+      >
+        المستوى الجديد: {{ passportEvaluation?.new_mastery_level || 'متقن' }}
       </p>
       <button
         class="bg-primary text-on-primary px-10 py-4 rounded-2xl font-bold text-lg

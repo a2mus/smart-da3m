@@ -8,7 +8,16 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
-const competencyId = computed(() => route.params.competencyId as string)
+const props = defineProps<{
+  competencyId?: string
+}>()
+
+const emit = defineEmits<{
+  (e: 'completed', evaluation: PassportEvaluation): void
+  (e: 'close'): void
+}>()
+
+const activeCompetencyId = computed(() => props.competencyId || (route.params.competencyId as string) || '')
 
 const questions = ref<PassportQuestion[]>([])
 const currentIndex = ref(0)
@@ -21,18 +30,19 @@ const results = ref<PassportEvaluation | null>(null)
 const startTime = ref<number>(Date.now())
 
 const currentQuestion = computed(() => questions.value[currentIndex.value])
-const progress = computed(() => ((currentIndex.value + 1) / questions.value.length) * 100)
+const progress = computed(() => ((currentIndex.value + 1) / (questions.value.length || 1)) * 100)
 const canSubmit = computed(() => !!selectedAnswer.value)
 
 const loadQuestions = async () => {
+  if (!activeCompetencyId.value) return
   isLoading.value = true
   error.value = null
   try {
-    const response = await remediationService.getPassportQuestions(competencyId.value)
+    const response = await remediationService.getPassportQuestions(activeCompetencyId.value)
     questions.value = response.questions
     startTime.value = Date.now()
   } catch (err) {
-    error.value = t('passport.error')
+    error.value = t('passport.error', 'تعذر تحميل أسئلة اختبار الجواز')
     console.error('Failed to load passport questions:', err)
   } finally {
     isLoading.value = false
@@ -65,9 +75,11 @@ const submitPassport = async (finalTimeMs: number) => {
       time_ms: index === questions.value.length - 1 ? finalTimeMs : 10000,
     }))
 
-    results.value = await remediationService.evaluatePassport(competencyId.value, answerArray)
+    const evaluation = await remediationService.evaluatePassport(activeCompetencyId.value, answerArray)
+    results.value = evaluation
+    emit('completed', evaluation)
   } catch (err) {
-    error.value = t('passport.submitError')
+    error.value = t('passport.submitError', 'تعذر تقييم نتائج اختبار الجواز')
     console.error('Failed to submit passport:', err)
   } finally {
     isSubmitting.value = false
@@ -75,7 +87,8 @@ const submitPassport = async (finalTimeMs: number) => {
 }
 
 const finishAssessment = () => {
-  router.push('/student/dashboard')
+  emit('close')
+  router.push('/student')
 }
 
 const retryAssessment = () => {
@@ -91,7 +104,7 @@ onMounted(loadQuestions)
 
 <template>
   <div
-    class="min-h-screen p-4 md:p-6"
+    class="min-h-screen p-4 md:p-6 bg-surface text-on-surface"
     data-testid="passport-assessment"
   >
     <div class="max-w-3xl mx-auto">
@@ -100,16 +113,16 @@ onMounted(loadQuestions)
         v-if="isLoading"
         class="text-center py-12"
       >
-        <div class="animate-spin inline-block w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full" />
-        <p class="mt-3 text-ink-600">
-          {{ t('passport.loading') }}
+        <div class="animate-spin inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full" />
+        <p class="mt-3 text-on-surface-variant">
+          {{ t('passport.loading', 'جاري تحميل اختبار الجواز...') }}
         </p>
       </div>
 
       <!-- Error -->
       <div
         v-else-if="error"
-        class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl mb-4"
+        class="bg-error-container border border-error text-error px-4 py-3 rounded-xl mb-4"
       >
         {{ error }}
       </div>
@@ -127,10 +140,10 @@ onMounted(loadQuestions)
           <div class="text-7xl mb-4">
             🏆
           </div>
-          <h2 class="text-3xl font-bold text-green-600 mb-2">
-            {{ t('passport.congratulations') }}
+          <h2 class="text-3xl font-bold text-tertiary mb-2">
+            {{ t('passport.congratulations', 'مبروك! اجتزت التقييم بنجاح') }}
           </h2>
-          <p class="text-ink-600">
+          <p class="text-on-surface-variant">
             {{ results.message }}
           </p>
         </div>
@@ -143,59 +156,59 @@ onMounted(loadQuestions)
           <div class="text-7xl mb-4">
             💪
           </div>
-          <h2 class="text-2xl font-bold text-ink-700 mb-2">
-            {{ t('passport.keepTrying') }}
+          <h2 class="text-2xl font-bold text-on-surface mb-2">
+            {{ t('passport.keepTrying', 'واصل المحاولة! أنت على وشك الإتقان') }}
           </h2>
-          <p class="text-ink-600">
+          <p class="text-on-surface-variant">
             {{ results.message }}
           </p>
         </div>
 
         <!-- Results Card -->
-        <div class="bg-surface-bright rounded-2xl p-6 shadow-soft mb-6 text-start">
+        <div class="bg-surface-bright rounded-2xl p-6 shadow-sm border border-outline-variant mb-6 text-start">
           <div class="grid grid-cols-2 gap-4 mb-6">
-            <div class="text-center p-4 bg-ink-50 rounded-xl">
+            <div class="text-center p-4 bg-surface-container rounded-xl">
               <div
                 class="text-3xl font-bold"
-                :class="results.passed ? 'text-green-600' : 'text-ink-600'"
+                :class="results.passed ? 'text-tertiary' : 'text-on-surface'"
               >
                 {{ Math.round(results.accuracy * 100) }}%
               </div>
-              <div class="text-sm text-ink-600">
-                {{ t('passport.accuracy') }}
+              <div class="text-sm text-on-surface-variant">
+                {{ t('passport.accuracy', 'نسبة الدقة') }}
               </div>
             </div>
-            <div class="text-center p-4 bg-ink-50 rounded-xl">
-              <div class="text-3xl font-bold text-teal-600">
+            <div class="text-center p-4 bg-surface-container rounded-xl">
+              <div class="text-3xl font-bold text-primary">
                 {{ results.correct_count }}/{{ results.total_questions }}
               </div>
-              <div class="text-sm text-ink-600">
-                {{ t('passport.questions') }}
+              <div class="text-sm text-on-surface-variant">
+                {{ t('passport.questions', 'الأسئلة الصحيحة') }}
               </div>
             </div>
           </div>
 
-          <div class="border-t border-ink-200 pt-4">
+          <div class="border-t border-outline-variant pt-4">
             <div class="flex justify-between items-center mb-2">
-              <span class="text-ink-600">{{ t('passport.previousLevel') }}</span>
-              <span class="font-medium">{{ results.previous_mastery_level }}</span>
+              <span class="text-on-surface-variant">{{ t('passport.previousLevel', 'المستوى السابق') }}</span>
+              <span class="font-medium text-on-surface">{{ results.previous_mastery_level }}</span>
             </div>
             <div class="flex justify-between items-center">
-              <span class="text-ink-600">{{ t('passport.newLevel') }}</span>
-              <span class="font-bold text-teal-600">{{ results.new_mastery_level }}</span>
+              <span class="text-on-surface-variant">{{ t('passport.newLevel', 'المستوى الجديد') }}</span>
+              <span class="font-bold text-primary">{{ results.new_mastery_level }}</span>
             </div>
           </div>
 
           <!-- Badge Earned -->
           <div
             v-if="results.badge_earned"
-            class="mt-4 p-4 bg-amber-50 border border-yellow-200 rounded-xl text-center"
+            class="mt-4 p-4 bg-secondary-container border border-secondary rounded-xl text-center"
           >
             <div class="text-2xl mb-1">
               ⭐
             </div>
-            <div class="font-semibold text-yellow-700">
-              {{ t('passport.badgeEarned') }}
+            <div class="font-semibold text-secondary">
+              {{ t('passport.badgeEarned', 'حصلت على شارة الإتقان!') }}
             </div>
           </div>
         </div>
@@ -204,16 +217,16 @@ onMounted(loadQuestions)
         <div class="flex gap-3 justify-center">
           <button
             v-if="!results.passed"
-            class="px-6 py-3 bg-ink-200 hover:bg-ink-300 text-ink-700 font-semibold rounded-xl transition-colors"
+            class="px-6 py-3 bg-surface-container hover:bg-surface-container-high text-on-surface font-semibold rounded-xl transition-colors"
             @click="retryAssessment"
           >
-            {{ t('passport.retry') }}
+            {{ t('passport.retry', 'إعادة المحاولة') }}
           </button>
           <button
-            class="px-6 py-3 bg-teal-500 hover:bg-teal-600 text-on-primary font-semibold rounded-xl transition-colors"
+            class="px-6 py-3 bg-primary hover:opacity-90 text-on-primary font-semibold rounded-xl transition-colors"
             @click="finishAssessment"
           >
-            {{ t('passport.finish') }}
+            {{ t('passport.finish', 'إنهاء التقييم') }}
           </button>
         </div>
       </div>
@@ -221,31 +234,31 @@ onMounted(loadQuestions)
       <!-- Question Screen -->
       <div
         v-else-if="currentQuestion"
-        class="bg-surface-bright rounded-2xl p-6 shadow-soft"
+        class="bg-surface-bright rounded-2xl p-6 shadow-sm border border-outline-variant"
       >
         <!-- Header -->
         <div class="mb-6">
           <div class="flex justify-between items-center mb-2">
-            <span class="text-sm text-ink-600">{{ t('passport.question') }} {{ currentIndex + 1 }} {{ t('passport.of') }} {{ questions.length }}</span>
-            <span class="text-sm text-ink-600">{{ Math.round(progress) }}%</span>
+            <span class="text-sm text-on-surface-variant">{{ t('passport.question', 'السؤال') }} {{ currentIndex + 1 }} {{ t('passport.of', 'من') }} {{ questions.length }}</span>
+            <span class="text-sm text-on-surface-variant">{{ Math.round(progress) }}%</span>
           </div>
-          <div class="h-2 bg-ink-200 rounded-full overflow-hidden">
+          <div class="h-2 bg-surface-container rounded-full overflow-hidden">
             <div
-              class="h-full bg-teal-500 rounded-full transition-all duration-300"
+              class="h-full bg-primary rounded-full transition-all duration-300"
               :style="{ width: `${progress}%` }"
             />
           </div>
         </div>
 
         <!-- Passport Badge -->
-        <div class="flex items-center gap-2 mb-6 p-3 bg-amber-50 rounded-xl">
+        <div class="flex items-center gap-2 mb-6 p-3 bg-primary-container rounded-xl">
           <span class="text-2xl">🛂</span>
-          <span class="font-semibold text-yellow-700">{{ t('passport.assessmentBadge') }}</span>
+          <span class="font-semibold text-primary">{{ t('passport.assessmentBadge', 'اختبار الجواز البيداغوجي') }}</span>
         </div>
 
         <!-- Question -->
         <div class="mb-8">
-          <h2 class="text-xl font-semibold text-ink-800 mb-4">
+          <h2 class="text-xl font-semibold text-on-surface mb-4">
             {{ currentQuestion.content.text }}
           </h2>
 
@@ -260,8 +273,8 @@ onMounted(loadQuestions)
               :class="[
                 'w-full p-4 text-start rounded-xl border-2 transition-all min-h-[60px]',
                 selectedAnswer === option
-                  ? 'border-teal-500 bg-teal-50'
-                  : 'border-ink-200 hover:border-teal-300'
+                  ? 'border-primary bg-primary-container text-primary font-bold'
+                  : 'border-outline-variant hover:border-primary bg-surface'
               ]"
               @click="selectedAnswer = option"
             >
@@ -277,8 +290,8 @@ onMounted(loadQuestions)
             <input
               v-model="selectedAnswer"
               type="text"
-              class="w-full p-4 rounded-xl border-2 border-ink-200 focus:border-teal-500 outline-none transition-all"
-              :placeholder="t('passport.enterAnswer')"
+              class="w-full p-4 rounded-xl border-2 border-outline-variant focus:border-primary bg-surface outline-none transition-all"
+              :placeholder="t('passport.enterAnswer', 'أدخل إجابتك هنا...')"
             >
           </div>
         </div>
@@ -286,14 +299,14 @@ onMounted(loadQuestions)
         <!-- Submit -->
         <button
           :disabled="!canSubmit || isSubmitting"
-          class="w-full py-4 bg-teal-500 hover:bg-teal-600 disabled:bg-ink-300 text-on-primary font-semibold rounded-xl transition-colors flex justify-center items-center gap-2"
+          class="w-full py-4 bg-primary hover:opacity-90 disabled:bg-surface-container-highest text-on-primary font-semibold rounded-xl transition-colors flex justify-center items-center gap-2"
           @click="submitAnswer"
         >
           <span
             v-if="isSubmitting"
             class="animate-spin"
           >⟳</span>
-          {{ isSubmitting ? t('passport.submitting') : (currentIndex < questions.length - 1 ? t('passport.next') : t('passport.finish')) }}
+          {{ isSubmitting ? t('passport.submitting', 'جاري التسجيل...') : (currentIndex < questions.length - 1 ? t('passport.next', 'التالي') : t('passport.finish', 'إنهاء')) }}
         </button>
       </div>
     </div>
