@@ -2,9 +2,12 @@
 Authentication API endpoints.
 """
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.security import (
     create_access_token,
@@ -17,6 +20,7 @@ from app.core.security import (
 )
 from app.api.deps import get_current_user
 from app.db.session import get_db
+from app.models.organization import Organization, OrganizationMember, OrganizationType
 from app.models.user import Language, User, UserRole
 from app.schemas.user import (
     LoginRequest,
@@ -31,6 +35,105 @@ from app.schemas.user import (
 router = APIRouter()
 
 
+async def get_user_organizations_claims(
+    user: User,
+    db: AsyncSession,
+) -> list[dict]:
+    """Retrieve organization membership claims [{id, role, type}] for user.
+
+    If a parent/user has no organization memberships, auto-create a HOUSEHOLD org.
+    If a student has no organization memberships, link to parent's household org.
+    """
+    stmt = (
+        select(OrganizationMember)
+        .options(selectinload(OrganizationMember.organization))
+        .where(OrganizationMember.user_id == user.id)
+        .execution_options(skip_tenant_filter=True)
+    )
+    result = await db.execute(stmt)
+    memberships = result.scalars().all()
+
+    if not memberships:
+        if user.role == UserRole.STUDENT and user.parent_id:
+            parent_stmt = (
+                select(OrganizationMember)
+                .options(selectinload(OrganizationMember.organization))
+                .where(OrganizationMember.user_id == user.parent_id)
+                .execution_options(skip_tenant_filter=True)
+            )
+            parent_res = await db.execute(parent_stmt)
+            parent_memberships = parent_res.scalars().all()
+            parent_org_id = None
+            for pm in parent_memberships:
+                if pm.organization and pm.organization.type == OrganizationType.HOUSEHOLD:
+                    parent_org_id = pm.organization_id
+                    break
+            if not parent_org_id and parent_memberships:
+                parent_org_id = parent_memberships[0].organization_id
+
+            if not parent_org_id:
+                parent_user_res = await db.execute(select(User).where(User.id == user.parent_id))
+                parent_user = parent_user_res.scalar_one_or_none()
+                parent_name = parent_user.email if (parent_user and parent_user.email) else "Parent"
+                household_org = Organization(
+                    name=f"{parent_name}'s Household",
+                    type=OrganizationType.HOUSEHOLD,
+                )
+                db.add(household_org)
+                await db.flush()
+
+                parent_member = OrganizationMember(
+                    user_id=user.parent_id,
+                    organization_id=household_org.id,
+                    role=UserRole.PARENT,
+                )
+                db.add(parent_member)
+                parent_org_id = household_org.id
+
+            student_member = OrganizationMember(
+                user_id=user.id,
+                organization_id=parent_org_id,
+                role=UserRole.STUDENT,
+            )
+            db.add(student_member)
+            await db.commit()
+
+            result = await db.execute(stmt)
+            memberships = result.scalars().all()
+        else:
+            org_name = f"{user.email}'s Household" if user.email else "Household Organization"
+            household_org = Organization(
+                name=org_name,
+                type=OrganizationType.HOUSEHOLD,
+            )
+            db.add(household_org)
+            await db.flush()
+
+            new_member = OrganizationMember(
+                user_id=user.id,
+                organization_id=household_org.id,
+                role=user.role,
+            )
+            db.add(new_member)
+            await db.commit()
+
+            result = await db.execute(stmt)
+            memberships = result.scalars().all()
+
+    claims = []
+    for m in memberships:
+        claims.append(
+            {
+                "id": str(m.organization_id),
+                "role": m.role.value if hasattr(m.role, "value") else str(m.role),
+                "type": m.organization.type.value
+                if (m.organization and hasattr(m.organization.type, "value"))
+                else str(m.organization.type if m.organization else "HOUSEHOLD"),
+            }
+        )
+    return claims
+
+
 @router.post("/login/email", response_model=Token)
 async def login_with_email(
     credentials: LoginRequest,
@@ -40,7 +143,6 @@ async def login_with_email(
 
     For parents and experts.
     """
-    # Look up user by email
     result = await db.execute(
         select(User).where(
             User.email == credentials.email,
@@ -56,8 +158,12 @@ async def login_with_email(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Create tokens with role claim
-    additional_claims = {"role": user.role.value, "language": user.language.value}
+    org_claims = await get_user_organizations_claims(user, db)
+    additional_claims = {
+        "role": user.role.value,
+        "language": user.language.value,
+        "organizations": org_claims,
+    }
     access_token = create_access_token(
         subject=str(user.id), additional_claims=additional_claims
     )
@@ -79,8 +185,6 @@ async def login_with_pin(
 
     For students logging in via parent-generated PIN.
     """
-    # Look up student by PIN hash
-    # Note: We need to check all students since PINs are hashed
     result = await db.execute(
         select(User).where(
             User.role == UserRole.STUDENT,
@@ -89,7 +193,6 @@ async def login_with_pin(
     )
     students = result.scalars().all()
 
-    # Find student with matching PIN
     student = None
     for s in students:
         if verify_pin(credentials.pin_code, s.pin_code_hash):
@@ -103,11 +206,12 @@ async def login_with_pin(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Create tokens with role claim
+    org_claims = await get_user_organizations_claims(student, db)
     additional_claims = {
         "role": student.role.value,
         "language": student.language.value,
         "parent_id": str(student.parent_id) if student.parent_id else None,
+        "organizations": org_claims,
     }
     access_token = create_access_token(
         subject=str(student.id), additional_claims=additional_claims
@@ -136,9 +240,19 @@ async def refresh_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user_id = payload.get("sub")
+    user_id_raw = payload.get("sub")
+    try:
+        user_id = UUID(str(user_id_raw)) if user_id_raw else None
+    except ValueError:
+        user_id = None
 
-    # Verify user still exists
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token subject",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
 
@@ -149,8 +263,12 @@ async def refresh_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Create new tokens
-    additional_claims = {"role": user.role.value, "language": user.language.value}
+    org_claims = await get_user_organizations_claims(user, db)
+    additional_claims = {
+        "role": user.role.value,
+        "language": user.language.value,
+        "organizations": org_claims,
+    }
     access_token = create_access_token(
         subject=str(user.id), additional_claims=additional_claims
     )
@@ -179,7 +297,6 @@ async def register_parent(
     db: AsyncSession = Depends(get_db),
 ):
     """Register a new parent account."""
-    # Check if email already exists
     result = await db.execute(select(User).where(User.email == request.email))
     if result.scalar_one_or_none():
         raise HTTPException(
@@ -187,7 +304,6 @@ async def register_parent(
             detail="Email already registered",
         )
 
-    # Create new parent user
     new_parent = User(
         email=request.email,
         hashed_password=get_password_hash(request.password),
@@ -196,6 +312,21 @@ async def register_parent(
     )
 
     db.add(new_parent)
+    await db.flush()
+
+    household_org = Organization(
+        name=f"{request.email}'s Household",
+        type=OrganizationType.HOUSEHOLD,
+    )
+    db.add(household_org)
+    await db.flush()
+
+    org_member = OrganizationMember(
+        user_id=new_parent.id,
+        organization_id=household_org.id,
+        role=UserRole.PARENT,
+    )
+    db.add(org_member)
     await db.commit()
     await db.refresh(new_parent)
 
@@ -211,7 +342,6 @@ async def register_student(
 
     Requires parent to be authenticated (parent_id is set from token in real implementation).
     """
-    # Verify parent exists
     result = await db.execute(
         select(User).where(
             User.id == request.parent_id,
@@ -226,15 +356,54 @@ async def register_student(
             detail="Parent not found",
         )
 
-    # Create new student user
     new_student = User(
         parent_id=request.parent_id,
         pin_code_hash=get_pin_hash(request.pin_code),
         role=UserRole.STUDENT,
-        language=parent.language,  # Inherit parent's language preference
+        language=parent.language,
     )
 
     db.add(new_student)
+    await db.flush()
+
+    parent_stmt = (
+        select(OrganizationMember)
+        .options(selectinload(OrganizationMember.organization))
+        .where(OrganizationMember.user_id == request.parent_id)
+        .execution_options(skip_tenant_filter=True)
+    )
+    parent_res = await db.execute(parent_stmt)
+    parent_memberships = parent_res.scalars().all()
+    parent_org_id = None
+    for pm in parent_memberships:
+        if pm.organization and pm.organization.type == OrganizationType.HOUSEHOLD:
+            parent_org_id = pm.organization_id
+            break
+    if not parent_org_id and parent_memberships:
+        parent_org_id = parent_memberships[0].organization_id
+
+    if not parent_org_id:
+        household_org = Organization(
+            name=f"{parent.email}'s Household" if parent.email else "Household",
+            type=OrganizationType.HOUSEHOLD,
+        )
+        db.add(household_org)
+        await db.flush()
+
+        parent_member = OrganizationMember(
+            user_id=parent.id,
+            organization_id=household_org.id,
+            role=UserRole.PARENT,
+        )
+        db.add(parent_member)
+        parent_org_id = household_org.id
+
+    student_member = OrganizationMember(
+        user_id=new_student.id,
+        organization_id=parent_org_id,
+        role=UserRole.STUDENT,
+    )
+    db.add(student_member)
     await db.commit()
     await db.refresh(new_student)
 

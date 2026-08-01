@@ -28,6 +28,7 @@ class TokenPayload(BaseModel):
     type: Optional[str] = None
     role: Optional[str] = None
     language: Optional[str] = None
+    organizations: Optional[list[dict]] = None
 
 
 class RefreshRequest(BaseModel):
