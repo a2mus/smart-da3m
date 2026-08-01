@@ -63,7 +63,7 @@ development_status:
   4-1-sse-endpoint-sse-starlette-integration: done
   4-2-wire-alertmanager-into-production-code-paths: done
   4-3-alert-trigger-thresholds-resolve-oq-4: done
-  4-4-frontend-usesse-composable-alertstore: backlog
+  4-4-frontend-usesse-composable-alertstore: done
   epic-4-retrospective: optional
 
   epic-5: backlog

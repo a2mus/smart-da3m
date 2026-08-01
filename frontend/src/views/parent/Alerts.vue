@@ -1,58 +1,139 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useAlertStore } from '@/stores/alertStore'
+import { useSSE } from '@/composables/useSSE'
+import { alertService } from '@/services/alertService'
 
-interface Alert {
-  id: string
-  severity: 'INFO' | 'WARNING' | 'CRITICAL'
-  messageAr: string
-  timestamp: string
-  read: boolean
+const { t } = useI18n()
+const alertStore = useAlertStore()
+
+// Initialize real-time SSE event listener
+useSSE({
+  autoConnect: true,
+  onAlert: (alert) => {
+    alertStore.addAlertFromSSE(alert)
+  },
+})
+
+const parentAlerts = computed(() => alertStore.parentAlerts)
+const isLoading = computed(() => alertStore.isLoading)
+const error = computed(() => alertStore.error)
+
+const markAsRead = async (id: string) => {
+  await alertStore.markAlertsRead([id])
 }
 
-const alerts = ref<Alert[]>([
-  { id: 'a1', severity: 'WARNING', messageAr: 'أحمد فشل في نفس نوع التمرين ٣ مرات في الكسور', timestamp: new Date().toISOString(), read: false },
-  { id: 'a2', severity: 'INFO', messageAr: 'فاطمة أتمت وحدة الضرب بنجاح', timestamp: new Date(Date.now() - 86400000).toISOString(), read: true },
-  { id: 'a3', severity: 'CRITICAL', messageAr: 'أحمد يحتاج دعماً فردياً في التعبير الكتابي', timestamp: new Date(Date.now() - 2 * 86400000).toISOString(), read: false },
-  { id: 'a4', severity: 'INFO', messageAr: 'لم يسجل أحمد دخوله منذ ٥ أيام', timestamp: new Date(Date.now() - 5 * 86400000).toISOString(), read: false },
-])
-
-const severityColors: Record<string, string> = {
-  INFO: 'bg-teal-100 text-teal-700 border-teal-300',
-  WARNING: 'bg-amber-100 text-amber-700 border-amber-300',
-  CRITICAL: 'bg-rose-100 text-rose-700 border-rose-300',
+const dismissAlert = (id: string) => {
+  alertStore.dismissAlert(id)
 }
+
+const severityClasses: Record<string, string> = {
+  CRITICAL: 'bg-error-container text-on-surface border-error',
+  WARNING: 'bg-secondary-container text-on-surface border-secondary',
+  INFO: 'bg-primary-container text-on-surface border-primary',
+}
+
+onMounted(() => {
+  alertStore.fetchAlerts()
+})
 </script>
 
 <template>
   <div
-    dir="rtl"
     class="min-h-screen bg-surface px-4 py-8"
   >
-    <div class="max-w-lg mx-auto">
-      <h1 class="text-2xl font-black text-teal-700 mb-6">
-        التنبيهات البيداغوجية
-      </h1>
-      <div class="space-y-3">
-        <div
-          v-for="a in alerts"
-          :key="a.id"
-          class="rounded-2xl border p-4 flex items-start gap-3"
-          :class="[severityColors[a.severity], a.read ? 'opacity-60' : '']"
+    <div class="max-w-xl mx-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-black text-primary">
+          {{ t('alerts.title') }}
+        </h1>
+        <button
+          v-if="parentAlerts.length > 0"
+          class="text-xs text-primary font-bold hover:underline"
+          @click="alertStore.fetchAlerts()"
         >
-          <span class="material-symbols-outlined text-2xl mt-0.5">
-            {{ a.severity === 'CRITICAL' ? 'warning' : a.severity === 'WARNING' ? 'error' : 'info' }}
+          {{ t('common.refresh') }}
+        </button>
+      </div>
+
+      <!-- Loading state -->
+      <div
+        v-if="isLoading"
+        class="text-center py-12"
+      >
+        <div class="animate-spin inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full mb-3" />
+        <p class="text-sm text-on-surface-variant">
+          {{ t('common.loading') }}
+        </p>
+      </div>
+
+      <!-- Error State -->
+      <div
+        v-else-if="error"
+        class="p-4 bg-error-container text-on-surface rounded-2xl border border-error mb-4"
+      >
+        <p class="text-sm font-semibold">
+          {{ error }}
+        </p>
+      </div>
+
+      <!-- Empty state -->
+      <div
+        v-else-if="parentAlerts.length === 0"
+        class="text-center py-12 bg-surface-bright rounded-2xl border border-outline-variant p-6"
+      >
+        <span class="text-4xl mb-3 block">🎉</span>
+        <h2 class="text-lg font-bold text-on-surface mb-1">
+          {{ t('alerts.noAlerts') }}
+        </h2>
+      </div>
+
+      <!-- Alerts List -->
+      <div
+        v-else
+        class="space-y-3"
+      >
+        <div
+          v-for="a in parentAlerts"
+          :key="a.id"
+          class="rounded-2xl border p-4 flex items-start gap-3 transition-opacity"
+          :class="[
+            severityClasses[a.severity] || 'bg-surface-container text-on-surface border-outline',
+            a.isRead || a.is_read ? 'opacity-60' : 'font-semibold'
+          ]"
+        >
+          <span class="text-2xl shrink-0 mt-0.5">
+            {{ alertService.getSeverityIcon(a.severity) }}
           </span>
           <div class="flex-1 min-w-0">
-            <p class="font-medium text-sm">
-              {{ a.messageAr }}
+            <p class="font-medium text-sm leading-relaxed">
+              {{ a.message }}
             </p>
-            <p class="text-xs opacity-60 mt-1">
-              {{ new Date(a.timestamp).toLocaleDateString('ar') }}
-            </p>
+            <div class="flex items-center justify-between mt-2">
+              <p class="text-xs opacity-70">
+                {{ new Date(a.createdAt || a.created_at || '').toLocaleDateString() }}
+              </p>
+              <div class="flex gap-2">
+                <button
+                  v-if="!(a.isRead || a.is_read)"
+                  class="text-xs text-primary font-bold hover:underline"
+                  @click="markAsRead(a.id)"
+                >
+                  {{ t('alerts.markRead') }}
+                </button>
+                <button
+                  class="text-xs text-on-surface-variant hover:text-on-surface"
+                  @click="dismissAlert(a.id)"
+                >
+                  {{ t('common.dismiss') }}
+                </button>
+              </div>
+            </div>
           </div>
           <span
-            v-if="!a.read"
-            class="w-2 h-2 rounded-full bg-current shrink-0 mt-1.5"
+            v-if="!(a.isRead || a.is_read)"
+            class="w-2.5 h-2.5 rounded-full bg-primary shrink-0 mt-1.5"
           />
         </div>
       </div>

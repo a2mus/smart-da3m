@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { alertService, type Alert } from '@/services/alertService'
+import { useAlertStore } from '@/stores/alertStore'
+import { useSSE } from '@/composables/useSSE'
+import { alertService } from '@/services/alertService'
 
 const { t } = useI18n()
 
@@ -14,70 +16,36 @@ const props = withDefaults(defineProps<Props>(), {
   compact: false,
 })
 
-const alerts = ref<Alert[]>([])
-const loading = ref(true)
+const alertStore = useAlertStore()
 const expanded = ref(false)
-const error = ref<string | null>(null)
 
-const unreadCount = computed(() => {
-  return alerts.value.filter(a => !a.is_read).length
+// Connect to real-time SSE stream and feed alerts directly into alertStore
+useSSE({
+  autoConnect: true,
+  onAlert: (alert) => {
+    alertStore.addAlertFromSSE(alert)
+  },
 })
 
-const hasCritical = computed(() => {
-  return alerts.value.some(a => a.severity === 'CRITICAL')
-})
+const unreadCount = computed(() => alertStore.unreadCount)
+const hasCritical = computed(() => alertStore.hasCritical)
+const alerts = computed(() => alertStore.sortedAlerts)
+const loading = computed(() => alertStore.isLoading)
 
 const fetchAlerts = async () => {
-  loading.value = true
-  error.value = null
-  try {
-    if (props.childId) {
-      const parentAlerts = await alertService.getChildAlerts(props.childId)
-      alerts.value = parentAlerts.map(a => ({
-        id: a.id,
-        student_id: '',
-        trigger_type: 'INACTIVITY' as const,
-        severity: a.severity,
-        status: a.is_read ? 'READ' as const : 'UNREAD' as const,
-        simplified_message: a.message,
-        expert_message: a.message,
-        context_data: {},
-        created_at: a.created_at,
-        is_read: a.is_read,
-        message: a.message,
-      }))
-    } else {
-      const response = await alertService.getAlerts(true)
-      alerts.value = response.items.map(a => ({
-        ...a,
-        is_read: a.is_read ?? (a.status === 'READ'),
-      }))
-    }
-  } catch (err) {
-    error.value = t('errors.fetchFailed')
-    console.error('Failed to fetch alerts:', err)
-  } finally {
-    loading.value = false
-  }
+  await alertStore.fetchAlerts(false, props.childId)
 }
 
 const markAsRead = async (alertId: string) => {
-  try {
-    await alertService.markAlertsRead([alertId])
-    const alert = alerts.value.find(a => a.id === alertId)
-    if (alert) {
-      alert.is_read = true
-    }
-  } catch (err) {
-    console.error('Failed to mark alert as read:', err)
-  }
+  await alertStore.markAlertsRead([alertId])
 }
 
 const dismissAlert = (alertId: string) => {
-  alerts.value = alerts.value.filter(a => a.id !== alertId)
+  alertStore.dismissAlert(alertId)
 }
 
-const formatTimeAgo = (timestamp: string) => {
+const formatTimeAgo = (timestamp?: string) => {
+  if (!timestamp) return t('time.justNow')
   const date = new Date(timestamp)
   const now = new Date()
   const diff = now.getTime() - date.getTime()
@@ -100,7 +68,7 @@ onMounted(fetchAlerts)
     <!-- Compact View (Badge) -->
     <button
       v-if="compact"
-      class="relative p-2 rounded-full hover:bg-warm-100 transition-colors"
+      class="relative p-2 rounded-full hover:bg-surface-container-low transition-colors"
       @click="expanded = !expanded"
     >
       <svg
@@ -109,7 +77,7 @@ onMounted(fetchAlerts)
         viewBox="0 0 24 24"
         stroke-width="1.5"
         stroke="currentColor"
-        class="w-6 h-6 text-warm-600"
+        class="w-6 h-6 text-on-surface-variant"
       >
         <path
           stroke-linecap="round"
@@ -121,7 +89,7 @@ onMounted(fetchAlerts)
         v-if="unreadCount > 0"
         :class="[
           'absolute top-0 end-0 w-5 h-5 rounded-full text-xs flex items-center justify-center text-on-primary font-bold',
-          hasCritical ? 'bg-danger-500' : 'bg-primary-500'
+          hasCritical ? 'bg-error' : 'bg-primary'
         ]"
       >
         {{ unreadCount }}
@@ -131,11 +99,11 @@ onMounted(fetchAlerts)
     <!-- Expanded View -->
     <div
       v-else
-      class="bg-surface-bright rounded-2xl shadow-soft overflow-hidden"
-      :class="{ 'border-2 border-danger-200': hasCritical }"
+      class="bg-surface-bright rounded-2xl shadow-md overflow-hidden border border-outline-variant"
+      :class="{ 'border-2 border-error': hasCritical }"
     >
       <!-- Header -->
-      <div class="flex items-center justify-between p-4 border-b border-warm-100">
+      <div class="flex items-center justify-between p-4 border-b border-outline-variant">
         <div class="flex items-center gap-2">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -143,7 +111,7 @@ onMounted(fetchAlerts)
             viewBox="0 0 24 24"
             stroke-width="1.5"
             stroke="currentColor"
-            class="w-6 h-6 text-warm-600"
+            class="w-6 h-6 text-primary"
           >
             <path
               stroke-linecap="round"
@@ -151,19 +119,19 @@ onMounted(fetchAlerts)
               d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
             />
           </svg>
-          <h3 class="font-bold text-warm-800">
+          <h3 class="font-bold text-on-surface">
             {{ t('alerts.title') }}
           </h3>
           <span
             v-if="unreadCount > 0"
-            class="bg-primary-500 text-on-primary text-xs px-2 py-0.5 rounded-full"
+            class="bg-primary text-on-primary text-xs px-2 py-0.5 rounded-full font-semibold"
           >
             {{ unreadCount }}
           </span>
         </div>
         <button
           v-if="alerts.length > 0"
-          class="text-sm text-primary-600 hover:text-primary-700"
+          class="text-sm text-primary hover:underline font-medium"
           @click="fetchAlerts"
         >
           {{ t('common.refresh') }}
@@ -175,13 +143,13 @@ onMounted(fetchAlerts)
         v-if="loading"
         class="text-center py-8"
       >
-        <div class="animate-spin inline-block w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full" />
+        <div class="animate-spin inline-block w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
       </div>
 
       <!-- Empty State -->
       <div
         v-else-if="alerts.length === 0"
-        class="text-center py-8 text-warm-500"
+        class="text-center py-8 text-on-surface-variant"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -189,7 +157,7 @@ onMounted(fetchAlerts)
           viewBox="0 0 24 24"
           stroke-width="1.5"
           stroke="currentColor"
-          class="w-12 h-12 text-success-500 mx-auto mb-2"
+          class="w-12 h-12 text-tertiary mx-auto mb-2"
         >
           <path
             stroke-linecap="round"
@@ -211,11 +179,11 @@ onMounted(fetchAlerts)
           v-for="alert in alerts"
           :key="alert.id"
           :class="[
-            'p-4 border-b border-warm-100 last:border-b-0 transition-colors',
-            alert.severity === 'CRITICAL' ? 'bg-danger-50 border-danger-500' :
-            alert.severity === 'WARNING' ? 'bg-warning-50 border-warning-500' :
-            'bg-success-50 border-success-500',
-            !alert.is_read ? 'border-s-4' : 'opacity-75'
+            'p-4 border-b border-outline-variant last:border-b-0 transition-colors',
+            alert.severity === 'CRITICAL' ? 'bg-error-container text-on-surface' :
+            alert.severity === 'WARNING' ? 'bg-secondary-container text-on-surface' :
+            'bg-tertiary-container text-on-surface',
+            !(alert.isRead || alert.is_read) ? 'border-s-4 border-s-primary' : 'opacity-75'
           ]"
         >
           <div class="flex items-start gap-3">
@@ -223,23 +191,23 @@ onMounted(fetchAlerts)
               {{ alertService.getSeverityIcon(alert.severity) }}
             </span>
             <div class="flex-1 min-w-0">
-              <p class="text-sm text-warm-800 leading-relaxed">
-                {{ alert.simplified_message || alert.message }}
+              <p class="text-sm text-on-surface leading-relaxed font-medium">
+                {{ alert.simplifiedMessage || alert.simplified_message || alert.message }}
               </p>
               <div class="flex items-center justify-between mt-2">
-                <span class="text-xs text-warm-500">
-                  {{ formatTimeAgo(alert.created_at) }}
+                <span class="text-xs text-on-surface-variant">
+                  {{ formatTimeAgo(alert.createdAt || alert.created_at) }}
                 </span>
                 <div class="flex gap-2">
                   <button
-                    v-if="!alert.is_read"
-                    class="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                    v-if="!(alert.isRead || alert.is_read)"
+                    class="text-xs text-primary font-bold hover:underline"
                     @click="markAsRead(alert.id)"
                   >
                     {{ t('alerts.markRead') }}
                   </button>
                   <button
-                    class="text-xs text-warm-400 hover:text-warm-600"
+                    class="text-xs text-on-surface-variant hover:text-on-surface"
                     @click="dismissAlert(alert.id)"
                   >
                     {{ t('common.dismiss') }}
@@ -254,11 +222,11 @@ onMounted(fetchAlerts)
       <!-- View All Link -->
       <div
         v-if="alerts.length > 0"
-        class="p-3 border-t border-warm-100 text-center"
+        class="p-3 border-t border-outline-variant text-center"
       >
         <router-link
           to="/parent/alerts"
-          class="text-sm text-primary-600 hover:text-primary-700 font-medium"
+          class="text-sm text-primary hover:underline font-semibold"
         >
           {{ t('alerts.viewAll') }} →
         </router-link>
@@ -268,12 +236,12 @@ onMounted(fetchAlerts)
     <!-- Dropdown for Compact Mode -->
     <div
       v-if="compact && expanded"
-      class="absolute end-0 top-full mt-2 w-80 bg-surface-bright rounded-xl shadow-lg z-50"
+      class="absolute end-0 top-full mt-2 w-80 bg-surface-bright rounded-xl shadow-lg border border-outline-variant z-50"
     >
-      <div class="p-3 border-b border-warm-100 flex justify-between items-center">
-        <span class="font-semibold text-warm-800">{{ t('alerts.title') }}</span>
+      <div class="p-3 border-b border-outline-variant flex justify-between items-center">
+        <span class="font-semibold text-on-surface">{{ t('alerts.title') }}</span>
         <button
-          class="text-warm-400 hover:text-warm-600"
+          class="text-on-surface-variant hover:text-on-surface"
           @click="expanded = false"
         >
           ×
@@ -282,19 +250,19 @@ onMounted(fetchAlerts)
       <div class="max-h-64 overflow-y-auto">
         <div
           v-if="alerts.length === 0"
-          class="p-4 text-center text-warm-500 text-sm"
+          class="p-4 text-center text-on-surface-variant text-sm"
         >
           {{ t('alerts.noAlerts') }}
         </div>
         <div
           v-for="alert in alerts.slice(0, 5)"
           :key="alert.id"
-          class="p-3 border-b border-warm-100 last:border-b-0 hover:bg-warm-50"
+          class="p-3 border-b border-outline-variant last:border-b-0 hover:bg-surface-container-low"
         >
           <div class="flex items-start gap-2">
             <span>{{ alertService.getSeverityIcon(alert.severity) }}</span>
-            <p class="text-sm text-warm-700 line-clamp-2">
-              {{ alert.simplified_message || alert.message }}
+            <p class="text-sm text-on-surface line-clamp-2">
+              {{ alert.simplifiedMessage || alert.simplified_message || alert.message }}
             </p>
           </div>
         </div>
