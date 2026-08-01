@@ -68,9 +68,14 @@ api.interceptors.request.use(
   (config) => {
     const authStore = useAuthStore()
     const token = authStore.token
+    const activeOrgId = authStore.activeOrganizationId
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+    }
+
+    if (activeOrgId) {
+      config.headers['X-Organization-Id'] = activeOrgId
     }
 
     if (config.data && isObject(config.data)) {

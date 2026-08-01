@@ -1,10 +1,19 @@
 export type UserRole = 'STUDENT' | 'PARENT' | 'EXPERT'
 
+export interface OrganizationClaim {
+  id: string
+  name?: string
+  role: string
+  type: 'SCHOOL' | 'HOUSEHOLD'
+}
+
 export interface User {
   id: string
   email: string | null
   role: UserRole
   language: 'AR' | 'FR'
+  parentId?: string | null
+  organizations?: OrganizationClaim[]
 }
 
 export interface LoginCredentials {

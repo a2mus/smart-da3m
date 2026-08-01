@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { UserRole } from '@/types/auth'
+import type { OrganizationClaim, UserRole } from '@/types/auth'
 import { authApi } from '@/services/api'
 
 export interface User {
@@ -10,12 +10,14 @@ export interface User {
   role: UserRole
   language: 'AR' | 'FR'
   parentId?: string | null
+  organizations?: OrganizationClaim[]
 }
 
 export interface AuthState {
   token: string | null
   refreshToken: string | null
   user: User | null
+  activeOrganizationId: string | null
   isLoading: boolean
   error: string | null
 }
@@ -24,6 +26,7 @@ export const useAuthStore = defineStore('auth', () => {
   // State
   const token = ref<string | null>(localStorage.getItem('token'))
   const refreshToken = ref<string | null>(localStorage.getItem('refreshToken'))
+  const activeOrganizationId = ref<string | null>(localStorage.getItem('activeOrganizationId'))
   const user = ref<User | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -35,6 +38,15 @@ export const useAuthStore = defineStore('auth', () => {
   const isParent = computed(() => user.value?.role === 'PARENT')
   const isExpert = computed(() => user.value?.role === 'EXPERT')
   const currentUser = computed(() => user.value)
+  const organizations = computed(() => user.value?.organizations || [])
+  const hasMultipleOrganizations = computed(() => organizations.value.length > 1)
+  const activeOrganization = computed(() => {
+    if (!organizations.value.length) return null
+    return (
+      organizations.value.find((org) => org.id === activeOrganizationId.value) ||
+      organizations.value[0]
+    )
+  })
 
   // RBAC Checkers
   const canAccess = (allowedRoles: UserRole[]) => {
@@ -46,6 +58,11 @@ export const useAuthStore = defineStore('auth', () => {
     if (!user.value) return false
     if (user.value.id === resourceOwnerId) return true
     return allowedRoles.includes(user.value.role)
+  }
+
+  function setActiveOrganization(id: string) {
+    activeOrganizationId.value = id
+    localStorage.setItem('activeOrganizationId', id)
   }
 
   // Actions
@@ -138,6 +155,18 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.getMe()
       user.value = response.data
 
+      const userOrgs = user.value?.organizations || []
+      if (userOrgs.length > 0) {
+        const isValidActive = userOrgs.some((org) => org.id === activeOrganizationId.value)
+        if (!isValidActive) {
+          activeOrganizationId.value = userOrgs[0].id
+          localStorage.setItem('activeOrganizationId', userOrgs[0].id)
+        }
+      } else {
+        activeOrganizationId.value = null
+        localStorage.removeItem('activeOrganizationId')
+      }
+
       // Update language preference
       if (user.value?.language) {
         const { locale } = useI18n()
@@ -168,10 +197,12 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     refreshToken.value = null
     user.value = null
+    activeOrganizationId.value = null
     error.value = null
 
     localStorage.removeItem('token')
     localStorage.removeItem('refreshToken')
+    localStorage.removeItem('activeOrganizationId')
   }
 
   function getDefaultRouteForRole(): string {
@@ -213,23 +244,24 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    // State
     token,
     refreshToken,
     user,
+    activeOrganizationId,
     isLoading,
     error,
-    // Getters
     isAuthenticated,
     userRole,
     isStudent,
     isParent,
     isExpert,
     currentUser,
-    // RBAC
+    organizations,
+    hasMultipleOrganizations,
+    activeOrganization,
     canAccess,
     isOwnerOr,
-    // Actions
+    setActiveOrganization,
     registerParent,
     loginWithEmail,
     loginWithPin,
