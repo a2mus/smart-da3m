@@ -1,14 +1,14 @@
 """
-Content service for managing modules, questions, and knowledge atoms.
+Content service for managing modules, questions, and knowledge atoms delegating to ContentRepository.
 """
 
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.content import KnowledgeAtom, Module, ModuleStatus, Question
+from app.repositories.content_repo import ContentRepository
 from app.schemas.content import (
     BulkQuestionCreate,
     KnowledgeAtomCreate,
@@ -21,33 +21,30 @@ from app.schemas.content import (
 
 
 class ContentService:
-    """Service for content CRUD operations."""
+    """Service for content CRUD operations delegating database operations to ContentRepository."""
 
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.repo = ContentRepository(db)
 
     # ==================== Module Operations ====================
 
-    async def create_module(self, module_data: ModuleCreate) -> Module:
+    async def create_module(self, module_data: ModuleCreate, organization_id: Optional[UUID] = None) -> Module:
         """Create a new curriculum module."""
-        module = Module(
-            subject=module_data.subject,
-            grade_level=module_data.grade_level,
-            domain=module_data.domain,
-            competency_id=module_data.competency_id,
-            status=module_data.status or ModuleStatus.DRAFT,
-        )
-        self.db.add(module)
-        await self.db.commit()
-        await self.db.refresh(module)
-        return module
+        module_kwargs = {
+            "subject": module_data.subject,
+            "grade_level": module_data.grade_level,
+            "domain": module_data.domain,
+            "competency_id": module_data.competency_id,
+            "status": module_data.status or ModuleStatus.DRAFT,
+        }
+        if organization_id:
+            module_kwargs["organization_id"] = organization_id
+        return await self.repo.create(**module_kwargs)
 
     async def get_module(self, module_id: UUID) -> Optional[Module]:
         """Get a module by ID."""
-        result = await self.db.execute(
-            select(Module).where(Module.id == module_id)
-        )
-        return result.scalar_one_or_none()
+        return await self.repo.get_module(module_id)
 
     async def list_modules(
         self,
@@ -58,76 +55,39 @@ class ContentService:
         status: Optional[ModuleStatus] = None,
     ) -> tuple[List[Module], int]:
         """List modules with optional filtering."""
-        query = select(Module)
-
-        if subject:
-            query = query.where(Module.subject == subject)
-        if grade_level:
-            query = query.where(Module.grade_level == grade_level)
-        if status:
-            query = query.where(Module.status == status)
-
-        # Get total count
-        count_result = await self.db.execute(
-            select(select(Module).subquery().c.id)
+        return await self.repo.list_modules(
+            skip=skip, limit=limit, subject=subject, grade_level=grade_level, status=status
         )
-        total = len(count_result.all())
-
-        # Get paginated results
-        query = query.offset(skip).limit(limit)
-        result = await self.db.execute(query)
-        modules = result.scalars().all()
-
-        return list(modules), total
 
     async def update_module(
         self, module_id: UUID, update_data: ModuleUpdate
     ) -> Optional[Module]:
         """Update a module."""
-        module = await self.get_module(module_id)
-        if not module:
-            return None
-
         update_dict = update_data.model_dump(exclude_unset=True)
-        for field, value in update_dict.items():
-            setattr(module, field, value)
-
-        await self.db.commit()
-        await self.db.refresh(module)
-        return module
+        return await self.repo.update(module_id, **update_dict)
 
     async def delete_module(self, module_id: UUID) -> bool:
         """Delete a module."""
-        module = await self.get_module(module_id)
-        if not module:
-            return False
-
-        await self.db.delete(module)
-        await self.db.commit()
-        return True
+        return await self.repo.delete(module_id)
 
     # ==================== Question Operations ====================
 
-    async def create_question(self, question_data: QuestionCreate) -> Question:
+    async def create_question(self, question_data: QuestionCreate, organization_id: Optional[UUID] = None) -> Question:
         """Create a new question."""
-        question = Question(
-            module_id=question_data.module_id,
-            content=question_data.content.model_dump(),
-            difficulty_level=question_data.difficulty_level,
-            target_misconception_id=question_data.target_misconception_id,
-            estimated_time_sec=question_data.estimated_time_sec,
-        )
-        self.db.add(question)
-        await self.db.commit()
-        await self.db.refresh(question)
-        return question
+        q_kwargs = {
+            "module_id": question_data.module_id,
+            "content": question_data.content.model_dump(),
+            "difficulty_level": question_data.difficulty_level,
+            "target_misconception_id": question_data.target_misconception_id,
+            "estimated_time_sec": question_data.estimated_time_sec,
+        }
+        if organization_id:
+            q_kwargs["organization_id"] = organization_id
+        return await self.repo.create_question(**q_kwargs)
 
     async def get_question(self, question_id: UUID) -> Optional[Question]:
         """Get a question by ID."""
-        result = await self.db.execute(
-            select(Question).where(Question.id == question_id)
-        )
-        return result.scalar_one_or_none()
+        return await self.repo.get_question(question_id)
 
     async def list_questions(
         self,
@@ -137,26 +97,15 @@ class ContentService:
         difficulty_level: Optional[int] = None,
     ) -> tuple[List[Question], int]:
         """List questions with optional filtering."""
-        query = select(Question)
-
         if module_id:
-            query = query.where(Question.module_id == module_id)
-        if difficulty_level:
-            query = query.where(Question.difficulty_level == difficulty_level)
-
-        # Get total count
-        count_query = select(Question)
-        if module_id:
-            count_query = count_query.where(Question.module_id == module_id)
-        count_result = await self.db.execute(count_query)
-        total = len(count_result.all())
-
-        # Get paginated results
-        query = query.offset(skip).limit(limit)
-        result = await self.db.execute(query)
-        questions = result.scalars().all()
-
-        return list(questions), total
+            questions = await self.repo.list_module_questions(module_id, skip=skip, limit=limit)
+            return questions, len(questions)
+        modules, total = await self.repo.list_modules(skip=skip, limit=limit)
+        all_q: List[Question] = []
+        for m in modules:
+            q_list = await self.repo.list_module_questions(m.id)
+            all_q.extend(q_list)
+        return all_q[:limit], len(all_q)
 
     async def update_question(
         self, question_id: UUID, update_data: QuestionUpdate
@@ -179,63 +128,47 @@ class ContentService:
 
     async def delete_question(self, question_id: UUID) -> bool:
         """Delete a question."""
-        question = await self.get_question(question_id)
-        if not question:
-            return False
-
-        await self.db.delete(question)
-        await self.db.commit()
-        return True
+        return await self.repo.delete(question_id)
 
     async def bulk_create_questions(
-        self, bulk_data: BulkQuestionCreate
+        self, bulk_data: BulkQuestionCreate, organization_id: Optional[UUID] = None
     ) -> tuple[List[Question], List[dict]]:
         """Bulk create questions."""
-        questions = []
-        errors = []
+        q_dicts = []
+        for qd in bulk_data.questions:
+            qd_dict = {
+                "module_id": bulk_data.module_id,
+                "content": qd.content.model_dump(),
+                "difficulty_level": qd.difficulty_level,
+                "target_misconception_id": qd.target_misconception_id,
+                "estimated_time_sec": qd.estimated_time_sec,
+            }
+            if organization_id:
+                qd_dict["organization_id"] = organization_id
+            q_dicts.append(qd_dict)
 
-        for idx, question_data in enumerate(bulk_data.questions):
-            try:
-                question = Question(
-                    module_id=bulk_data.module_id,
-                    content=question_data.content.model_dump(),
-                    difficulty_level=question_data.difficulty_level,
-                    target_misconception_id=question_data.target_misconception_id,
-                    estimated_time_sec=question_data.estimated_time_sec,
-                )
-                self.db.add(question)
-                questions.append(question)
-            except Exception as e:
-                errors.append({"index": idx, "error": str(e)})
-
-        await self.db.commit()
-        for question in questions:
-            await self.db.refresh(question)
-
-        return questions, errors
+        try:
+            questions = await self.repo.bulk_create_questions(q_dicts)
+            return questions, []
+        except Exception as e:
+            return [], [{"index": 0, "error": str(e)}]
 
     # ==================== Knowledge Atom Operations ====================
 
     async def create_knowledge_atom(
-        self, atom_data: KnowledgeAtomCreate
+        self, atom_data: KnowledgeAtomCreate, organization_id: Optional[UUID] = None
     ) -> KnowledgeAtom:
         """Create a new knowledge atom."""
-        atom = KnowledgeAtom(
+        return await self.repo.create_knowledge_atom(
+            organization_id=organization_id or UUID("00000000-0000-0000-0000-000000000000"),
             competency_id=atom_data.competency_id,
             remediation_type=atom_data.remediation_type,
             content=atom_data.content.model_dump(),
         )
-        self.db.add(atom)
-        await self.db.commit()
-        await self.db.refresh(atom)
-        return atom
 
     async def get_knowledge_atom(self, atom_id: UUID) -> Optional[KnowledgeAtom]:
         """Get a knowledge atom by ID."""
-        result = await self.db.execute(
-            select(KnowledgeAtom).where(KnowledgeAtom.id == atom_id)
-        )
-        return result.scalar_one_or_none()
+        return await self.repo.get_knowledge_atom(atom_id)
 
     async def list_knowledge_atoms(
         self,
@@ -244,26 +177,14 @@ class ContentService:
         competency_id: Optional[str] = None,
     ) -> tuple[List[KnowledgeAtom], int]:
         """List knowledge atoms with optional filtering."""
-        query = select(KnowledgeAtom)
-
         if competency_id:
-            query = query.where(KnowledgeAtom.competency_id == competency_id)
-
-        # Get total count
-        count_query = select(KnowledgeAtom)
-        if competency_id:
-            count_query = count_query.where(
-                KnowledgeAtom.competency_id == competency_id
-            )
-        count_result = await self.db.execute(count_query)
-        total = len(count_result.all())
-
-        # Get paginated results
-        query = query.offset(skip).limit(limit)
-        result = await self.db.execute(query)
-        atoms = result.scalars().all()
-
-        return list(atoms), total
+            atoms = await self.repo.list_competency_atoms(competency_id, skip=skip, limit=limit)
+            return atoms, len(atoms)
+        atoms_res = await self.repo.db.execute(
+            select(KnowledgeAtom).offset(skip).limit(limit)
+        )
+        atoms_list = list(atoms_res.scalars().all())
+        return atoms_list, len(atoms_list)
 
     async def update_knowledge_atom(
         self, atom_id: UUID, update_data: KnowledgeAtomUpdate

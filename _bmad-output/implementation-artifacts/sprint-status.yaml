@@ -44,7 +44,7 @@ development_status:
 
   epic-2: backlog
   2-1-create-backend-engines-layer-extract-stateless-domain-logic: done
-  2-2-create-backend-repositories-layer-centralize-db-access: backlog
+  2-2-create-backend-repositories-layer-centralize-db-access: done
   2-3-wire-diagnostic-endpoint-to-engine-kill-hardcoded-mastery: backlog
   2-4-structured-json-logging-middleware: backlog
   epic-2-retrospective: optional
