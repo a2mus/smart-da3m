@@ -4,11 +4,14 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const startJourney = () => {
-  router.push('/student/journey')
+  router.push('/register')
 }
 
 const learnMore = () => {
-  router.push('/parent-dashboard')
+  const element = document.getElementById('how-it-works')
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth' })
+  }
 }
 </script>
 

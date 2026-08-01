@@ -57,7 +57,10 @@ const goToLogin = () => {
       <FeatureGrid />
 
       <!-- How it Works -->
-      <section class="py-24 px-6 max-w-7xl mx-auto">
+      <section
+        id="how-it-works"
+        class="py-24 px-6 max-w-7xl mx-auto"
+      >
         <div class="text-center mb-20">
           <h2 class="text-4xl font-bold text-primary">
             كيف تبدأ الرحلة؟

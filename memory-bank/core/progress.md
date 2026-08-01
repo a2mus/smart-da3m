@@ -27,6 +27,9 @@
 | 2026-04-15 | **Spec 003 COMPLETE** | Design Quality Enforcement — 39/39 tasks, WCAG AA 0 violations |
 | 2026-04-15 | Test Suite Remediated | Fixed 10 failing unit tests due to design token updates/JSDOM |
 | 2026-06-13 | branches merged & verified | Merged all 11 feature branches (001-011) into master, resolved conflicts, and verified TypeScript compilation / production build |
+| 2026-06-13 | Routing & Links issues fixed | Resolved uvicorn API doc 500 error, Caddy proxy path-stripping bugs, corrected VITE_API_URL endpoints, and implemented Parent sign-up in Register.vue |
+| 2026-06-13 | Database Tables Initialized | Generated and ran Alembic migrations to create modules, questions, atoms, sessions, and other operational tables. |
+| 2026-06-13 | Direct Bcrypt Hashing | Fixed Python 3.12+ passlib self-test bug by replacing it with direct bcrypt library password and PIN hashing. |
 
 ## Phase Completion Status
 

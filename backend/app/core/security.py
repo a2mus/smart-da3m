@@ -7,39 +7,39 @@ from typing import Any, Optional
 from uuid import UUID
 
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 
 from app.core.config import settings
-
-# Password hashing context (for parents/experts)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# PIN hashing context (for students - simpler, but still secure)
-pin_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a plain password against its hash."""
     if not hashed_password:
         return False
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except Exception:
+        return False
 
 
 def get_password_hash(password: str) -> str:
     """Generate password hash."""
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 
 def verify_pin(plain_pin: str, hashed_pin: str) -> bool:
     """Verify a plain PIN against its hash."""
     if not hashed_pin:
         return False
-    return pin_context.verify(plain_pin, hashed_pin)
+    try:
+        return bcrypt.checkpw(plain_pin.encode('utf-8'), hashed_pin.encode('utf-8'))
+    except Exception:
+        return False
 
 
 def get_pin_hash(pin: str) -> str:
     """Generate PIN hash."""
-    return pin_context.hash(pin)
+    return bcrypt.hashpw(pin.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 
 def create_access_token(

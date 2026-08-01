@@ -7,9 +7,13 @@
 1. Review integrated `master` branch — all 11 feature branches (001-011) have been merged, resolved, and production build compiles successfully.
 2. Current focus: **MVP Validation & Pilot Testing**.
 
-## Completed This Session — Test Suite Remediated
+## Completed This Session — DB Tables Initialized & Routing/API Fixed
 
 ### What was done
+- **Direct Bcrypt Hashing**: Resolved the Python 3.12+ compatibility crash in `passlib` (ValueError: password cannot be longer than 72 bytes) by replacing `passlib.context.CryptContext` with direct `bcrypt` library usage for both parent/expert passwords and student PIN codes.
+- **Database Tables Initialized**: Fixed `UndefinedTableError` by modifying `alembic/env.py` to import all models, generated a migration for the remaining tables, resolved Postgres TEXT-to-Enum cast errors by dropping old constraints and using `postgresql_using` in `alter_column`, and successfully applied `alembic upgrade head`.
+- **Routing & API Connectivity**: Fixed `/openapi.json` crash by changing the custom `require_expert` security dependency in `analytics.py` to the standard `get_current_expert` dependency. Corrected `VITE_API_URL` variable definitions to include the `/api/v1` prefix. Modified `Caddyfile` to use `handle` instead of `handle_path` for backend routes to keep paths intact.
+- **Landing Page & Signup**: Corrected non-functional links on the landing page, and built a fully working Parent sign-up form in `Register.vue`.
 - **Test Suite Remediated** — Fixed 10 failing unit tests that broke after updating the design tokens and Vite jsdom configuration.
   - `DiagnosticSession.spec.ts`: Prevented local offline DB/Dexie errors by properly mocking the `offlineModule` in JSDOM environment, updated router mock, fixed data fetching target (`startDiagnostic` vs `startSession`).
   - `RadarChart.spec.ts`: Refactored color-checking assertions (`toContain('green')` -> `.toMatch(/green|22c55e/i)`) so Vitest no longer prematurely aborts, added `role="img"` to SVG, updated click event to emit `select-subject`.

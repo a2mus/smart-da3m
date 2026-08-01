@@ -110,7 +110,7 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-      - VITE_API_URL=http://localhost:8001
+      - VITE_API_URL=http://localhost:8001/api/v1
     command: sh -c "npm install -g pnpm && pnpm install && pnpm dev"
     depends_on:
       - backend

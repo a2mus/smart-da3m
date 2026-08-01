@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import get_current_active_user, require_expert
+from app.api.deps import get_current_expert
 from app.db.session import get_db
 from app.models.diagnostic import (
     CompetencyProfile,
@@ -40,7 +40,7 @@ router = APIRouter()
 async def get_competency_heatmap(
     filters: HeatmapFilters,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_expert),
+    current_user: User = Depends(get_current_expert),
 ) -> HeatmapResponse:
     """
     Get competency heatmap data for expert analytics.
@@ -151,7 +151,7 @@ async def auto_group_students(
     filters: HeatmapFilters,
     group_by: str = Query("competency", description="Group by: competency or error_type"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_expert),
+    current_user: User = Depends(get_current_expert),
 ) -> AutoGroupResponse:
     """
     Auto-group students based on shared patterns.
@@ -280,7 +280,7 @@ async def get_platform_metrics(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_expert),
+    current_user: User = Depends(get_current_expert),
 ) -> MetricResponse:
     """
     Get platform-level analytics metrics.
@@ -355,7 +355,7 @@ async def get_platform_metrics(
 async def export_analytics(
     request: ExportRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_expert),
+    current_user: User = Depends(get_current_expert),
 ) -> ExportResponse:
     """
     Export analytics data in PDF or CSV format.

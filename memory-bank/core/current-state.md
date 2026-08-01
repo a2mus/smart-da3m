@@ -7,6 +7,11 @@
 ## Active Tasks
 
 ### Recently Completed ✅
+- [x] Fixed Python 3.12+ / `passlib` compatibility issue by replacing `passlib` context hashing with direct `bcrypt` password and PIN hashing/verification (2026-06-13)
+- [x] Initialized all remaining database tables (modules, questions, knowledge atoms, etc.) by configuring Alembic `env.py` to auto-detect all models, generating `6721010c96a7_create_remaining_tables.py`, dropping conflicting text check constraints, and applying `alembic upgrade head` (2026-06-13)
+- [x] Fixed Pydantic forward-reference resolution error on `/openapi.json` by using standard `get_current_expert` dependency in analytics endpoints (2026-06-13)
+- [x] Fixed backend API port and path mapping by updating `VITE_API_URL` values in dev and prod compose files and configuring Caddy to preserve `/api` prefix (2026-06-13)
+- [x] Resolved landing page broken links (Start Journey, Learn More) and implemented a functional Parent sign-up form in `Register.vue` (2026-06-13)
 - [x] Merge all 11 feature branches (001-011) into master, resolving conflicts and verifying production build compilation (2026-06-13)
 - [x] Phase 1: Setup (FastAPI, Vue 3, Docker, tooling)
 - [x] Phase 2: Foundational (Auth, JWT, RBAC, database)

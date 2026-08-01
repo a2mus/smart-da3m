@@ -30,7 +30,7 @@ ihsan-dz.duckdns.org {
     }
 
     # API Backend routes
-    handle_path /api/* {
+    handle /api/* {
         reverse_proxy backend:8000 {
             health_uri /health
             health_interval 30s
@@ -44,15 +44,15 @@ ihsan-dz.duckdns.org {
     }
 
     # API Documentation (Swagger UI)
-    handle_path /docs {
+    handle /docs {
         reverse_proxy backend:8000
     }
 
-    handle_path /docs/* {
+    handle /docs/* {
         reverse_proxy backend:8000
     }
 
-    handle_path /openapi.json {
+    handle /openapi.json {
         reverse_proxy backend:8000
     }
 

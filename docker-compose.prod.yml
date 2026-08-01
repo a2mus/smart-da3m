@@ -138,7 +138,7 @@ services:
       - ./frontend:/src:ro
       - frontend_dist:/output
     environment:
-      - VITE_API_URL=https://ihsan-dz.duckdns.org/api
+      - VITE_API_URL=https://ihsan-dz.duckdns.org/api/v1
       - CI=true
     command: >
       sh -c "

@@ -14,7 +14,7 @@ from app.core.config import settings
 from app.db.session import Base
 
 # Import all models here for autogenerate to work
-from app.models.user import User  # noqa: F401
+import app.models  # noqa: F401
 
 # this is the Alembic Config object
 config = context.config
