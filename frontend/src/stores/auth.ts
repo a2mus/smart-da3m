@@ -55,13 +55,16 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const response = await authApi.loginWithEmail(email, password)
-      const { access_token, refresh_token } = response.data
+      const { accessToken, refreshToken: newRefreshToken } = response.data as {
+        accessToken: string
+        refreshToken: string
+      }
 
-      token.value = access_token
-      refreshToken.value = refresh_token
+      token.value = accessToken
+      refreshToken.value = newRefreshToken
 
-      localStorage.setItem('token', access_token)
-      localStorage.setItem('refreshToken', refresh_token)
+      localStorage.setItem('token', accessToken)
+      localStorage.setItem('refreshToken', newRefreshToken)
 
       // Fetch user info
       await fetchCurrentUser()
@@ -82,13 +85,16 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const response = await authApi.loginWithPin(parentEmail, pinCode)
-      const { access_token, refresh_token } = response.data
+      const { accessToken, refreshToken: newRefreshToken } = response.data as {
+        accessToken: string
+        refreshToken: string
+      }
 
-      token.value = access_token
-      refreshToken.value = refresh_token
+      token.value = accessToken
+      refreshToken.value = newRefreshToken
 
-      localStorage.setItem('token', access_token)
-      localStorage.setItem('refreshToken', refresh_token)
+      localStorage.setItem('token', accessToken)
+      localStorage.setItem('refreshToken', newRefreshToken)
 
       // Fetch user info
       await fetchCurrentUser()
@@ -108,13 +114,16 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const response = await authApi.refreshToken(refreshToken.value)
-      const { access_token, refresh_token } = response.data
+      const { accessToken, refreshToken: newRefreshToken } = response.data as {
+        accessToken: string
+        refreshToken: string
+      }
 
-      token.value = access_token
-      refreshToken.value = refresh_token
+      token.value = accessToken
+      refreshToken.value = newRefreshToken
 
-      localStorage.setItem('token', access_token)
-      localStorage.setItem('refreshToken', refresh_token)
+      localStorage.setItem('token', accessToken)
+      localStorage.setItem('refreshToken', newRefreshToken)
 
       return true
     } catch {
