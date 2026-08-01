@@ -51,7 +51,7 @@ development_status:
 
   epic-3: backlog
   3-1-remediation-state-machine-add-missing-states-transition-guard: done
-  3-2-celery-tasks-infrastructure-litellm-integration: backlog
+  3-2-celery-tasks-infrastructure-litellm-integration: awaiting-operator
   3-3-expert-validation-queue-workflow: backlog
   3-4-student-remediation-execution-atom-delivery-progress-tracking: backlog
   3-5-spaced-re-surfacing-of-failed-items-fr-16: backlog

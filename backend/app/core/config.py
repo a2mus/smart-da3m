@@ -2,7 +2,7 @@
 Core configuration settings for the Ihsane MVP Platform.
 """
 
-from typing import List
+from typing import List, Optional
 
 from pydantic_settings import BaseSettings
 
@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     # Celery
     CELERY_BROKER_URL: str = "redis://localhost:6379/1"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/2"
+
+    # LiteLLM Integration Settings
+    LLM_BASE_URL: Optional[str] = None
+    LLM_API_KEY: Optional[str] = None
+    LLM_MODEL: str = "gpt-4o-mini"
 
     class Config:
         env_file = ".env"

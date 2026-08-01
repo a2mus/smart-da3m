@@ -10,7 +10,7 @@ celery_app = Celery(
     "ihsane",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["app.services.alert_manager"],
+    include=["app.tasks"],
 )
 
 celery_app.conf.update(

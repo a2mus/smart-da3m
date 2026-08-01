@@ -1,0 +1,9 @@
+{
+  "actions": [
+    "Configure production LLM_API_KEY and LLM_BASE_URL environment variables in the deployment console for LiteLLM provider access."
+  ],
+  "parked_at": "2026-08-01",
+  "run_id": "20260801-125618-8f62",
+  "spec_file": "_bmad-output/implementation-artifacts/spec-3-2-celery-tasks-infrastructure-litellm-integration.md",
+  "story_key": "3-2-celery-tasks-infrastructure-litellm-integration"
+}
