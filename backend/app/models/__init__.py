@@ -25,6 +25,7 @@ from app.models.diagnostic import (
     MasteryLevel,
     RemediationGroup,
 )
+from app.models.organization import Organization, OrganizationMember, OrganizationType
 from app.models.remediation import (
     AtomCompletion,
     PassportAssessment,
@@ -37,6 +38,9 @@ __all__ = [
     "User",
     "UserRole",
     "Language",
+    "Organization",
+    "OrganizationType",
+    "OrganizationMember",
     "Module",
     "ModuleStatus",
     "Question",
