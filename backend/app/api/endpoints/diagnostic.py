@@ -1,5 +1,5 @@
 """
-API endpoints for diagnostic sessions using repository layer for DB access.
+API endpoints for diagnostic sessions using repository layer and stateless domain engine per AD-1.
 """
 
 from datetime import datetime, timezone
@@ -10,9 +10,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_student, get_db
+from app.engines.diagnostic_engine import DiagnosticEngine
 from app.models.diagnostic import (
     DiagnosticSessionStatus,
     ErrorClassification,
+    MasteryLevel,
     RemediationGroup,
 )
 from app.models.user import User
@@ -117,65 +119,120 @@ async def submit_answer(
 
     correct_answer = question.content.get("correct_answer", "")
     is_correct = answer_data.answer.strip().lower() == correct_answer.strip().lower()
-    error_classification = ErrorClassification.NONE if is_correct else ErrorClassification.PROCESS
+
+    # Retrieve module to determine target competency
+    module = await content_repo.get_module(session.module_id)
+    competency_id = module.competency_id if module else "C1"
 
     org_id = getattr(session, "organization_id", None) or UUID("00000000-0000-0000-0000-000000000000")
 
+    # Get student's current competency profile P(learned)
+    profile = await diag_repo.get_competency_profile(current_user.id, competency_id)
+    current_p_learned = profile.p_learned if profile else 0.5
+
+    # Process answer with stateless DiagnosticEngine & BKT
+    engine = DiagnosticEngine()
+    processed = engine.process_answer(
+        current_p_learned=current_p_learned,
+        is_correct=is_correct,
+        response_time_ms=answer_data.time_ms,
+        difficulty_level=question.difficulty_level,
+        target_misconception_id=question.target_misconception_id,
+    )
+
+    new_p_learned = processed["current_mastery"]
+    mastery_level_val = processed["mastery_level"]
+    error_classification_val = processed["error_classification"]
+
+    # Persist updated competency profile P(learned) and mastery level to DB
+    await diag_repo.update_or_create_competency_profile(
+        student_id=current_user.id,
+        competency_id=competency_id,
+        organization_id=org_id,
+        p_learned=new_p_learned,
+        mastery_level=MasteryLevel(mastery_level_val),
+    )
+
+    # Record student answer in DB
     await diag_repo.record_answer(
         session_id=answer_data.session_id,
         question_id=answer_data.question_id,
         organization_id=org_id,
         is_correct=1 if is_correct else 0,
         response_time_ms=answer_data.time_ms,
-        error_classification=error_classification,
+        error_classification=ErrorClassification(error_classification_val),
     )
 
     answers = await diag_repo.get_session_answers(answer_data.session_id)
     answer_count = len(answers)
-    is_complete = answer_count >= 10
+    is_complete = engine.is_session_complete(
+        answers_count=answer_count,
+        current_p_learned=new_p_learned,
+    )
 
     if not is_complete:
-        answered_ids = {a.question_id for a in answers}
+        answered_ids = [str(a.question_id) for a in answers]
         module_questions = await content_repo.list_module_questions(session.module_id)
-        next_question = next((q for q in module_questions if q.id not in answered_ids), None)
+        questions_dicts = [
+            {
+                "id": str(q.id),
+                "content": q.content,
+                "difficulty_level": q.difficulty_level,
+                "target_misconception_id": q.target_misconception_id,
+                "estimated_time_sec": q.estimated_time_sec,
+                "_question_obj": q,
+            }
+            for q in module_questions
+        ]
 
-        if not next_question:
+        selected_dict = engine.question_selector.select_next_question(
+            questions=questions_dicts,
+            answered_question_ids=answered_ids,
+            current_mastery=new_p_learned,
+            target_misconceptions=[question.target_misconception_id] if question.target_misconception_id else [],
+        )
+
+        if not selected_dict:
             is_complete = True
         else:
+            next_q = selected_dict["_question_obj"]
             return AnswerSubmitResponse(
                 is_correct=is_correct,
-                error_classification=error_classification,
-                current_mastery=0.5,
-                mastery_level="FAMILIAR",
+                error_classification=ErrorClassification(error_classification_val),
+                current_mastery=new_p_learned,
+                mastery_level=mastery_level_val,
                 next_question={
-                    "id": str(next_question.id),
-                    "content": next_question.content,
-                    "difficulty_level": next_question.difficulty_level,
-                    "estimated_time_sec": next_question.estimated_time_sec,
+                    "id": str(next_q.id),
+                    "content": next_q.content,
+                    "difficulty_level": next_q.difficulty_level,
+                    "estimated_time_sec": next_q.estimated_time_sec,
                 },
                 is_complete=False,
             )
 
     if is_complete:
         correct_count = sum(a.is_correct for a in answers)
-        accuracy = correct_count / len(answers) if answers else 0.0
+        eval_results = engine.evaluate_session_results(
+            session_id=session.id,
+            final_p_learned=new_p_learned,
+            correct_count=correct_count,
+            total_count=len(answers),
+        )
 
-        if accuracy >= 0.7:
-            rec_group = RemediationGroup.A
-        elif accuracy >= 0.4:
-            rec_group = RemediationGroup.B
-        else:
-            rec_group = RemediationGroup.C
+        rec_group_raw = eval_results["recommended_group"]
+        rec_group_enum = RemediationGroup(
+            rec_group_raw.value if hasattr(rec_group_raw, "value") else str(rec_group_raw)
+        )
 
         await diag_repo.update_session_status(
-            session.id, DiagnosticSessionStatus.COMPLETED, rec_group
+            session.id, DiagnosticSessionStatus.COMPLETED, rec_group_enum
         )
 
         return AnswerSubmitResponse(
             is_correct=is_correct,
-            error_classification=error_classification,
-            current_mastery=accuracy,
-            mastery_level="PROFICIENT" if accuracy > 0.7 else "FAMILIAR",
+            error_classification=ErrorClassification(error_classification_val),
+            current_mastery=eval_results["mastery_probability"],
+            mastery_level=eval_results["mastery_level"],
             next_question=None,
             is_complete=True,
         )
@@ -193,8 +250,9 @@ async def get_results(
 ) -> DiagnosticResultsResponse:
     """Get the results of a completed diagnostic session."""
     diag_repo = DiagnosticRepository(db)
-    session = await diag_repo.get_session(session_id)
+    content_repo = ContentRepository(db)
 
+    session = await diag_repo.get_session(session_id)
     if not session or session.student_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -204,34 +262,31 @@ async def get_results(
     answers = await diag_repo.get_session_answers(session_id)
     total_questions = len(answers)
     correct_answers = sum(a.is_correct for a in answers)
-    accuracy = correct_answers / total_questions if total_questions > 0 else 0.0
 
-    if accuracy >= 0.9:
-        mastery_level = "MASTERED"
-        mastery_probability = 0.95
-    elif accuracy >= 0.7:
-        mastery_level = "PROFICIENT"
-        mastery_probability = 0.75
-    elif accuracy >= 0.5:
-        mastery_level = "FAMILIAR"
-        mastery_probability = 0.55
-    elif accuracy >= 0.3:
-        mastery_level = "ATTEMPTED"
-        mastery_probability = 0.25
-    else:
-        mastery_level = "NOT_STARTED"
-        mastery_probability = 0.05
+    module = await content_repo.get_module(session.module_id)
+    competency_id = module.competency_id if module else "C1"
+    profile = await diag_repo.get_competency_profile(current_user.id, competency_id)
+    p_learned = profile.p_learned if profile else (correct_answers / total_questions if total_questions > 0 else 0.5)
 
-    rec_group_val = session.recommended_group.value if session.recommended_group else "C"
+    engine = DiagnosticEngine()
+    eval_results = engine.evaluate_session_results(
+        session_id=session.id,
+        final_p_learned=p_learned,
+        correct_count=correct_answers,
+        total_count=total_questions,
+    )
+
+    rec_group_raw = eval_results["recommended_group"]
+    rec_group_val = rec_group_raw.value if hasattr(rec_group_raw, "value") else str(rec_group_raw)
 
     return DiagnosticResultsResponse(
         session_id=session_id,
-        mastery_probability=mastery_probability,
-        mastery_level=mastery_level,
+        mastery_probability=eval_results["mastery_probability"],
+        mastery_level=eval_results["mastery_level"],
         recommended_group=rec_group_val,
         total_questions=total_questions,
         correct_answers=correct_answers,
-        accuracy=accuracy,
+        accuracy=eval_results["accuracy"],
         completed_at=session.completed_at or datetime.now(timezone.utc),
     )
 
