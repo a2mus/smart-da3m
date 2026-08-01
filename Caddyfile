@@ -15,8 +15,11 @@
 
 # Main site - Caddy automatically handles HTTP->HTTPS redirect
 ihsan-dz.duckdns.org {
-    # Enable compression
-    encode gzip zstd
+    # Enable compression (excluding SSE streaming to prevent buffering)
+    @not_sse {
+        not path /api/v1/events/stream
+    }
+    encode @not_sse gzip zstd
 
     # Security headers
     header {

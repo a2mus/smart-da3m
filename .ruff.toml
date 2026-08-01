@@ -1,11 +1,10 @@
 # Ruff Configuration for Ihsane MVP Platform
 # Fast, Python linter and code formatter
 
-[tool.ruff]
 target-version = "py312"  # Python 3.12
 line-length = 88
 
-[tool.ruff.lint]
+[lint]
 select = [
     # Pyflakes
     "F",
@@ -49,20 +48,20 @@ ignore = [
     "D104",
 ]
 
-[tool.ruff.lint.pydocstyle]
+[lint.pydocstyle]
 convention = "google"
 
-[tool.ruff.lint.per-file-ignores]
+[lint.per-file-ignores]
 # Test files can use assert
 "tests/**/*.py" = ["S101"]
 # Conftest can have unused imports
 "**/conftest.py" = ["F401"]
 
-[tool.ruff.format]
+[format]
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
 
-[tool.ruff.lint.isort]
+[lint.isort]
 known-first-party = ["app"]

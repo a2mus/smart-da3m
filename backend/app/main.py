@@ -1,19 +1,24 @@
-"""
-Ihsane MVP Platform - FastAPI Backend Main Application
-"""
+"""Ihsane MVP Platform - FastAPI Backend Main Application."""
 
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.endpoints import analytics, auth, content, dashboard, diagnostic, remediation
+from app.api.endpoints import (
+    analytics,
+    auth,
+    content,
+    dashboard,
+    diagnostic,
+    events,
+    remediation,
+)
 from app.core.config import settings
 from app.core.logging_middleware import LoggingMiddleware
 from app.core.tenant import setup_tenant_query_filter
 from app.core.tenant_middleware import TenantMiddleware
 from app.db.session import engine
-from app.models import user
 
 # Initialize tenant query filter event listener
 setup_tenant_query_filter()
@@ -62,6 +67,9 @@ app.include_router(
 )
 app.include_router(
     analytics.router, prefix="/api/v1/analytics", tags=["analytics"]
+)
+app.include_router(
+    events.router, prefix="/api/v1/events", tags=["events"]
 )
 
 
