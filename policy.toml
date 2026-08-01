@@ -1,0 +1,175 @@
+# bmad-loop orchestration policy. All keys optional; defaults shown.
+
+[gates]
+mode = "per-epic"            # none | per-epic | per-story-spec-approval
+retrospective = "notify"     # never | notify | auto (auto unsupported in v1)
+
+[limits]
+max_review_cycles = 3
+max_dev_attempts = 2
+# Raised 90 -> 180 min for opencode-go (kimi-k3 is a reasoning model; the first
+# 1-3 dev pass used the full 90 min and got cut mid-implementation at 1.9M
+# tokens, no commit written, which forced the manual-rollback escalation on
+# run 20260717-195424-86db). 180 min gives slow reasoning models the headroom
+# claude/z.ai fast models didn't need.
+session_timeout_min = 180
+# opencode-http adapter is hookless: it observes turn completion via SSE rather
+# than a Stop hook writing result.json. The default of 1 treats a single
+# result-less Stop as a stall, which marked the 13:15 run as "0 done" despite
+# 17 min of real bmad-dev-auto progress. Raising to 5 (matches the copilot
+# profile shipped default) tolerates the SSE handshake edge cases.
+stop_without_result_nudges = 5
+dev_stall_grace_s = 600      # grace for a dev session that ended its turn awaiting a background process (e.g. a slow PlayMode/test run) before it is called stalled; each re-invocation resets it. 0 = fail fast on the first result-less Stop
+dev_stall_nudges = 4         # times an idle dev session is nudged awake on grace expiry before it is called stalled (bmad-loop has no background-completion re-invocation); pane output re-arms the grace window and a fresh Stop restores the budget. 0 = stall on grace expiry
+workflow_stall_nudges_cap = 3 # total (never-restored) stall nudges for an injected plugin-workflow session before it is called stalled; bounds a session that finished its work but never wrote its completion marker. 0 = stall on first grace expiry
+# Raised 2_000_000 -> 4_000_000 per story. The 1-3 dev pass already burned
+# 1,915,750 raw tokens (95.8% of the 2M cap) before timeout — at the rate
+# kimi-k3 burns context with the bmad-dev-auto review+loopback cycle, story
+# completion can legitimately exceed 2M. 4M gives the loopback path room to
+# converge without surfacing a false token-budget escalation.
+max_tokens_per_story = 4000000
+cache_read_weight = 0.1      # cache reads bill at ~0.1x input on all vendors; 1.0 = count raw
+
+[verify]
+# Deterministic gates run by the orchestrator after a clean review, before commit.
+commands = []                # e.g. ["pytest -q", "ruff check ."]
+
+[notify]
+desktop = true               # notify-send, best-effort
+file = true                  # ATTENTION file in the run dir
+
+[review]
+# enabled = true  -> run a follow-up review session (bmad-dev-auto re-invoked on
+#                    the done spec for a fresh review pass) after a dev pass.
+# enabled = false -> skip that session; the bmad-dev-auto pass's own inline review
+#                    is the only review and it finalizes the story straight to done.
+enabled = true
+# trigger (only consulted when enabled = true) decides WHEN that session runs:
+#   "recommended" -> only when the bmad-dev-auto pass flags the story with
+#                    `followup_review_recommended: true` (it self-reviews inline
+#                    and flags this when its changes warrant an independent pass).
+#   "always"      -> run the second-opinion review on every story.
+# The loop is bounded by limits.max_review_cycles either way.
+trigger = "recommended"
+
+[adapter]
+# opencode-http drives `opencode serve` over HTTP/SSE (hookless SSE transport;
+# no permission-bypass flags needed — extra_args stays empty).
+#
+# Available providers (confirmed via API enumeration 2026-07-30):
+#   zai-coding-plan : glm-5.2, glm-5.1, glm-5, glm-5-turbo, glm-4.7, glm-4.6, glm-4.5
+#   nvidia          : nvidia/llama-3.1-nemotron-ultra-253b-v1,
+#                     nvidia/llama-3.3-nemotron-super-49b-v1.5,
+#                     deepseek-ai/deepseek-v4-pro, deepseek-ai/deepseek-v4-flash,
+#                     moonshotai/kimi-k2.6, meta/llama-3.3-70b-instruct
+#   antigravity-manager : claude-sonnet-4-6-thinking, claude-sonnet-4-6,
+#                         gemini-3.1-pro-high, gemini-3.6-flash-high, gemini-2.5-flash
+#   api-keys-fun    : claude-opus-4-8 (EXPENSIVE — emergency only, balance depleted)
+#
+# FALLBACK STRATEGY (swap model = line when quota/rate-limit hit):
+#   DEV     primary  : antigravity-manager/gemini-3.6-flash-high
+#           fallback1: nvidia/llama-3.1-nemotron-ultra-253b-v1
+#           fallback2: zai-coding-plan/glm-5.2
+#   REVIEW  primary  : antigravity-manager/gemini-3.6-flash-high
+#           fallback1: nvidia/deepseek-ai/deepseek-v4-pro
+#           fallback2: zai-coding-plan/glm-5.1
+#   TRIAGE  primary  : antigravity-manager/gemini-3.6-flash-high
+#           fallback1: nvidia/deepseek-ai/deepseek-v4-pro
+#           fallback2: zai-coding-plan/glm-5-turbo
+name = "opencode-http"      # claude | codex | gemini | opencode-http | <custom .bmad-loop/profiles/*.toml>
+model = "antigravity-manager/gemini-3.6-flash-high"  # DEV — primary
+# model = "nvidia/llama-3.1-nemotron-ultra-253b-v1"  # DEV — fallback1
+# model = "zai-coding-plan/glm-5.2"                 # DEV — fallback2 (rate-limited)
+cleanup_session_on_finish = true  # kill the run's tmux session when it finishes (false keeps it for inspection)
+
+# Per-stage overrides for the dev, review and sweep-triage passes. Unset keys
+# inherit from [adapter] when the stage runs the same client; a stage that
+# switches client falls back to that profile's defaults instead (model and
+# extra_args are client-specific). Stage tables must come after the [adapter]
+# keys above.
+[adapter.review]
+model = "antigravity-manager/gemini-3.6-flash-high"  # REVIEW — primary (1M ctx, deep reasoning)
+# model = "nvidia/deepseek-ai/deepseek-v4-pro"     # REVIEW — fallback1
+# model = "zai-coding-plan/glm-5.1"                # REVIEW — fallback2
+
+[adapter.triage]
+model = "antigravity-manager/gemini-3.6-flash-high" # TRIAGE — primary
+# model = "nvidia/deepseek-ai/deepseek-v4-pro"        # TRIAGE — fallback1
+# model = "zai-coding-plan/glm-5-turbo"              # TRIAGE — fallback2
+
+[sweep]
+# Deferred-work sweep: triage + execute open deferred-work.md entries.
+auto = "never"               # never | per-epic | run-end (auto-triggered sweeps never prompt)
+max_bundles = 5              # bundles executed per sweep; triage excess is truncated
+max_triage_attempts = 2      # triage validation retries before escalating
+max_migration_attempts = 2   # legacy-ledger migration retries before escalating
+repeat = false               # after a cycle completes, re-triage and continue on newly deferred work
+max_cycles = 5               # safety cap on total cycles per sweep run when repeat = true
+
+[cleanup]
+# Disk reclamation for .bmad-loop/runs. Only terminal (finished/stopped) runs are
+# ever touched; paused/interrupted runs stay intact so they remain resumable.
+# `bmad-loop clean` applies these, and every run/sweep start reconciles worktrees
+# leaked by a mid-flight stop.
+run_retention = 10           # newest concluded runs kept whole; older ones are trimmed/archived (0 keeps none)
+retention_days = 0           # 0 = disabled; else also keep runs newer than N days regardless of count
+trim_artifacts = true        # drop the heavy worktrees/ tree from concluded runs (run stays viewable in the TUI)
+archive_old = true           # archive (.bmad-loop/archive/<id>.tar.gz) rather than hard-delete runs past the window
+auto_clean_on_finish = true  # reconcile stale worktrees + apply retention when a run finishes cleanly
+clean_tmp = true             # let engine plugins clean their /tmp scratch on finish (e.g. Unity MCP server zips)
+
+[scm]
+# Source-control isolation + merge-back. Defaults reproduce today's behavior:
+# work happens in place on the checked-out branch, with no branches.
+isolation = "none"           # none | worktree
+branch_per = "story"         # story | run (worktree mode only; "run" forces delete_branch = false)
+target_branch = ""           # "" = the branch checked out at run start
+merge_strategy = "merge"     # ff | merge | squash (worktree mode merges the unit branch into target locally)
+delete_branch = true         # delete the unit branch after a successful merge
+keep_failed = true           # keep a failed unit's worktree+branch for inspection
+rollback_on_failure = true  # in-place (isolation="none") recovery after a failed attempt. false = never touch the tree; pause with manual recovery steps. true = auto-revert the attempt's tracked changes + remove only the untracked files this run created (WARNING: discards the attempt's uncommitted work; never a blanket git clean). Governs unattended/stopped attempts only: a resolved escalation's re-drive always auto-recovers regardless (reverts the failed source, keeps the corrected spec). Prefer isolation="worktree" to avoid touching your main checkout.
+preserve_keep = 20           # attempt-preserve/* branches and attempt-preserve-dirty/* snapshots kept at run start (per family), newest by committer date; the tail is deleted (0 = never prune)
+failed_diff_max_mb = 5       # per-file size cap (MB) for untracked files in a kept-failed unit's changes.patch; oversized files are skipped with a marker
+failed_diff_unlimited = false # true = capture the failed-unit diff with no size cap (may produce very large patches; warns when active)
+# commit_message_template: when set, the commit message dev sessions use for a
+# story's commit. {story_key} and {run_id} are substituted. Empty = built-in default.
+commit_message_template = ""
+max_parallel = 1             # units in flight at once (parallel fan-out unbuilt; values > 1 clamp to 1)
+# A git worktree checks out tracked files only, so gitignored MCP/CLI configs are
+# absent from every fresh worktree and isolated sessions can't reach their MCP
+# server. seed_adapter_defaults copies each loaded adapter's own config files
+# (claude -> .mcp.json/.claude/settings.json, codex -> .codex/config.toml, etc.)
+# into the worktree; worktree_seed adds extra project-specific gitignored paths.
+seed_adapter_defaults = true # seed each loaded adapter's default gitignored configs into worktrees
+worktree_seed = []           # extra gitignored files to copy into each worktree, on top of adapter defaults
+
+[plugins]
+# Plugin trust allowlist. A plugin dropped under .bmad-loop/plugins/<name>/ loads
+# its declarative manifest (settings + out-of-process shell hooks) automatically.
+# A plugin that ships an in-process [python] module is NEVER imported or run
+# unless its name is listed here. Empty = no plugins trusted (today's behavior).
+enabled = []                 # e.g. ["unity", "my-lint-plugin"]
+
+# The game-engine layer is a plugin. For a Unity project whose dev/sweep cycle
+# drives a live Editor via an Editor MCP, enable it above and configure it here:
+#   [plugins.unity]
+#   editor_mode = "shared"       # shared (live Editor; requires scm.isolation = "none")
+#                                # | per_worktree (one Editor per worktree; requires
+#                                #   scm.isolation = "worktree")
+#   mcp = "ivanmurzak"           # which Editor MCP the scripts target: ivanmurzak | coplaydev
+#   unity_path = ""              # Editor binary for a per_worktree launch ("" = auto-detect)
+#   ready_timeout_sec = 600      # how long the readiness gate waits for the Editor + MCP
+#   ready_grace_sec = -1         # delay before the first probe (-1 = auto: per_worktree waits)
+# (The legacy [engine] block still loads with a deprecation warning, folded into
+#  [plugins.unity] — migrate to [plugins] when convenient.)
+
+[tui]
+# low_frame_rate = true caps Textual to 15fps and disables animations (sets
+# TEXTUAL_FPS=15 / TEXTUAL_ANIMATIONS=none at launch). Fixes repaint tearing
+# over slow/high-latency links (SSH, Tailscale). Equivalent to launching with
+# `bmad-loop tui --low-frame-rate`. Takes effect the next time the TUI starts.
+low_frame_rate = false
+runs_height = 4
+deferred_height = 17
+tasks_height = 3
+left_width = 50
