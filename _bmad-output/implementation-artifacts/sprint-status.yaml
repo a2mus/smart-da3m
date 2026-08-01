@@ -54,7 +54,7 @@ development_status:
   3-2-celery-tasks-infrastructure-litellm-integration: awaiting-operator
   3-3-expert-validation-queue-workflow: done
   3-4-student-remediation-execution-atom-delivery-progress-tracking: done
-  3-5-spaced-re-surfacing-of-failed-items-fr-16: backlog
+  3-5-spaced-re-surfacing-of-failed-items-fr-16: done
   3-6-passport-competency-task-wire-orphaned-component: backlog
   3-7-frontend-remediationstore-remediation-session-views: backlog
   epic-3-retrospective: optional

@@ -2,12 +2,14 @@
 Diagnostic Repository for managing diagnostic sessions, answers, and competency profiles.
 """
 
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.engines.spaced_repetition import SpacedRepetitionScheduler
 from app.models.diagnostic import (
     CompetencyProfile,
     DiagnosticAnswer,
@@ -17,6 +19,7 @@ from app.models.diagnostic import (
     MasteryLevel,
     RemediationGroup,
 )
+from app.models.spaced_repetition import SpacedRepetition
 from app.repositories.base import BaseRepository
 
 
@@ -156,3 +159,102 @@ class DiagnosticRepository(BaseRepository[DiagnosticSession]):
             select(CompetencyProfile).where(CompetencyProfile.student_id == student_id)
         )
         return list(result.scalars().all())
+
+    # ==================== Spaced Repetition (FR-16) ====================
+
+    async def get_spaced_repetition_item(
+        self, student_id: UUID, question_id: UUID, organization_id: UUID
+    ) -> Optional[SpacedRepetition]:
+        """Get a specific spaced repetition record for a student and question."""
+        result = await self.db.execute(
+            select(SpacedRepetition).where(
+                SpacedRepetition.student_id == student_id,
+                SpacedRepetition.question_id == question_id,
+                SpacedRepetition.organization_id == organization_id,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def record_failed_item(
+        self,
+        student_id: UUID,
+        question_id: UUID,
+        organization_id: UUID,
+        now: Optional[datetime] = None,
+    ) -> SpacedRepetition:
+        """Record or reset a failed item for spaced re-surfacing."""
+        current_time = now or datetime.now(timezone.utc)
+        scheduler = SpacedRepetitionScheduler()
+        next_date, interval, ease = scheduler.calculate_next_review(
+            current_interval=1, ease_factor=2.5, is_correct=False, current_time=current_time
+        )
+
+        item = await self.get_spaced_repetition_item(student_id, question_id, organization_id)
+        if item:
+            item.next_review_date = next_date
+            item.interval_days = interval
+            item.ease_factor = ease
+            await self.db.commit()
+            await self.db.refresh(item)
+            return item
+
+        item = SpacedRepetition(
+            student_id=student_id,
+            question_id=question_id,
+            organization_id=organization_id,
+            next_review_date=next_date,
+            interval_days=interval,
+            ease_factor=ease,
+        )
+        self.db.add(item)
+        await self.db.commit()
+        await self.db.refresh(item)
+        return item
+
+    async def get_due_spaced_repetition_items(
+        self,
+        student_id: UUID,
+        organization_id: UUID,
+        now: Optional[datetime] = None,
+    ) -> List[SpacedRepetition]:
+        """Get all due spaced repetition items for a student."""
+        current_time = now or datetime.now(timezone.utc)
+        result = await self.db.execute(
+            select(SpacedRepetition).where(
+                SpacedRepetition.student_id == student_id,
+                SpacedRepetition.organization_id == organization_id,
+                SpacedRepetition.next_review_date <= current_time,
+            )
+        )
+        return list(result.scalars().all())
+
+    async def record_spaced_repetition_answer(
+        self,
+        student_id: UUID,
+        question_id: UUID,
+        organization_id: UUID,
+        is_correct: bool,
+        now: Optional[datetime] = None,
+    ) -> Optional[SpacedRepetition]:
+        """Update spaced repetition item based on answer correctness."""
+        current_time = now or datetime.now(timezone.utc)
+        item = await self.get_spaced_repetition_item(student_id, question_id, organization_id)
+        if not item:
+            if not is_correct:
+                return await self.record_failed_item(student_id, question_id, organization_id, current_time)
+            return None
+
+        scheduler = SpacedRepetitionScheduler()
+        next_date, interval, ease = scheduler.calculate_next_review(
+            current_interval=item.interval_days,
+            ease_factor=item.ease_factor,
+            is_correct=is_correct,
+            current_time=current_time,
+        )
+
+        item.next_review_date = next_date
+        item.interval_days = interval
+        item.ease_factor = ease
+        await self.db.commit()
+        await self.db.refresh(item)
+        return item

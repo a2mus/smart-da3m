@@ -32,6 +32,7 @@ from app.models.remediation import (
     RemediationPath,
     RemediationPathStatus,
 )
+from app.models.spaced_repetition import SpacedRepetition
 from app.models.user import Language, User, UserRole
 
 __all__ = [
@@ -57,6 +58,7 @@ __all__ = [
     "RemediationPathStatus",
     "AtomCompletion",
     "PassportAssessment",
+    "SpacedRepetition",
     "PedagogicalAlert",
     "AlertSeverity",
     "AlertStatus",

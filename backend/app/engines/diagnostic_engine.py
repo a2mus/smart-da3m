@@ -61,20 +61,15 @@ class ErrorClassification:
 
 
 class QuestionSelector:
-    """
-    Adaptive question selection algorithm (stateless).
-    """
-
     def select_next_question(
         self,
         questions: List[Dict[str, Any]],
         answered_question_ids: List[str],
         current_mastery: float,
         target_misconceptions: List[str],
+        due_review_question_ids: Optional[List[str]] = None,
     ) -> Optional[Dict[str, Any]]:
-        """
-        Select the next question adaptively based on current state parameters.
-        """
+        review_ids = [str(rid) for rid in (due_review_question_ids or [])]
         available = [
             q for q in questions if str(q.get("id")) not in [str(aid) for aid in answered_question_ids]
         ]
@@ -82,18 +77,19 @@ class QuestionSelector:
         if not available:
             return None
 
-        # Target difficulty based on mastery (1-10)
         target_difficulty = min(10, max(1, int(current_mastery * 10) + 1))
 
         def score_question(q: Dict[str, Any]) -> float:
             score = 0.0
+            qid = str(q.get("id", ""))
 
-            # Difficulty match score
+            if qid in review_ids:
+                score += 100
+
             q_difficulty = q.get("difficulty_level", 5)
             difficulty_diff = abs(q_difficulty - target_difficulty)
             score -= difficulty_diff * 10
 
-            # Misconception targeting bonus
             q_misconception = q.get("target_misconception_id")
             if q_misconception and q_misconception in target_misconceptions:
                 score += 50
@@ -101,7 +97,9 @@ class QuestionSelector:
             return score
 
         available.sort(key=score_question, reverse=True)
-        return available[0]
+        selected = dict(available[0])
+        selected["is_review"] = str(selected.get("id")) in review_ids
+        return selected
 
 
 class MultiArmBanditSelector:
