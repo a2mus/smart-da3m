@@ -13,6 +13,7 @@ from app.api.endpoints import (
     diagnostic,
     events,
     remediation,
+    sync,
 )
 from app.core.config import settings
 from app.core.logging_middleware import LoggingMiddleware
@@ -70,6 +71,9 @@ app.include_router(
 )
 app.include_router(
     events.router, prefix="/api/v1/events", tags=["events"]
+)
+app.include_router(
+    sync.router, prefix="/api/v1/sync", tags=["sync"]
 )
 
 
