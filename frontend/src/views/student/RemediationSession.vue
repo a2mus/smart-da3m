@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useRemediationStore } from '@/stores/remediationStore'
+import { useOfflineSync } from '@/composables/useOfflineSync'
 import PathwayOverview from '@/components/student/PathwayOverview.vue'
 import type { PathwayAtom } from '@/components/student/PathwayOverview.vue'
 import PassportAssessment from '@/components/student/PassportAssessment.vue'
@@ -11,6 +12,7 @@ import type { PassportEvaluation } from '@/services/remediationService'
 const route = useRoute()
 const router = useRouter()
 const remediationStore = useRemediationStore()
+const { isOnline, isSyncing, queueCompletion } = useOfflineSync()
 
 const competencyId = computed(() => (route.params.competencyId as string) || '')
 const difficulty = ref(5)
@@ -69,8 +71,13 @@ async function handleCompleteAtom() {
         interactions_count: 1,
         is_correct: true,
       })
+      if (remediationStore.pathway?.id) {
+        await queueCompletion(remediationStore.pathway.id)
+      }
     } catch {
-      // Error managed in store.error
+      if (remediationStore.pathway?.id) {
+        await queueCompletion(remediationStore.pathway.id)
+      }
     }
   }
   currentView.value = 'overview'
@@ -105,6 +112,21 @@ onMounted(async () => {
     dir="rtl"
     class="min-h-screen bg-background px-4 py-8"
   >
+    <!-- Offline / Syncing Banner -->
+    <div
+      v-if="!isOnline || isSyncing"
+      data-testid="offline-banner"
+      class="max-w-lg mx-auto bg-secondary-container text-on-surface-variant border border-outline-variant px-4 py-2 rounded-xl mb-4 flex items-center justify-between text-sm"
+    >
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-secondary">{{ isOnline ? 'sync' : 'wifi_off' }}</span>
+        <span>{{ isOnline ? 'جاري المزامنة...' : 'أنت تفاعلي حالياً دون اتصال — سيتم حفظ نتائجك ومزامنتها لاحقاً' }}</span>
+      </div>
+      <span
+        v-if="isSyncing"
+        class="animate-spin material-symbols-outlined text-primary"
+      >progress_activity</span>
+    </div>
     <!-- Loading State -->
     <div
       v-if="remediationStore.loading"

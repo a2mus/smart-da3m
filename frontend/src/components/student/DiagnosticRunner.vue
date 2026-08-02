@@ -4,10 +4,12 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { diagnosticService, type Question, type AnswerSubmitResponse } from '@/services/diagnosticService'
 import { offlineStore } from '@/stores/offlineModule'
+import { useOfflineSync } from '@/composables/useOfflineSync'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const { isOnline, isSyncing, queueAnswer, syncNow } = useOfflineSync()
 
 const moduleId = computed(() => route.params.moduleId as string)
 const sessionId = ref<string>('')
@@ -24,48 +26,9 @@ const showFeedback = ref(false)
 const lastAnswerCorrect = ref<boolean | null>(null)
 const lastErrorClass = ref<string | null>(null)
 const totalQuestions = ref(10)
-const isOnline = ref(typeof navigator !== 'undefined' ? navigator.onLine : true)
-const isSyncing = ref(false)
 
 const canSubmit = computed(() => !!selectedAnswer.value && !isSubmitting.value && !showFeedback.value)
 const progress = computed(() => Math.min(100, (questionNumber.value / totalQuestions.value) * 100))
-
-const flushPendingAnswers = async () => {
-  if (typeof navigator !== 'undefined' && !navigator.onLine) return
-  isSyncing.value = true
-  try {
-    const pending = await offlineStore.getPendingAnswers()
-    for (const item of pending) {
-      try {
-        await diagnosticService.submitAnswer({
-          session_id: item.session_id,
-          question_id: item.question_id,
-          answer: item.answer,
-          time_ms: item.time_ms || 0,
-        })
-        if (item.id) {
-          await offlineStore.markAnswerSynced(item.id)
-        }
-      } catch (e) {
-        console.warn('Failed to sync pending answer during flush:', e)
-        break
-      }
-    }
-  } catch (err) {
-    console.error('Error in flushPendingAnswers:', err)
-  } finally {
-    isSyncing.value = false
-  }
-}
-
-const handleOnline = () => {
-  isOnline.value = true
-  flushPendingAnswers()
-}
-
-const handleOffline = () => {
-  isOnline.value = false
-}
 
 const errorClassLabels: Record<string, string> = {
   RESOURCE: 'راجع الأساسيات — هناك مفهوم سابق تحتاج إتقانه',
@@ -126,7 +89,7 @@ const submitAnswer = async () => {
 
   let pendingId: number | null = null
   try {
-    pendingId = await offlineStore.queueAnswer({
+    pendingId = await queueAnswer({
       session_id: sessionId.value,
       question_id: questionId,
       answer: answerVal,
@@ -207,17 +170,6 @@ const finishDiagnostic = () => {
 
 onMounted(() => {
   startDiagnostic()
-  if (typeof window !== 'undefined') {
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-  }
-})
-
-onUnmounted(() => {
-  if (typeof window !== 'undefined') {
-    window.removeEventListener('online', handleOnline)
-    window.removeEventListener('offline', handleOffline)
-  }
 })
 </script>
 

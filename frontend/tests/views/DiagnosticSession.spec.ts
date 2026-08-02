@@ -56,6 +56,8 @@ vi.mock('@/stores/offlineModule', () => ({
     queueAnswer: vi.fn().mockResolvedValue(1),
     getPendingAnswers: vi.fn().mockResolvedValue([]),
     markAnswerSynced: vi.fn().mockResolvedValue(true),
+    getPendingSyncSessions: vi.fn().mockResolvedValue([]),
+    markSessionSynced: vi.fn().mockResolvedValue(true),
   }
 }))
 
