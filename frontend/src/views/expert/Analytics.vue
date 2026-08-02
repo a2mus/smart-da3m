@@ -83,6 +83,24 @@ onMounted(() => {
             متابعة مستويات التحكم لكل تلميذ وكفاءة بناءً على بيانات التقييم التكيفي والتحليلات البيداغوجية.
           </p>
         </div>
+        <div class="flex items-center gap-3">
+          <button
+            class="flex items-center gap-2 px-4 py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-primary font-bold text-sm rounded-xl border border-outline-variant/30 transition-all duration-200 shadow-sm disabled:opacity-50"
+            :disabled="analyticsStore.exporting"
+            @click="analyticsStore.exportReport('heatmap', 'csv')"
+          >
+            <span class="material-symbols-outlined text-lg">download</span>
+            <span>تصدير CSV</span>
+          </button>
+          <button
+            class="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-[#003f45] text-on-primary font-bold text-sm rounded-xl transition-all duration-200 shadow-sm disabled:opacity-50"
+            :disabled="analyticsStore.exporting"
+            @click="analyticsStore.exportReport('heatmap', 'pdf')"
+          >
+            <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
+            <span>تصدير PDF</span>
+          </button>
+        </div>
       </section>
 
       <!-- Competency Heatmap Section -->

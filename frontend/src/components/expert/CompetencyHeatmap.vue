@@ -82,11 +82,19 @@ const toggleAutoGroups = () => {
 const changeGroupBy = (groupBy: string) => {
   analyticsStore.fetchStudentGroups(groupBy)
 }
+
+const handleExportPdf = () => {
+  analyticsStore.exportReport('pdf', 'heatmap')
+}
+
+const handleExportCsv = () => {
+  analyticsStore.exportReport('csv', 'heatmap')
+}
 </script>
 
 <template>
   <div class="competency-heatmap">
-    <!-- Auto-Grouping Control Toolbar -->
+    <!-- Auto-Grouping & Export Control Toolbar -->
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3 bg-surface-container-low p-3 rounded-lg border border-outline-variant">
       <div class="flex items-center gap-2">
         <button
@@ -96,6 +104,26 @@ const changeGroupBy = (groupBy: string) => {
           @click="toggleAutoGroups"
         >
           {{ analyticsStore.showAutoGroupsOverlay ? t('analytics.hideAutoGroups', 'إخفاء مجموعات المعالجة') : t('analytics.showAutoGroups', 'عرض مجموعات المعالجة المقترحة') }}
+        </button>
+
+        <div class="h-4 w-px bg-outline-variant mx-1" />
+
+        <button
+          type="button"
+          class="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors bg-surface-bright text-on-surface border border-outline-variant hover:bg-surface-container flex items-center gap-1.5"
+          @click="handleExportPdf"
+        >
+          <span class="i-lucide-file-text w-3.5 h-3.5 text-secondary" />
+          {{ t('analytics.exportPdf', 'تصدير PDF') }}
+        </button>
+
+        <button
+          type="button"
+          class="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors bg-surface-bright text-on-surface border border-outline-variant hover:bg-surface-container flex items-center gap-1.5"
+          @click="handleExportCsv"
+        >
+          <span class="i-lucide-file-spread-sheet w-3.5 h-3.5 text-tertiary" />
+          {{ t('analytics.exportCsv', 'تصدير CSV') }}
         </button>
       </div>
 

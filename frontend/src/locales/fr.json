@@ -74,7 +74,16 @@
     "doingGreat": "S'en sort très bien",
     "keepItUp": "Continuez comme ça !",
     "dailyTip": "Conseil du jour",
-    "weeklyReport": "Rapport hebdomadaire"
+    "weeklyReport": "Rapport hebdomadaire",
+    "smartInsights": "Analyses & Aperçus Pédagogiques",
+    "generalInsight": "Aperçu pédagogique"
+  },
+  "mastery": {
+    "mastered": "Excellente maîtrise",
+    "proficient": "Maîtrisé",
+    "familiar": "Acquis",
+    "attempted": "Besoin d'aide",
+    "not_started": "Non démarré"
   },
   "expert": {
     "dashboard": "Tableau de l'expert",

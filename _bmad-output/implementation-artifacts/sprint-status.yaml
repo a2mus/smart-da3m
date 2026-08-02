@@ -95,7 +95,7 @@ development_status:
   epic-9: backlog
   9-1-real-competency-heatmap-data: done
   9-2-auto-grouping-into-remediation-groups: done
-  9-3-report-export-pdf-csv-wire-orphaned-exporter: backlog
+  9-3-report-export-pdf-csv-wire-orphaned-exporter: done
   9-4-printable-remediation-cards: backlog
   epic-9-retrospective: optional
 

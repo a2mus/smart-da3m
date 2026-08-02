@@ -42,6 +42,17 @@ class Recommendation(BaseModel):
     error_type: Optional[str] = None
 
 
+class InsightMessage(BaseModel):
+    """Schema for plain-language smart insight messages (zero raw scores)."""
+
+    id: str
+    type: str  # STRENGTH, GAP, PROGRESS, GENERAL
+    text: str
+    competency_id: Optional[str] = None
+    competency_name: Optional[str] = None
+    mastery_level: Optional[str] = None
+
+
 class ChildDashboardData(BaseModel):
     """Schema for individual child dashboard data."""
 
@@ -50,6 +61,7 @@ class ChildDashboardData(BaseModel):
     subjects: List[SubjectProgress]
     recent_activities: List[RecentActivity]
     summary: str
+    insights: List[InsightMessage] = Field(default_factory=list)
     recommendations: List[Recommendation]
     daily_recommendation: Optional[Recommendation] = None
     overall_progress: float

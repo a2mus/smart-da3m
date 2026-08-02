@@ -1,11 +1,5 @@
-"""
-Report exporter service for generating PDF and CSV reports.
-Handles remediation cards, heatmaps, and analytics exports.
-"""
-
 import csv
 import os
-import tempfile
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from uuid import UUID
@@ -14,21 +8,24 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.diagnostic import CompetencyProfile, MasteryLevel
+from app.models.organization import OrganizationMember
 from app.models.user import User, UserRole
 
 
 class ReportExporter:
-    """Service for exporting analytics reports in various formats."""
+    """Service for exporting analytics reports to CSV and PDF formats."""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, export_dir: str = "/tmp/exports"):
         self.db = db
-        self.export_dir = tempfile.gettempdir()
+        self.export_dir = export_dir
+        os.makedirs(self.export_dir, exist_ok=True)
 
     async def export_csv(
         self,
         report_type: str,
         filters: Optional[Any] = None,
         student_ids: Optional[List[UUID]] = None,
+        organization_id: Optional[UUID] = None,
     ) -> str:
         """Export analytics data as CSV."""
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -36,11 +33,11 @@ class ReportExporter:
         filepath = os.path.join(self.export_dir, filename)
 
         if report_type == "heatmap":
-            await self._export_heatmap_csv(filepath, filters, student_ids)
+            await self._export_heatmap_csv(filepath, filters, student_ids, organization_id)
         elif report_type == "remediation_card":
-            await self._export_remediation_csv(filepath, student_ids)
+            await self._export_remediation_csv(filepath, student_ids, organization_id)
         elif report_type == "full_report":
-            await self._export_full_report_csv(filepath, filters, student_ids)
+            await self._export_full_report_csv(filepath, filters, student_ids, organization_id)
         else:
             raise ValueError(f"Unknown report type: {report_type}")
 
@@ -51,19 +48,42 @@ class ReportExporter:
         filepath: str,
         filters: Optional[Any] = None,
         student_ids: Optional[List[UUID]] = None,
+        organization_id: Optional[UUID] = None,
     ) -> None:
         """Export competency heatmap as CSV."""
-        query = select(User).where(User.role == UserRole.STUDENT)
+        query = select(User)
+        if organization_id:
+            query = query.join(OrganizationMember, OrganizationMember.user_id == User.id).where(
+                OrganizationMember.organization_id == organization_id,
+                OrganizationMember.role == UserRole.STUDENT,
+            )
+        else:
+            query = query.where(User.role == UserRole.STUDENT)
+
         if student_ids:
             query = query.where(User.id.in_(student_ids))
 
         result = await self.db.execute(query)
         students = list(result.scalars().all())
 
+        if not students:
+            with open(filepath, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow([
+                    "student_id",
+                    "competency_id",
+                    "mastery_level",
+                    "p_learned",
+                    "last_assessed",
+                ])
+            return
+
         student_ids_list = [s.id for s in students]
         profile_query = select(CompetencyProfile).where(
             CompetencyProfile.student_id.in_(student_ids_list)
         )
+        if organization_id:
+            profile_query = profile_query.where(CompetencyProfile.organization_id == organization_id)
 
         if filters and hasattr(filters, "competency_ids") and filters.competency_ids:
             profile_query = profile_query.where(
@@ -76,11 +96,11 @@ class ReportExporter:
         with open(filepath, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow([
-                "Student ID",
-                "Competency ID",
-                "Mastery Level",
-                "Probability Learned",
-                "Last Assessed",
+                "student_id",
+                "competency_id",
+                "mastery_level",
+                "p_learned",
+                "last_assessed",
             ])
 
             for profile in profiles:
@@ -96,10 +116,30 @@ class ReportExporter:
         self,
         filepath: str,
         student_ids: Optional[List[UUID]] = None,
+        organization_id: Optional[UUID] = None,
     ) -> None:
         """Export remediation cards as CSV."""
         if not student_ids:
-            raise ValueError("Student IDs required for remediation card export")
+            if organization_id:
+                student_query = select(User.id).join(
+                    OrganizationMember, OrganizationMember.user_id == User.id
+                ).where(
+                    OrganizationMember.organization_id == organization_id,
+                    OrganizationMember.role == UserRole.STUDENT,
+                )
+                res = await self.db.execute(student_query)
+                student_ids = list(res.scalars().all())
+            if not student_ids:
+                with open(filepath, "w", newline="", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    writer.writerow([
+                        "student_id",
+                        "competency_id",
+                        "mastery_level",
+                        "gap_level",
+                        "recommended_action",
+                    ])
+                return
 
         query = select(CompetencyProfile).where(
             CompetencyProfile.student_id.in_(student_ids),
@@ -108,6 +148,8 @@ class ReportExporter:
                 MasteryLevel.ATTEMPTED,
             ]),
         )
+        if organization_id:
+            query = query.where(CompetencyProfile.organization_id == organization_id)
 
         result = await self.db.execute(query)
         profiles = list(result.scalars().all())
@@ -115,11 +157,11 @@ class ReportExporter:
         with open(filepath, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow([
-                "Student ID",
-                "Competency ID",
-                "Current Mastery",
-                "Gap Level",
-                "Recommended Action",
+                "student_id",
+                "competency_id",
+                "mastery_level",
+                "gap_level",
+                "recommended_action",
             ])
 
             for profile in profiles:
@@ -140,9 +182,18 @@ class ReportExporter:
         filepath: str,
         filters: Optional[Any] = None,
         student_ids: Optional[List[UUID]] = None,
+        organization_id: Optional[UUID] = None,
     ) -> None:
         """Export full analytics report as CSV."""
-        query = select(User).where(User.role == UserRole.STUDENT)
+        query = select(User)
+        if organization_id:
+            query = query.join(OrganizationMember, OrganizationMember.user_id == User.id).where(
+                OrganizationMember.organization_id == organization_id,
+                OrganizationMember.role == UserRole.STUDENT,
+            )
+        else:
+            query = query.where(User.role == UserRole.STUDENT)
+
         if student_ids:
             query = query.where(User.id.in_(student_ids))
 
@@ -162,12 +213,17 @@ class ReportExporter:
             ])
             writer.writerow([])
 
-            student_ids_list = [s.id for s in students]
-            profile_query = select(CompetencyProfile).where(
-                CompetencyProfile.student_id.in_(student_ids_list)
-            )
-            result = await self.db.execute(profile_query)
-            profiles = list(result.scalars().all())
+            if students:
+                student_ids_list = [s.id for s in students]
+                profile_query = select(CompetencyProfile).where(
+                    CompetencyProfile.student_id.in_(student_ids_list)
+                )
+                if organization_id:
+                    profile_query = profile_query.where(CompetencyProfile.organization_id == organization_id)
+                result = await self.db.execute(profile_query)
+                profiles = list(result.scalars().all())
+            else:
+                profiles = []
 
             mastery_counts: Dict[str, int] = {}
             for profile in profiles:
@@ -184,6 +240,7 @@ class ReportExporter:
         report_type: str,
         filters: Optional[Any] = None,
         student_ids: Optional[List[UUID]] = None,
+        organization_id: Optional[UUID] = None,
     ) -> str:
         """Export analytics data as PDF."""
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -206,11 +263,11 @@ class ReportExporter:
             )
 
         if report_type == "heatmap":
-            await self._export_heatmap_pdf(filepath, filters, student_ids)
+            await self._export_heatmap_pdf(filepath, filters, student_ids, organization_id)
         elif report_type == "remediation_card":
-            await self._export_remediation_pdf(filepath, student_ids)
+            await self._export_remediation_pdf(filepath, student_ids, organization_id)
         elif report_type == "full_report":
-            await self._export_full_report_pdf(filepath, filters, student_ids)
+            await self._export_full_report_pdf(filepath, filters, student_ids, organization_id)
         else:
             raise ValueError(f"Unknown report type: {report_type}")
 
@@ -244,6 +301,7 @@ class ReportExporter:
         filepath: str,
         filters: Optional[Any],
         student_ids: Optional[List[UUID]],
+        organization_id: Optional[UUID] = None,
     ) -> None:
         """Export competency heatmap as PDF."""
         from reportlab.lib import colors
@@ -259,17 +317,32 @@ class ReportExporter:
         elements.append(title)
         elements.append(Spacer(1, 20))
 
-        query = select(User).where(User.role == UserRole.STUDENT)
+        query = select(User)
+        if organization_id:
+            query = query.join(OrganizationMember, OrganizationMember.user_id == User.id).where(
+                OrganizationMember.organization_id == organization_id,
+                OrganizationMember.role == UserRole.STUDENT,
+            )
+        else:
+            query = query.where(User.role == UserRole.STUDENT)
+
         if student_ids:
             query = query.where(User.id.in_(student_ids))
 
         result = await self.db.execute(query)
         students = list(result.scalars().all())
 
+        if not students:
+            elements.append(Paragraph("No student records found.", styles["Normal"]))
+            doc.build(elements)
+            return
+
         student_ids_list = [s.id for s in students]
         profile_query = select(CompetencyProfile).where(
             CompetencyProfile.student_id.in_(student_ids_list)
         )
+        if organization_id:
+            profile_query = profile_query.where(CompetencyProfile.organization_id == organization_id)
         result = await self.db.execute(profile_query)
         profiles = list(result.scalars().all())
 
@@ -314,6 +387,7 @@ class ReportExporter:
         self,
         filepath: str,
         student_ids: Optional[List[UUID]],
+        organization_id: Optional[UUID] = None,
     ) -> None:
         """Export remediation cards as PDF."""
         from reportlab.lib import colors
@@ -330,6 +404,17 @@ class ReportExporter:
         elements.append(Spacer(1, 20))
 
         if not student_ids:
+            if organization_id:
+                student_query = select(User.id).join(
+                    OrganizationMember, OrganizationMember.user_id == User.id
+                ).where(
+                    OrganizationMember.organization_id == organization_id,
+                    OrganizationMember.role == UserRole.STUDENT,
+                )
+                res = await self.db.execute(student_query)
+                student_ids = list(res.scalars().all())
+
+        if not student_ids:
             elements.append(Paragraph("No students specified", styles["Normal"]))
             doc.build(elements)
             return
@@ -341,6 +426,8 @@ class ReportExporter:
                 MasteryLevel.ATTEMPTED,
             ]),
         )
+        if organization_id:
+            query = query.where(CompetencyProfile.organization_id == organization_id)
         result = await self.db.execute(query)
         profiles = list(result.scalars().all())
 
@@ -373,6 +460,7 @@ class ReportExporter:
         filepath: str,
         filters: Optional[Any],
         student_ids: Optional[List[UUID]],
+        organization_id: Optional[UUID] = None,
     ) -> None:
         """Export full analytics report as PDF."""
         from reportlab.lib import colors
@@ -394,7 +482,14 @@ class ReportExporter:
         )
         elements.append(Spacer(1, 40))
 
-        query = select(User).where(User.role == UserRole.STUDENT)
+        query = select(User)
+        if organization_id:
+            query = query.join(OrganizationMember, OrganizationMember.user_id == User.id).where(
+                OrganizationMember.organization_id == organization_id,
+                OrganizationMember.role == UserRole.STUDENT,
+            )
+        else:
+            query = query.where(User.role == UserRole.STUDENT)
         if student_ids:
             query = query.where(User.id.in_(student_ids))
 
@@ -404,12 +499,17 @@ class ReportExporter:
         elements.append(Paragraph(f"Total Students: {len(students)}", styles["Heading2"]))
         elements.append(Spacer(1, 20))
 
-        student_ids_list = [s.id for s in students]
-        profile_query = select(CompetencyProfile).where(
-            CompetencyProfile.student_id.in_(student_ids_list)
-        )
-        result = await self.db.execute(profile_query)
-        profiles = list(result.scalars().all())
+        if students:
+            student_ids_list = [s.id for s in students]
+            profile_query = select(CompetencyProfile).where(
+                CompetencyProfile.student_id.in_(student_ids_list)
+            )
+            if organization_id:
+                profile_query = profile_query.where(CompetencyProfile.organization_id == organization_id)
+            result = await self.db.execute(profile_query)
+            profiles = list(result.scalars().all())
+        else:
+            profiles = []
 
         elements.append(Paragraph("Mastery Distribution", styles["Heading2"]))
 

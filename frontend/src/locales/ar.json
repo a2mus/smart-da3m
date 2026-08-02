@@ -74,7 +74,16 @@
     "doingGreat": "يؤدي أداءً رائعاً",
     "keepItUp": "استمر في العمل الجيد!",
     "dailyTip": "نصيحة يومية",
-    "weeklyReport": "التقرير الأسبوعي"
+    "weeklyReport": "التقرير الأسبوعي",
+    "smartInsights": "رؤى بيداغوجية ذكية",
+    "generalInsight": "ملاحظة تربوية"
+  },
+  "mastery": {
+    "mastered": "متمكن جداً",
+    "proficient": "متفوق",
+    "familiar": "مكتسب",
+    "attempted": "يحتاج دعم",
+    "not_started": "لم يبدأ بعد"
   },
   "expert": {
     "dashboard": "لوحة الخبير",

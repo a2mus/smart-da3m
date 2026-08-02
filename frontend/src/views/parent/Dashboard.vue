@@ -122,7 +122,7 @@ onMounted(() => {
         class="text-center py-12 text-ink-600"
       >
         <div class="text-6xl mb-4">
-          👨‍👩‍👧
+          👨‍gsub👨‍👧
         </div>
         <p class="text-lg">
           {{ t('parent.noChildren') }}
@@ -143,22 +143,42 @@ onMounted(() => {
             {{ childData.summary }}
           </p>
 
-          <!-- Overall Progress -->
+          <!-- Qualitative Primary Status -->
           <div class="mt-4 flex items-center gap-3">
             <div class="flex-1">
               <div class="flex justify-between text-sm mb-1">
                 <span class="text-ink-600">{{ t('parent.overallProgress') }}</span>
                 <span class="font-semibold text-teal-600">
-                  {{ Math.round(childData.overallProgress ?? childData.overall_progress ?? 0) }}%
+                  {{ t(`mastery.${(childData.subjects && childData.subjects.length ? childData.subjects[0].mastery_level || childData.subjects[0].masteryLevel || 'FAMILIAR' : 'FAMILIAR').toLowerCase()}`) }}
                 </span>
               </div>
               <div class="h-2 bg-ink-200 rounded-full overflow-hidden">
                 <div
                   class="h-full bg-teal-500 rounded-full transition-all duration-500"
-                  :style="{ width: `${childData.overallProgress ?? childData.overall_progress ?? 0}%` }"
+                  :style="{ width: `${childData.overallProgress ?? childData.overall_progress ?? 50}%` }"
                 />
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Smart Insights Section (Zero Raw Scores - Primary Indicators) -->
+        <div
+          v-if="childData.insights && childData.insights.length > 0"
+          class="bg-surface rounded-2xl p-5 shadow-soft"
+        >
+          <h3 class="text-lg font-bold text-ink-800 mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-teal-600">psychology</span>
+            {{ t('parent.smartInsights', 'Smart Insights') }}
+          </h3>
+          <div class="space-y-3">
+            <InsightCard
+              v-for="insight in childData.insights"
+              :key="insight.id"
+              :title="insight.competencyName || insight.competency_name || t('parent.generalInsight', 'Pedagogical Insight')"
+              :description="insight.text"
+              :priority="insight.type === 'GAP' ? 'high' : insight.type === 'STRENGTH' ? 'low' : 'medium'"
+            />
           </div>
         </div>
 
@@ -190,10 +210,9 @@ onMounted(() => {
               <div class="flex-1">
                 <div class="flex justify-between items-center">
                   <span class="font-medium text-ink-800">{{ subject.name }}</span>
-                  <span class="text-sm text-ink-600">{{ subject.score }}%</span>
-                </div>
-                <div class="text-xs text-ink-500 capitalize">
-                  {{ t(`mastery.${(subject.masteryLevel || subject.mastery_level || '').toLowerCase()}`) }}
+                  <span class="text-xs px-2 py-1 rounded-md font-semibold text-ink-700 bg-surface-container-high">
+                    {{ t(`mastery.${(subject.masteryLevel || subject.mastery_level || 'FAMILIAR').toLowerCase()}`) }}
+                  </span>
                 </div>
               </div>
             </div>

@@ -12,6 +12,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const studentGroups = ref<StudentGroup[]>([])
   const metrics = ref<MetricsResponse | null>(null)
   const loading = ref<boolean>(false)
+  const exporting = ref<boolean>(false)
   const error = ref<string | null>(null)
   const showAutoGroupsOverlay = ref<boolean>(false)
   const autoGroupBy = ref<string>('competency')
@@ -56,11 +57,36 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
   }
 
+  async function exportReport(format: 'pdf' | 'csv' = 'csv', reportType: string = 'heatmap') {
+    exporting.value = true
+    loading.value = true
+    try {
+      const res = await analyticsService.exportReport(format, reportType)
+      if ('file_path' in res && res.file_path) {
+        const a = document.createElement('a')
+        a.href = `/api/v1/analytics/export?format=${format}&report_type=${reportType}`
+        a.download = `${reportType}.${format}`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+      }
+      return res
+    } catch (err: unknown) {
+      error.value = err instanceof Error ? err.message : 'Failed to export report'
+      console.error('analyticsStore exportReport error:', err)
+      throw err
+    } finally {
+      exporting.value = false
+      loading.value = false
+    }
+  }
+
   return {
     heatmapData,
     studentGroups,
     metrics,
     loading,
+    exporting,
     error,
     showAutoGroupsOverlay,
     autoGroupBy,
@@ -68,5 +94,6 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     fetchStudentGroups,
     toggleAutoGroupsOverlay,
     fetchMetrics,
+    exportReport,
   }
 })
