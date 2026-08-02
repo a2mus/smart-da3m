@@ -50,7 +50,7 @@ enabled = true
 #                    and flags this when its changes warrant an independent pass).
 #   "always"      -> run the second-opinion review on every story.
 # The loop is bounded by limits.max_review_cycles either way.
-trigger = "recommended"
+trigger = "always"
 
 [adapter]
 # opencode-http drives `opencode serve` over HTTP/SSE (hookless SSE transport;
@@ -99,11 +99,11 @@ model = "antigravity-manager/gemini-3.6-flash-high" # TRIAGE — primary
 
 [sweep]
 # Deferred-work sweep: triage + execute open deferred-work.md entries.
-auto = "never"               # never | per-epic | run-end (auto-triggered sweeps never prompt)
+auto = "run-end"               # never | per-epic | run-end (auto-triggered sweeps never prompt)
 max_bundles = 5              # bundles executed per sweep; triage excess is truncated
 max_triage_attempts = 2      # triage validation retries before escalating
 max_migration_attempts = 2   # legacy-ledger migration retries before escalating
-repeat = false               # after a cycle completes, re-triage and continue on newly deferred work
+repeat = true                # after a cycle completes, re-triage and continue on newly deferred work
 max_cycles = 5               # safety cap on total cycles per sweep run when repeat = true
 
 [cleanup]
