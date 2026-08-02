@@ -42,7 +42,8 @@ async def get_dashboard_overview(
     Returns qualitative summaries, subject progress, recent activities,
     and actionable recommendations for each child.
     """
-    aggregator = DashboardAggregator(db)
+    tenant_id = getattr(current_user, "organization_id", None)
+    aggregator = DashboardAggregator(db, tenant_id=tenant_id)
 
     # Get dashboard data
     dashboard_data = await aggregator.get_parent_dashboard(current_user.id)
@@ -68,7 +69,8 @@ async def get_child_details(
     current_user: User = Depends(get_current_parent),
 ) -> ChildDashboardData:
     """Get detailed dashboard data for a specific child."""
-    aggregator = DashboardAggregator(db)
+    tenant_id = getattr(current_user, "organization_id", None)
+    aggregator = DashboardAggregator(db, tenant_id=tenant_id)
 
     # Verify the child belongs to this parent
     children = await aggregator.get_children_for_parent(current_user.id)
@@ -94,7 +96,8 @@ async def get_children_list(
     current_user: User = Depends(get_current_parent),
 ) -> list[ChildProgressSummary]:
     """Get a simplified list of all children with basic progress info."""
-    aggregator = DashboardAggregator(db)
+    tenant_id = getattr(current_user, "organization_id", None)
+    aggregator = DashboardAggregator(db, tenant_id=tenant_id)
 
     children = await aggregator.get_children_for_parent(current_user.id)
 
@@ -143,7 +146,8 @@ async def get_alerts(
     current_user: User = Depends(get_current_parent),
 ) -> AlertListResponse:
     """Get pedagogical alerts for the authenticated parent."""
-    aggregator = DashboardAggregator(db)
+    tenant_id = getattr(current_user, "organization_id", None)
+    aggregator = DashboardAggregator(db, tenant_id=tenant_id)
     children = await aggregator.get_children_for_parent(current_user.id)
     child_ids = [c.id for c in children]
 
@@ -191,7 +195,8 @@ async def mark_alerts_read(
     current_user: User = Depends(get_current_parent),
 ) -> AlertMarkReadResponse:
     """Mark specified alerts as read."""
-    aggregator = DashboardAggregator(db)
+    tenant_id = getattr(current_user, "organization_id", None)
+    aggregator = DashboardAggregator(db, tenant_id=tenant_id)
     children = await aggregator.get_children_for_parent(current_user.id)
     child_ids = {c.id for c in children}
 
@@ -248,7 +253,8 @@ async def get_child_alerts(
     current_user: User = Depends(get_current_parent),
 ) -> list[ParentAlertSummary]:
     """Get simplified alerts for a specific child."""
-    aggregator = DashboardAggregator(db)
+    tenant_id = getattr(current_user, "organization_id", None)
+    aggregator = DashboardAggregator(db, tenant_id=tenant_id)
     children = await aggregator.get_children_for_parent(current_user.id)
     child_ids = {str(c.id) for c in children}
 
