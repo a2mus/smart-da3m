@@ -243,3 +243,57 @@ class RemediationEngine:
             "new_mastery_level": new_mastery,
             "alert_triggered": not evaluation["passed"],
         }
+
+    def auto_group_students(
+        self,
+        records: List[Dict[str, Any]],
+        group_by: str = "competency",
+        min_group_size: int = 1,
+    ) -> List[Dict[str, Any]]:
+        """
+        Statelessly cluster students by shared competency gaps and error types.
+        """
+        grouped: Dict[str, Dict[str, Any]] = {}
+
+        for rec in records:
+            student_id = str(rec["student_id"])
+            competency_id = rec.get("competency_id", "GENERAL")
+            mastery_level = rec.get("mastery_level", "NOT_STARTED")
+            error_type = rec.get("error_type") or rec.get("error_classification") or "UNCATEGORIZED"
+
+            if group_by == "error_type":
+                key = f"error_{error_type}"
+                name = f"Group: {error_type} Errors"
+                rec_action = f"Targeted review for {error_type} error patterns"
+            else:  # default competency
+                key = f"comp_{competency_id}_{mastery_level}"
+                name = f"Group: {competency_id} ({mastery_level})"
+                rec_action = f"Remediation pathway for competency {competency_id}"
+
+            if key not in grouped:
+                grouped[key] = {
+                    "group_id": key,
+                    "name": name,
+                    "competency": competency_id,
+                    "error_type": error_type,
+                    "student_ids": [],
+                    "students": [],
+                    "criteria": {
+                        "competency_id": competency_id,
+                        "mastery_level": mastery_level,
+                        "error_type": error_type,
+                    },
+                    "recommended_action": rec_action,
+                }
+
+            if student_id not in grouped[key]["student_ids"]:
+                grouped[key]["student_ids"].append(student_id)
+                grouped[key]["students"].append(student_id)
+
+        results = []
+        for g in grouped.values():
+            g["student_count"] = len(g["student_ids"])
+            if g["student_count"] >= min_group_size:
+                results.append(g)
+
+        return results

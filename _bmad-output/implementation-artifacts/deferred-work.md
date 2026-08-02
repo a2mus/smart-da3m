@@ -27,3 +27,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md`
   summary: Duplicate static _mastery_to_color and _mastery_to_score functions exist in analytics.py endpoint module.
   evidence: backend/app/api/endpoints/analytics.py retains unused module-level helper functions alongside AnalyticsService static methods.
+- source_spec: `_bmad-output/implementation-artifacts/spec-9-2-auto-grouping-into-remediation-groups.md`
+  summary: Legacy inline helper functions _group_by_competency and _group_by_error_type remain unreferenced in backend/app/api/endpoints/analytics.py.
+  evidence: POST /api/v1/analytics/auto-group delegates directly to AnalyticsService.auto_group_students, rendering inline grouping functions in analytics.py dead code.

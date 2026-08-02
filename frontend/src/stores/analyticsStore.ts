@@ -13,6 +13,8 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const metrics = ref<MetricsResponse | null>(null)
   const loading = ref<boolean>(false)
   const error = ref<string | null>(null)
+  const showAutoGroupsOverlay = ref<boolean>(false)
+  const autoGroupBy = ref<string>('competency')
 
   async function fetchHeatmap(moduleId?: string) {
     loading.value = true
@@ -28,12 +30,20 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
   }
 
-  async function fetchStudentGroups() {
+  async function fetchStudentGroups(groupBy: string = 'competency') {
+    autoGroupBy.value = groupBy
     try {
-      const groups = await analyticsService.getStudentGroups()
+      const groups = await analyticsService.getStudentGroups(groupBy)
       studentGroups.value = groups
     } catch (err: unknown) {
       console.error('analyticsStore fetchStudentGroups error:', err)
+    }
+  }
+
+  function toggleAutoGroupsOverlay() {
+    showAutoGroupsOverlay.value = !showAutoGroupsOverlay.value
+    if (showAutoGroupsOverlay.value && studentGroups.value.length === 0) {
+      fetchStudentGroups(autoGroupBy.value)
     }
   }
 
@@ -52,8 +62,11 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     metrics,
     loading,
     error,
+    showAutoGroupsOverlay,
+    autoGroupBy,
     fetchHeatmap,
     fetchStudentGroups,
+    toggleAutoGroupsOverlay,
     fetchMetrics,
   }
 })

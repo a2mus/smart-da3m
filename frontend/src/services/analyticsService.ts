@@ -19,10 +19,16 @@ export interface HeatmapResponse {
 }
 
 export interface StudentGroup {
-  group_name: string
+  group_id?: string
+  name?: string
+  group_name?: string
   student_count: number
-  competency: string
+  student_ids?: string[]
+  students?: string[]
+  competency?: string
+  error_type?: string
   recommended_action: string
+  criteria?: Record<string, unknown>
 }
 
 export interface MetricsResponse {
@@ -39,8 +45,10 @@ export const analyticsService = {
     return response.data
   },
 
-  async getStudentGroups(): Promise<StudentGroup[]> {
-    const response = await http.post<{ groups: StudentGroup[] }>('/analytics/auto-group')
+  async getStudentGroups(groupBy: string = 'competency'): Promise<StudentGroup[]> {
+    const response = await http.post<{ groups: StudentGroup[] }>('/analytics/auto-group', {}, {
+      params: { group_by: groupBy }
+    })
     return response.data.groups || []
   },
 

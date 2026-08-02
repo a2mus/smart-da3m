@@ -100,7 +100,7 @@ def _mastery_to_score(mastery: MasteryLevel) -> int:
 
 @router.post("/auto-group", response_model=AutoGroupResponse)
 async def auto_group_students(
-    filters: HeatmapFilters,
+    filters: Optional[HeatmapFilters] = None,
     group_by: str = Query("competency", description="Group by: competency or error_type"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_expert),
@@ -112,19 +112,21 @@ async def auto_group_students(
     - Same unmastered competencies (group_by=competency)
     - Same error types (group_by=error_type)
     """
-    if group_by == "competency":
-        groups = await _group_by_competency(db, filters)
-    elif group_by == "error_type":
-        groups = await _group_by_error_type(db, filters)
-    else:
+    if group_by not in ("competency", "error_type"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid group_by value: {group_by}",
         )
 
-    return AutoGroupResponse(
-        groups=groups,
-        total_groups=len(groups),
+    from app.core.tenant import get_optional_active_organization_id
+    org_id = getattr(current_user, "organization_id", None) or get_optional_active_organization_id()
+    if not org_id:
+        org_id = UUID("00000000-0000-0000-0000-000000000000")
+
+    service = AnalyticsService(db)
+    return await service.auto_group_students(
+        organization_id=org_id,
+        filters=filters,
         group_by=group_by,
     )
 

@@ -74,10 +74,81 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
   if (!cell) return t('analytics.noData', 'لا توجد بيانات')
   return `${getMasteryLabel(cell.mastery_level)} (${Math.round(cell.score)}%)`
 }
+
+const toggleAutoGroups = () => {
+  analyticsStore.toggleAutoGroupsOverlay()
+}
+
+const changeGroupBy = (groupBy: string) => {
+  analyticsStore.fetchStudentGroups(groupBy)
+}
 </script>
 
 <template>
   <div class="competency-heatmap">
+    <!-- Auto-Grouping Control Toolbar -->
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3 bg-surface-container-low p-3 rounded-lg border border-outline-variant">
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors border"
+          :class="analyticsStore.showAutoGroupsOverlay ? 'bg-primary text-on-primary border-primary' : 'bg-surface-bright text-on-surface border-outline-variant hover:bg-surface-container'"
+          @click="toggleAutoGroups"
+        >
+          {{ analyticsStore.showAutoGroupsOverlay ? t('analytics.hideAutoGroups', 'إخفاء مجموعات المعالجة') : t('analytics.showAutoGroups', 'عرض مجموعات المعالجة المقترحة') }}
+        </button>
+      </div>
+
+      <div
+        v-if="analyticsStore.showAutoGroupsOverlay"
+        class="flex items-center gap-2 text-xs"
+      >
+        <span class="text-on-surface-variant font-medium">{{ t('analytics.groupBy', 'تجميع حسب') }}:</span>
+        <button
+          type="button"
+          class="px-2.5 py-1 rounded transition-colors"
+          :class="analyticsStore.autoGroupBy === 'competency' ? 'bg-primary-container text-on-primary-container font-bold' : 'bg-surface-bright text-on-surface hover:bg-surface-container-high'"
+          @click="changeGroupBy('competency')"
+        >
+          {{ t('analytics.groupByCompetency', 'الكفاءة') }}
+        </button>
+        <button
+          type="button"
+          class="px-2.5 py-1 rounded transition-colors"
+          :class="analyticsStore.autoGroupBy === 'error_type' ? 'bg-primary-container text-on-primary-container font-bold' : 'bg-surface-bright text-on-surface hover:bg-surface-container-high'"
+          @click="changeGroupBy('error_type')"
+        >
+          {{ t('analytics.groupByErrorType', 'نوع الخطأ') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Suggested Remediation Groups Overlay / Banner -->
+    <div
+      v-if="analyticsStore.showAutoGroupsOverlay && analyticsStore.studentGroups.length > 0"
+      class="mb-6 bg-secondary-container/20 p-4 rounded-xl border border-secondary-container"
+    >
+      <h4 class="text-sm font-bold text-secondary mb-2">
+        {{ t('analytics.suggestedRemediationGroups', 'مجموعات المعالجة المقترحة (آلياً)') }}
+      </h4>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div
+          v-for="group in analyticsStore.studentGroups"
+          :key="group.group_id || group.name || group.group_name"
+          class="bg-surface-bright p-3 rounded-lg border border-outline-variant shadow-sm"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-on-surface">{{ group.name || group.group_name }}</span>
+            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-primary-fixed text-on-primary-fixed">
+              {{ group.student_count }} {{ t('analytics.studentsCount', 'تلاميذ') }}
+            </span>
+          </div>
+          <p class="text-xs text-on-surface-variant mt-1.5">
+            {{ group.recommended_action }}
+          </p>
+        </div>
+      </div>
+    </div>
     <!-- Loading State -->
     <div
       v-if="isLoading"

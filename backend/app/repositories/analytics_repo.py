@@ -8,7 +8,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.diagnostic import CompetencyProfile, DiagnosticSession
+from app.models.diagnostic import CompetencyProfile, DiagnosticSession, MasteryLevel
 from app.models.organization import OrganizationMember
 from app.models.user import User, UserRole
 from app.repositories.base import BaseRepository
@@ -71,6 +71,32 @@ class AnalyticsRepo(BaseRepository[CompetencyProfile]):
                 .distinct()
             )
             query = query.where(User.id.in_(student_ids_subquery))
+
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
+
+    async def get_auto_group_data(
+        self,
+        organization_id: UUID,
+        student_ids: Optional[List[UUID]] = None,
+        competency_ids: Optional[List[str]] = None,
+    ) -> List[CompetencyProfile]:
+        """
+        Fetch unmastered competency profiles (NOT_STARTED, ATTEMPTED) for students
+        in the given organization.
+        """
+        query = select(CompetencyProfile).where(
+            CompetencyProfile.organization_id == organization_id,
+            CompetencyProfile.mastery_level.in_(
+                [MasteryLevel.NOT_STARTED, MasteryLevel.ATTEMPTED]
+            ),
+        )
+
+        if student_ids:
+            query = query.where(CompetencyProfile.student_id.in_(student_ids))
+
+        if competency_ids:
+            query = query.where(CompetencyProfile.competency_id.in_(competency_ids))
 
         result = await self.db.execute(query)
         return list(result.scalars().all())

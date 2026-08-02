@@ -7,10 +7,13 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.engines.remediation_engine import RemediationEngine
 from app.models.diagnostic import CompetencyProfile, MasteryLevel
 from app.repositories.analytics_repo import AnalyticsRepo
 from app.schemas.analytics import (
+    AutoGroupResponse,
     HeatmapCell,
+    HeatmapFilters,
     HeatmapResponse,
     StudentCompetencyRow,
 )
@@ -22,6 +25,7 @@ class AnalyticsService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.repo = AnalyticsRepo(db)
+        self.engine = RemediationEngine()
 
     async def get_heatmap(
         self, organization_id: UUID, module_id: Optional[UUID] = None
@@ -78,6 +82,45 @@ class AnalyticsService:
             cells=cells,
             total_students=len(student_rows),
             total_competencies=len(competencies),
+        )
+
+    async def auto_group_students(
+        self,
+        organization_id: UUID,
+        filters: Optional[HeatmapFilters] = None,
+        group_by: str = "competency",
+    ) -> AutoGroupResponse:
+        """
+        Auto-group students by delegating DB fetching to repo and clustering to RemediationEngine.
+        """
+        student_ids = filters.student_ids if filters else None
+        competency_ids = filters.competency_ids if filters else None
+
+        profiles = await self.repo.get_auto_group_data(
+            organization_id=organization_id,
+            student_ids=student_ids,
+            competency_ids=competency_ids,
+        )
+
+        records = [
+            {
+                "student_id": str(p.student_id),
+                "competency_id": p.competency_id,
+                "mastery_level": p.mastery_level.value,
+                "error_type": getattr(p, "error_type", None) or "PROCESS",
+            }
+            for p in profiles
+        ]
+
+        groups = self.engine.auto_group_students(
+            records=records,
+            group_by=group_by,
+        )
+
+        return AutoGroupResponse(
+            groups=groups,
+            total_groups=len(groups),
+            group_by=group_by,
         )
 
     @staticmethod
