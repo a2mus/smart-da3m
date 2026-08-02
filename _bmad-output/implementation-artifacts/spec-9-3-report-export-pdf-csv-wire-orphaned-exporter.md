@@ -2,7 +2,7 @@
 title: 'Story 9.3: Report Export (PDF/CSV) — Wire Orphaned Exporter'
 type: 'feature'
 created: '2026-08-03'
-status: 'done'
+status: 'in-review'
 baseline_revision: '8650778f14331c3d0f6a792a3240be24174633b4'
 final_revision: 'd68eee58dd615e0af7c641d4da945e6bf15bbd8f'
 review_loop_iteration: 0
@@ -86,29 +86,3 @@ Report export functionality delegates through `AnalyticsService.export_report`, 
 **Commands:**
 - `pytest backend/tests/api/test_analytics_export.py backend/tests/api/test_analytics_auto_group.py` -- expected: 8 passed
 
-## Auto Run Result
-
-### Implementation Summary
-- Enforced multi-tenant data isolation (`organization_id`) in `ReportExporter` (`backend/app/services/report_exporter.py`) for all CSV and PDF queries.
-- Added `export_report` method to `AnalyticsService` (`backend/app/services/analytics_service.py`), establishing `AnalyticsService` -> `ReportExporter` layering.
-- Added `GET /api/v1/analytics/export` (returning `FileResponse`) and updated `POST /api/v1/analytics/export` in `backend/app/api/endpoints/analytics.py`.
-- Added `exportReport` method in `frontend/src/services/analyticsService.ts` and Pinia store action in `frontend/src/stores/analyticsStore.ts`.
-- Added PDF and CSV export action buttons to `CompetencyHeatmap.vue` toolbar with i18n support (`t('analytics.exportPdf')`, `t('analytics.exportCsv')`).
-- Added full unit and integration test suite in `backend/tests/api/test_analytics_export.py`.
-
-### Changed Files
-- `backend/app/services/report_exporter.py`: Added `organization_id` filtering and `OrganizationMember` join.
-- `backend/app/services/analytics_service.py`: Implemented `export_report` coordination method.
-- `backend/app/api/endpoints/analytics.py`: Added GET endpoint and updated POST endpoint to delegate to `AnalyticsService`.
-- `frontend/src/services/analyticsService.ts`: Added `exportReport` API service method.
-- `frontend/src/stores/analyticsStore.ts`: Added `exportReport` action with browser download trigger.
-- `frontend/src/components/expert/CompetencyHeatmap.vue`: Added PDF and CSV export buttons to control toolbar.
-- `backend/tests/api/test_analytics_export.py`: Added comprehensive unit and integration tests.
-
-### Review Findings Breakdown
-- Patches applied: 0
-- Items deferred: 0
-- Items rejected: 0
-
-### Verification
-- Executed `pytest backend/tests/api/test_analytics_export.py backend/tests/api/test_analytics_auto_group.py` -> 8 passed in 0.22s.
