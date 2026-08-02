@@ -106,6 +106,29 @@ class ContentRepository(BaseRepository[Module]):
             await self.db.refresh(q)
         return questions
 
+    async def update_question(
+        self, question_id: UUID, **kwargs
+    ) -> Optional[Question]:
+        """Update a question record."""
+        question = await self.get_question(question_id)
+        if not question:
+            return None
+        for field, value in kwargs.items():
+            if value is not None:
+                setattr(question, field, value)
+        await self.db.commit()
+        await self.db.refresh(question)
+        return question
+
+    async def delete_question(self, question_id: UUID) -> bool:
+        """Delete a question record."""
+        question = await self.get_question(question_id)
+        if not question:
+            return False
+        await self.db.delete(question)
+        await self.db.commit()
+        return True
+
     # ==================== Knowledge Atom Operations ====================
 
     async def get_knowledge_atom(self, atom_id: UUID) -> Optional[KnowledgeAtom]:
@@ -149,3 +172,26 @@ class ContentRepository(BaseRepository[Module]):
         await self.db.commit()
         await self.db.refresh(atom)
         return atom
+
+    async def update_knowledge_atom(
+        self, atom_id: UUID, **kwargs
+    ) -> Optional[KnowledgeAtom]:
+        """Update a knowledge atom record."""
+        atom = await self.get_knowledge_atom(atom_id)
+        if not atom:
+            return None
+        for field, value in kwargs.items():
+            if value is not None:
+                setattr(atom, field, value)
+        await self.db.commit()
+        await self.db.refresh(atom)
+        return atom
+
+    async def delete_knowledge_atom(self, atom_id: UUID) -> bool:
+        """Delete a knowledge atom record."""
+        atom = await self.get_knowledge_atom(atom_id)
+        if not atom:
+            return False
+        await self.db.delete(atom)
+        await self.db.commit()
+        return True

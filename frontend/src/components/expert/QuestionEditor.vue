@@ -6,7 +6,7 @@ const { t } = useI18n()
 
 interface QuestionContent {
   text: string
-  type: 'multiple_choice' | 'text' | 'interactive'
+  type: 'multiple_choice' | 'image_choice' | 'numeric' | 'text' | 'interactive'
   options?: string[]
   correct_answer?: string
 }
@@ -66,12 +66,22 @@ const validateForm = (): boolean => {
     isValid = false
   }
 
-  if (form.content.type === 'multiple_choice') {
+  if (form.content.type === 'multiple_choice' || form.content.type === 'image_choice') {
     const validOptions = optionsList.value.filter((o: string) => o.trim())
     if (!validOptions || validOptions.length < 2) {
       errors.options = t('validation.minOptions')
       isValid = false
     }
+    if (!form.content.correct_answer) {
+      errors.correct_answer = t('validation.correctAnswerRequired')
+      isValid = false
+    }
+  } else if (form.content.type === 'numeric') {
+    if (!form.content.correct_answer || isNaN(Number(form.content.correct_answer))) {
+      errors.correct_answer = t('validation.correctAnswerRequired')
+      isValid = false
+    }
+  } else {
     if (!form.content.correct_answer) {
       errors.correct_answer = t('validation.correctAnswerRequired')
       isValid = false
@@ -162,6 +172,12 @@ const togglePreview = () => {
           <option value="multiple_choice">
             {{ t('expert.multipleChoice') }}
           </option>
+          <option value="image_choice">
+            Image Choice
+          </option>
+          <option value="numeric">
+            Numeric
+          </option>
           <option value="text">
             {{ t('expert.textAnswer') }}
           </option>
@@ -171,10 +187,10 @@ const togglePreview = () => {
         </select>
       </div>
 
-      <!-- Multiple Choice Options -->
-      <div v-if="form.content.type === 'multiple_choice'">
+      <!-- Multiple Choice / Image Choice Options -->
+      <div v-if="form.content.type === 'multiple_choice' || form.content.type === 'image_choice'">
         <label class="block text-sm font-medium text-warm-700 mb-2">
-          {{ t('expert.answerOptions') }}
+          {{ form.content.type === 'image_choice' ? 'Image URLs for Options' : t('expert.answerOptions') }}
         </label>
         <div class="space-y-2">
           <div
@@ -187,7 +203,7 @@ const togglePreview = () => {
               type="text"
               data-testid="option-input"
               class="flex-1 px-4 py-2 rounded-xl border-2 border-warm-200 focus:border-primary-400 outline-none transition-all"
-              :placeholder="t('expert.optionPlaceholder', { number: index + 1 })"
+              :placeholder="form.content.type === 'image_choice' ? 'https://example.com/image.png' : t('expert.optionPlaceholder', { number: index + 1 })"
             >
             <input
               v-model="form.content.correct_answer"
@@ -220,6 +236,27 @@ const togglePreview = () => {
         >
           {{ errors.options }}
         </p>
+        <p
+          v-if="errors.correct_answer"
+          class="text-red-500 text-sm mt-1"
+        >
+          {{ errors.correct_answer }}
+        </p>
+      </div>
+
+      <!-- Numeric Correct Answer -->
+      <div v-else-if="form.content.type === 'numeric'">
+        <label class="block text-sm font-medium text-warm-700 mb-1">
+          Correct Numeric Answer
+        </label>
+        <input
+          v-model="form.content.correct_answer"
+          type="number"
+          step="any"
+          data-testid="numeric-answer-input"
+          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 outline-none transition-all bg-surface-bright"
+          placeholder="42"
+        >
         <p
           v-if="errors.correct_answer"
           class="text-red-500 text-sm mt-1"

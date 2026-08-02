@@ -113,24 +113,16 @@ class ContentService:
         self, question_id: UUID, update_data: QuestionUpdate
     ) -> Optional[Question]:
         """Update a question."""
-        question = await self.get_question(question_id)
-        if not question:
-            return None
-
         update_dict = update_data.model_dump(exclude_unset=True)
-        if "content" in update_dict and update_dict["content"]:
-            update_dict["content"] = update_dict["content"].model_dump()
+        if "content" in update_dict and update_dict["content"] is not None:
+            if hasattr(update_dict["content"], "model_dump"):
+                update_dict["content"] = update_dict["content"].model_dump()
 
-        for field, value in update_dict.items():
-            setattr(question, field, value)
-
-        await self.db.commit()
-        await self.db.refresh(question)
-        return question
+        return await self.repo.update_question(question_id, **update_dict)
 
     async def delete_question(self, question_id: UUID) -> bool:
         """Delete a question."""
-        return await self.repo.delete(question_id)
+        return await self.repo.delete_question(question_id)
 
     async def bulk_create_questions(
         self, bulk_data: BulkQuestionCreate, organization_id: Optional[UUID] = None
@@ -192,27 +184,13 @@ class ContentService:
         self, atom_id: UUID, update_data: KnowledgeAtomUpdate
     ) -> Optional[KnowledgeAtom]:
         """Update a knowledge atom."""
-        atom = await self.get_knowledge_atom(atom_id)
-        if not atom:
-            return None
-
         update_dict = update_data.model_dump(exclude_unset=True)
-        if "content" in update_dict and update_dict["content"]:
-            update_dict["content"] = update_dict["content"].model_dump()
+        if "content" in update_dict and update_dict["content"] is not None:
+            if hasattr(update_dict["content"], "model_dump"):
+                update_dict["content"] = update_dict["content"].model_dump()
 
-        for field, value in update_dict.items():
-            setattr(atom, field, value)
-
-        await self.db.commit()
-        await self.db.refresh(atom)
-        return atom
+        return await self.repo.update_knowledge_atom(atom_id, **update_dict)
 
     async def delete_knowledge_atom(self, atom_id: UUID) -> bool:
         """Delete a knowledge atom."""
-        atom = await self.get_knowledge_atom(atom_id)
-        if not atom:
-            return False
-
-        await self.db.delete(atom)
-        await self.db.commit()
-        return True
+        return await self.repo.delete_knowledge_atom(atom_id)

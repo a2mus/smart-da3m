@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.content import ModuleStatus, RemediationType
 
@@ -73,6 +73,12 @@ class QuestionContent(BaseModel):
     options: Optional[List[str]] = None
     correct_answer: Optional[str] = None
     media_urls: Optional[List[str]] = None
+
+    @model_validator(mode="after")
+    def validate_correct_answer(self) -> "QuestionContent":
+        if not self.correct_answer or not self.correct_answer.strip():
+            raise ValueError("Question content must include a non-empty correct_answer key")
+        return self
 
 
 class QuestionBase(BaseModel):

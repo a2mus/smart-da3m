@@ -327,7 +327,7 @@ class TestQuestionEndpoints:
             Question(
                 organization_id=test_org.id,
                 module_id=module.id,
-                content={"text": f"Question {i}"},
+                content={"text": f"Question {i}", "correct_answer": "Option A"},
                 difficulty_level=i,
                 estimated_time_sec=60,
             )
@@ -369,13 +369,13 @@ class TestQuestionEndpoints:
             "questions": [
                 {
                     "module_id": str(module.id),
-                    "content": {"text": "Question 1"},
+                    "content": {"text": "Question 1", "correct_answer": "Option A"},
                     "difficulty_level": 2,
                     "estimated_time_sec": 45,
                 },
                 {
                     "module_id": str(module.id),
-                    "content": {"text": "Question 2"},
+                    "content": {"text": "Question 2", "correct_answer": "Option B"},
                     "difficulty_level": 3,
                     "target_misconception_id": "MATH-TEST-01",
                     "estimated_time_sec": 60,
@@ -394,6 +394,41 @@ class TestQuestionEndpoints:
         assert data["imported_count"] == 2
         assert "imported_ids" in data
         assert len(data["imported_ids"]) == 2
+
+
+    async def test_create_question_missing_correct_answer_fails(
+        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession, test_org: Organization
+    ) -> None:
+        """Test creating a question without correct_answer fails validation."""
+        module = Module(
+            organization_id=test_org.id,
+            subject="Mathematics",
+            grade_level="السنة 4",
+            domain="Numbers & Operations",
+            competency_id="MATH-4-NUM-01",
+            status=ModuleStatus.PUBLISHED,
+        )
+        db.add(module)
+        await db.commit()
+
+        question_data = {
+            "module_id": str(module.id),
+            "content": {
+                "text": "Invalid Question with no answer",
+                "type": "multiple_choice",
+                "options": ["Option A", "Option B"],
+            },
+            "difficulty_level": 3,
+            "estimated_time_sec": 60,
+        }
+
+        response = await async_client.post(
+            "/api/v1/content/questions",
+            json=question_data,
+            headers=auth_headers,
+        )
+
+        assert response.status_code in (422, 400)
 
 
 class TestKnowledgeAtomEndpoints:
@@ -453,3 +488,75 @@ class TestKnowledgeAtomEndpoints:
         data = response.json()
         assert "items" in data
         assert len(data["items"]) == 3
+
+    async def test_get_knowledge_atom(
+        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession, test_org: Organization
+    ) -> None:
+        """Test getting a knowledge atom by ID."""
+        atom = KnowledgeAtom(
+            organization_id=test_org.id,
+            competency_id="MATH-4-NUM-01",
+            remediation_type=RemediationType.SIMULATION,
+            content={"title": "Interactive Fraction Bar", "description": "Drag to fill"},
+        )
+        db.add(atom)
+        await db.commit()
+        await db.refresh(atom)
+
+        response = await async_client.get(
+            f"/api/v1/content/knowledge-atoms/{atom.id}",
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == str(atom.id)
+
+    async def test_update_knowledge_atom(
+        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession, test_org: Organization
+    ) -> None:
+        """Test updating a knowledge atom."""
+        atom = KnowledgeAtom(
+            organization_id=test_org.id,
+            competency_id="MATH-4-NUM-01",
+            remediation_type=RemediationType.MIND_MAP,
+            content={"title": "Initial Mindmap", "description": "initial"},
+        )
+        db.add(atom)
+        await db.commit()
+        await db.refresh(atom)
+
+        update_data = {
+            "content": {"title": "Updated Mindmap", "description": "updated"},
+        }
+
+        response = await async_client.patch(
+            f"/api/v1/content/knowledge-atoms/{atom.id}",
+            json=update_data,
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["content"]["title"] == "Updated Mindmap"
+
+    async def test_delete_knowledge_atom(
+        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession, test_org: Organization
+    ) -> None:
+        """Test deleting a knowledge atom."""
+        atom = KnowledgeAtom(
+            organization_id=test_org.id,
+            competency_id="MATH-4-NUM-01",
+            remediation_type=RemediationType.AUDIO_VISUAL,
+            content={"title": "To delete", "description": "delete me"},
+        )
+        db.add(atom)
+        await db.commit()
+        await db.refresh(atom)
+
+        response = await async_client.delete(
+            f"/api/v1/content/knowledge-atoms/{atom.id}",
+            headers=auth_headers,
+        )
+
+        assert response.status_code == 204

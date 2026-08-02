@@ -25,7 +25,7 @@ export interface ModuleCreate {
 
 export interface QuestionContent {
   text: string
-  type: 'multiple_choice' | 'text' | 'interactive'
+  type: 'multiple_choice' | 'image_choice' | 'numeric' | 'text' | 'interactive'
   options?: string[]
   correct_answer?: string
 }
@@ -136,9 +136,23 @@ class ContentService {
     return response.data
   }
 
+  async getKnowledgeAtom(id: string): Promise<KnowledgeAtom> {
+    const response = await api.get(`/content/knowledge-atoms/${id}`)
+    return response.data
+  }
+
   async createKnowledgeAtom(data: Omit<KnowledgeAtom, 'id' | 'created_at' | 'updated_at'>): Promise<KnowledgeAtom> {
     const response = await api.post('/content/knowledge-atoms', data)
     return response.data
+  }
+
+  async updateKnowledgeAtom(id: string, data: Partial<Omit<KnowledgeAtom, 'id' | 'created_at' | 'updated_at'>>): Promise<KnowledgeAtom> {
+    const response = await api.patch(`/content/knowledge-atoms/${id}`, data)
+    return response.data
+  }
+
+  async deleteKnowledgeAtom(id: string): Promise<void> {
+    await api.delete(`/content/knowledge-atoms/${id}`)
   }
 }
 
