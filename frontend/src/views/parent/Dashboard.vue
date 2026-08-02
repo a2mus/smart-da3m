@@ -122,7 +122,7 @@ onMounted(() => {
         class="text-center py-12 text-ink-600"
       >
         <div class="text-6xl mb-4">
-          👨‍👩‍👧
+          👨‍gsub👨‍👧
         </div>
         <p class="text-lg">
           {{ t('parent.noChildren') }}

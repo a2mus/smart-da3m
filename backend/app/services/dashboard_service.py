@@ -221,7 +221,6 @@ class DashboardAggregator:
             })
 
         return insights
-
     def generate_summary_message(self, subjects: List[Dict[str, Any]]) -> str:
         """Generate qualitative summary message for parent."""
         if not subjects:
