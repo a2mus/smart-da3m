@@ -305,6 +305,51 @@ async def get_platform_metrics(
     )
 
 
+@router.get("/export")
+async def export_analytics_get(
+    format: str = Query("csv", description="Export format: csv or pdf"),
+    report_type: str = Query("heatmap", description="Report type: heatmap, remediation_card, full_report"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_expert),
+):
+    """
+    Export analytics data in PDF or CSV format via GET.
+    Delegates to AnalyticsService for real tenant-isolated export generation.
+    """
+    if format not in ("csv", "pdf"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported format: {format}",
+        )
+
+    from app.core.tenant import get_optional_active_organization_id
+    org_id = getattr(current_user, "organization_id", None) or get_optional_active_organization_id()
+    if not org_id:
+        org_id = UUID("00000000-0000-0000-0000-000000000000")
+
+    service = AnalyticsService(db)
+    try:
+        file_path = await service.export_report(
+            organization_id=org_id,
+            report_type=report_type,
+            export_format=format,
+        )
+
+        from fastapi.responses import FileResponse
+        media_type = "text/csv" if format == "csv" else "application/pdf"
+        return FileResponse(path=file_path, filename=f"{report_type}.{format}", media_type=media_type)
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Export failed: {str(e)}",
+        )
+
+
 @router.post("/export", response_model=ExportResponse)
 async def export_analytics(
     request: ExportRequest,
@@ -313,29 +358,23 @@ async def export_analytics(
 ) -> ExportResponse:
     """
     Export analytics data in PDF or CSV format.
-
-    Generates printable remediation cards or detailed reports.
+    Delegates to AnalyticsService for real tenant-isolated data export.
     """
-    exporter = ReportExporter(db)
+    from app.core.tenant import get_optional_active_organization_id
+    org_id = getattr(current_user, "organization_id", None) or get_optional_active_organization_id()
+    if not org_id:
+        org_id = UUID("00000000-0000-0000-0000-000000000000")
+
+    service = AnalyticsService(db)
 
     try:
-        if request.format == "csv":
-            file_path = await exporter.export_csv(
-                request.report_type,
-                request.filters,
-                request.student_ids,
-            )
-        elif request.format == "pdf":
-            file_path = await exporter.export_pdf(
-                request.report_type,
-                request.filters,
-                request.student_ids,
-            )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unsupported format: {request.format}",
-            )
+        file_path = await service.export_report(
+            organization_id=org_id,
+            report_type=request.report_type,
+            export_format=request.format,
+            filters=request.filters,
+            student_ids=request.student_ids,
+        )
 
         return ExportResponse(
             success=True,
@@ -345,6 +384,11 @@ async def export_analytics(
             generated_at=datetime.now(timezone.utc).isoformat(),
         )
 
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve),
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

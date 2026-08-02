@@ -38,6 +38,14 @@ export interface MetricsResponse {
   resilience_score: number
 }
 
+export interface ExportResponse {
+  success: boolean
+  file_path: string
+  format: string
+  report_type: string
+  generated_at: string
+}
+
 export const analyticsService = {
   async getHeatmap(moduleId?: string): Promise<HeatmapResponse> {
     const params = moduleId ? { module_id: moduleId } : {}
@@ -54,6 +62,19 @@ export const analyticsService = {
 
   async getMetrics(): Promise<MetricsResponse> {
     const response = await http.get<MetricsResponse>('/analytics/metrics')
+    return response.data
+  },
+
+  async exportReport(
+    format: 'pdf' | 'csv' = 'csv',
+    reportType: string = 'heatmap',
+    studentIds?: string[]
+  ): Promise<Blob | ExportResponse> {
+    const response = await http.post<ExportResponse>('/analytics/export', {
+      format,
+      report_type: reportType,
+      student_ids: studentIds,
+    })
     return response.data
   },
 }

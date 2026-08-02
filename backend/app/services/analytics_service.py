@@ -123,6 +123,40 @@ class AnalyticsService:
             group_by=group_by,
         )
 
+    async def export_report(
+        self,
+        organization_id: UUID,
+        report_type: str,
+        export_format: str,
+        filters: Optional[HeatmapFilters] = None,
+        student_ids: Optional[List[UUID]] = None,
+    ) -> str:
+        """
+        Delegate report exporting to ReportExporter with organization tenant isolation.
+        """
+        from app.core.tenant import set_active_organization_id
+        from app.services.report_exporter import ReportExporter
+
+        set_active_organization_id(organization_id)
+
+        exporter = ReportExporter(self.db)
+        if export_format == "csv":
+            return await exporter.export_csv(
+                report_type=report_type,
+                filters=filters,
+                student_ids=student_ids,
+                organization_id=organization_id,
+            )
+        elif export_format == "pdf":
+            return await exporter.export_pdf(
+                report_type=report_type,
+                filters=filters,
+                student_ids=student_ids,
+                organization_id=organization_id,
+            )
+        else:
+            raise ValueError(f"Unsupported format: {export_format}")
+
     @staticmethod
     def _mastery_to_color(mastery: MasteryLevel) -> str:
         colors = {

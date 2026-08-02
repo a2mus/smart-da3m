@@ -56,6 +56,27 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
   }
 
+  async function exportReport(format: 'pdf' | 'csv' = 'csv', reportType: string = 'heatmap') {
+    loading.value = true
+    try {
+      const res = await analyticsService.exportReport(format, reportType)
+      if ('file_path' in res && res.file_path) {
+        const a = document.createElement('a')
+        a.href = `/api/v1/analytics/export?format=${format}&report_type=${reportType}`
+        a.download = `${reportType}.${format}`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+      }
+      return res
+    } catch (err: unknown) {
+      error.value = err instanceof Error ? err.message : 'Failed to export report'
+      console.error('analyticsStore exportReport error:', err)
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     heatmapData,
     studentGroups,
@@ -68,5 +89,6 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     fetchStudentGroups,
     toggleAutoGroupsOverlay,
     fetchMetrics,
+    exportReport,
   }
 })
