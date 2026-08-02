@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAnalyticsStore } from '@/stores/analyticsStore'
 import type { HeatmapResponse, HeatmapCell } from '@/services/analyticsService'
 
 const { t } = useI18n()
+const analyticsStore = useAnalyticsStore()
 
 const props = defineProps<{
-  data: HeatmapResponse | null
+  data?: HeatmapResponse | null
   loading?: boolean
+  moduleId?: string
 }>()
 
 const emit = defineEmits<{
@@ -15,11 +18,20 @@ const emit = defineEmits<{
   (e: 'student-click', studentId: string): void
 }>()
 
+onMounted(() => {
+  if (!props.data && !analyticsStore.heatmapData) {
+    analyticsStore.fetchHeatmap(props.moduleId)
+  }
+})
+
+const currentData = computed(() => props.data ?? analyticsStore.heatmapData)
+const isLoading = computed(() => props.loading ?? analyticsStore.loading)
+
 // Build a matrix of cells for the heatmap
 const heatmapMatrix = computed(() => {
-  if (!props.data) return []
+  if (!currentData.value) return []
 
-  const { students, competencies, cells } = props.data
+  const { students, competencies, cells } = currentData.value
   const matrix: Array<{
     student: { id: string; name: string; grade_level: string }
     cells: Array<HeatmapCell | null>
@@ -40,27 +52,26 @@ const heatmapMatrix = computed(() => {
 })
 
 const getMasteryLabel = (masteryLevel?: string) => {
-  if (!masteryLevel) return t('analytics.noData')
-  return t(`mastery.${masteryLevel.toLowerCase()}`)
+  if (!masteryLevel) return t('analytics.noData', 'لا توجد بيانات')
+  return t(`mastery.${masteryLevel.toLowerCase()}`, masteryLevel)
 }
 
 const getCellBgColor = (masteryLevel: string) => {
   switch (masteryLevel.toUpperCase()) {
     case 'MASTERED':
-      return '#86efac'
     case 'PROFICIENT':
-      return '#d1fae5'
+      return '#86efac' // Green
     case 'FAMILIAR':
-      return '#fef9c3'
+      return '#fef9c3' // Yellow
     case 'ATTEMPTED':
-      return '#fef3c7'
+    case 'NOT_STARTED':
     default:
-      return '#fee2e2'
+      return '#fee2e2' // Red
   }
 }
 
 const getCellTooltip = (cell: HeatmapCell | null) => {
-  if (!cell) return t('analytics.noData')
+  if (!cell) return t('analytics.noData', 'لا توجد بيانات')
   return `${getMasteryLabel(cell.mastery_level)} (${Math.round(cell.score)}%)`
 }
 </script>
@@ -69,7 +80,7 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
   <div class="competency-heatmap">
     <!-- Loading State -->
     <div
-      v-if="loading"
+      v-if="isLoading"
       class="flex items-center justify-center py-12"
     >
       <div class="animate-spin w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full" />
@@ -77,14 +88,14 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
 
     <!-- Empty State -->
     <div
-      v-else-if="!data || data.students.length === 0"
+      v-else-if="!currentData || currentData.students.length === 0"
       class="text-center py-12 text-ink-600"
     >
       <p class="text-lg">
-        {{ t('analytics.noDataAvailable') }}
+        {{ t('analytics.noDataAvailable', 'لا توجد بيانات متاحة حالياً') }}
       </p>
       <p class="text-sm mt-1">
-        {{ t('analytics.selectFilters') }}
+        {{ t('analytics.selectFilters', 'اختر وحدة دراسية لعرض الخريطة الحرارية') }}
       </p>
     </div>
 
@@ -98,11 +109,11 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
         <div class="flex border-b-2 border-ink-200">
           <!-- Student Name Header -->
           <div class="w-40 flex-shrink-0 p-3 font-semibold text-ink-700 bg-ink-50 sticky start-0 z-10">
-            {{ t('analytics.student') }}
+            {{ t('analytics.student', 'التلميذ') }}
           </div>
           <!-- Competency Headers -->
           <div
-            v-for="competency in data.competencies"
+            v-for="competency in currentData.competencies"
             :key="competency"
             class="w-24 flex-shrink-0 p-3 text-center text-xs font-medium text-ink-700 bg-ink-50 border-s border-ink-200"
             :title="competency"
@@ -133,7 +144,7 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
           <!-- Competency Cells -->
           <div
             v-for="(cell, index) in row.cells"
-            :key="`${row.student.id}-${data.competencies[index]}`"
+            :key="`${row.student.id}-${currentData.competencies[index]}`"
             class="w-24 flex-shrink-0 p-2 border-s border-ink-100"
           >
             <div
@@ -161,44 +172,30 @@ const getCellTooltip = (cell: HeatmapCell | null) => {
 
     <!-- Legend -->
     <div
-      v-if="data && data.students.length > 0"
+      v-if="currentData && currentData.students.length > 0"
       class="mt-6 flex flex-wrap items-center gap-4 text-sm"
     >
-      <span class="font-medium text-ink-700">{{ t('analytics.legend') }}:</span>
+      <span class="font-medium text-ink-700">{{ t('analytics.legend', 'مفتاح الخريطة') }}:</span>
       <div class="flex items-center gap-2">
         <div
           class="w-4 h-4 rounded"
           style="background-color: #86efac;"
         />
-        <span class="text-ink-600">{{ t('mastery.mastered') }}</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <div
-          class="w-4 h-4 rounded"
-          style="background-color: #d1fae5;"
-        />
-        <span class="text-ink-600">{{ t('mastery.proficient') }}</span>
+        <span class="text-ink-600">{{ t('mastery.mastered', 'متقن') }} / {{ t('mastery.proficient', 'متمكن') }}</span>
       </div>
       <div class="flex items-center gap-2">
         <div
           class="w-4 h-4 rounded"
           style="background-color: #fef9c3;"
         />
-        <span class="text-ink-600">{{ t('mastery.familiar') }}</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <div
-          class="w-4 h-4 rounded"
-          style="background-color: #fef3c7;"
-        />
-        <span class="text-ink-600">{{ t('mastery.attempted') }}</span>
+        <span class="text-ink-600">{{ t('mastery.familiar', 'مكتسب جزئياً') }}</span>
       </div>
       <div class="flex items-center gap-2">
         <div
           class="w-4 h-4 rounded"
           style="background-color: #fee2e2;"
         />
-        <span class="text-ink-600">{{ t('mastery.not_started') }}</span>
+        <span class="text-ink-600">{{ t('mastery.not_started', 'غير مكتسب') }} / {{ t('mastery.attempted', 'في طور الإكتساب') }}</span>
       </div>
     </div>
   </div>

@@ -31,95 +31,47 @@ from app.schemas.analytics import (
     MetricResponse,
     StudentCompetencyRow,
 )
+from app.services.analytics_service import AnalyticsService
 from app.services.report_exporter import ReportExporter
 
 router = APIRouter()
 
 
+@router.get("/heatmap", response_model=HeatmapResponse)
+async def get_competency_heatmap_get(
+    module_id: Optional[UUID] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_expert),
+) -> HeatmapResponse:
+    """
+    Get competency heatmap data for expert analytics via GET.
+    Delegates to AnalyticsService for real tenant-isolated data.
+    """
+    from app.core.tenant import get_optional_active_organization_id
+    org_id = getattr(current_user, "organization_id", None) or get_optional_active_organization_id()
+    if not org_id:
+        org_id = UUID("00000000-0000-0000-0000-000000000000")
+    service = AnalyticsService(db)
+    return await service.get_heatmap(organization_id=org_id, module_id=module_id)
+
+
 @router.post("/heatmap", response_model=HeatmapResponse)
 async def get_competency_heatmap(
     filters: HeatmapFilters,
+    module_id: Optional[UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_expert),
 ) -> HeatmapResponse:
     """
     Get competency heatmap data for expert analytics.
-
-    Returns a matrix of students × competencies with mastery levels
-    color-coded for quick visual assessment.
+    Delegates to AnalyticsService for real tenant-isolated data.
     """
-    # Build base query for students
-    student_query = select(User).where(User.role == UserRole.STUDENT)
-
-    # Apply filters
-    if filters.student_ids:
-        student_query = student_query.where(User.id.in_(filters.student_ids))
-
-    result = await db.execute(student_query)
-    students = list(result.scalars().all())
-
-    if not students:
-        return HeatmapResponse(
-            students=[],
-            competencies=[],
-            cells=[],
-            total_students=0,
-            total_competencies=0,
-        )
-
-    student_ids = [s.id for s in students]
-
-    # Get all competency profiles for these students
-    profile_query = select(CompetencyProfile).where(
-        CompetencyProfile.student_id.in_(student_ids)
-    )
-
-    if filters.competency_ids:
-        profile_query = profile_query.where(
-            CompetencyProfile.competency_id.in_(filters.competency_ids)
-        )
-
-    result = await db.execute(profile_query)
-    profiles = list(result.scalars().all())
-
-    # Extract unique competencies
-    competency_ids = sorted(set(p.competency_id for p in profiles))
-
-    # Build heatmap cells
-    cells: List[HeatmapCell] = []
-    for profile in profiles:
-        # Determine color based on mastery level
-        color = _mastery_to_color(profile.mastery_level)
-        score = _mastery_to_score(profile.mastery_level)
-
-        cells.append(
-            HeatmapCell(
-                student_id=profile.student_id,
-                competency_id=profile.competency_id,
-                mastery_level=profile.mastery_level.value,
-                p_learned=round(profile.p_learned, 2),
-                color=color,
-                score=score,
-            )
-        )
-
-    # Build student rows
-    student_rows = [
-        StudentCompetencyRow(
-            id=s.id,
-            name=f"Student {str(s.id)[:8]}",  # Placeholder
-            grade_level="Grade 4",  # Would come from profile
-        )
-        for s in students
-    ]
-
-    return HeatmapResponse(
-        students=student_rows,
-        competencies=competency_ids,
-        cells=cells,
-        total_students=len(students),
-        total_competencies=len(competency_ids),
-    )
+    from app.core.tenant import get_optional_active_organization_id
+    org_id = getattr(current_user, "organization_id", None) or get_optional_active_organization_id()
+    if not org_id:
+        org_id = UUID("00000000-0000-0000-0000-000000000000")
+    service = AnalyticsService(db)
+    return await service.get_heatmap(organization_id=org_id, module_id=module_id)
 
 
 def _mastery_to_color(mastery: MasteryLevel) -> str:
