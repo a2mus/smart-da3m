@@ -56,30 +56,30 @@ trigger = "recommended"
 # opencode-http drives `opencode serve` over HTTP/SSE (hookless SSE transport;
 # no permission-bypass flags needed — extra_args stays empty).
 #
-# Available providers (confirmed via API enumeration 2026-07-30):
-#   zai-coding-plan : glm-5.2, glm-5.1, glm-5, glm-5-turbo, glm-4.7, glm-4.6, glm-4.5
-#   nvidia          : nvidia/llama-3.1-nemotron-ultra-253b-v1,
-#                     nvidia/llama-3.3-nemotron-super-49b-v1.5,
-#                     deepseek-ai/deepseek-v4-pro, deepseek-ai/deepseek-v4-flash,
-#                     moonshotai/kimi-k2.6, meta/llama-3.3-70b-instruct
-#   antigravity-manager : claude-sonnet-4-6-thinking, claude-sonnet-4-6,
-#                         gemini-3.1-pro-high, gemini-3.6-flash-high, gemini-2.5-flash
-#   api-keys-fun    : claude-opus-4-8 (EXPENSIVE — emergency only, balance depleted)
+# Primary Provider: antigravity-manager (Local Proxy)
+# NIM Fallback Options (NVIDIA NIM — Rate Limit Risk):
+#   - Best Overall Balance (Coding + Reasoning): nvidia/deepseek-ai/deepseek-v4-pro
+#   - Best Fast Alternative: nvidia/deepseek-ai/deepseek-v4-flash
+#   - Best Pure Coding Focus: nvidia/qwen/qwen3-coder-480b-a35b-instruct
+#   - Best Heavyweight Reasoning: nvidia/mistralai/mistral-large-3-675b-instruct-2512
+#   - Best NVIDIA-Native Reasoning: nvidia/nvidia/llama-3.1-nemotron-ultra-253b-v1
 #
 # FALLBACK STRATEGY (swap model = line when quota/rate-limit hit):
 #   DEV     primary  : antigravity-manager/gemini-3.6-flash-high
-#           fallback1: nvidia/llama-3.1-nemotron-ultra-253b-v1
-#           fallback2: zai-coding-plan/glm-5.2
+#           fallback1: antigravity-manager/claude-sonnet-4-6
+#           fallback2: nvidia/deepseek-ai/deepseek-v4-pro (NIM Best Balance)
+#           fallback3: nvidia/qwen/qwen3-coder-480b-a35b-instruct (NIM Pure Coding)
 #   REVIEW  primary  : antigravity-manager/gemini-3.6-flash-high
-#           fallback1: nvidia/deepseek-ai/deepseek-v4-pro
-#           fallback2: zai-coding-plan/glm-5.1
+#           fallback1: antigravity-manager/claude-opus-4-6-thinking
+#           fallback2: nvidia/mistralai/mistral-large-3-675b-instruct-2512 (NIM Heavy Reasoning)
 #   TRIAGE  primary  : antigravity-manager/gemini-3.6-flash-high
-#           fallback1: nvidia/deepseek-ai/deepseek-v4-pro
-#           fallback2: zai-coding-plan/glm-5-turbo
+#           fallback1: antigravity-manager/claude-sonnet-4-6
+#           fallback2: nvidia/nvidia/llama-3.1-nemotron-ultra-253b-v1 (NIM Native Reasoning)
 name = "opencode-http"      # claude | codex | gemini | opencode-http | <custom .bmad-loop/profiles/*.toml>
 model = "antigravity-manager/gemini-3.6-flash-high"  # DEV — primary
-# model = "nvidia/llama-3.1-nemotron-ultra-253b-v1"  # DEV — fallback1
-# model = "zai-coding-plan/glm-5.2"                 # DEV — fallback2 (rate-limited)
+# model = "antigravity-manager/claude-sonnet-4-6"    # DEV — fallback1
+# model = "nvidia/deepseek-ai/deepseek-v4-pro"        # DEV — fallback2 (NIM Best Balance)
+# model = "nvidia/qwen/qwen3-coder-480b-a35b-instruct"# DEV — fallback3 (NIM Pure Coding)
 cleanup_session_on_finish = true  # kill the run's tmux session when it finishes (false keeps it for inspection)
 
 # Per-stage overrides for the dev, review and sweep-triage passes. Unset keys
@@ -89,13 +89,13 @@ cleanup_session_on_finish = true  # kill the run's tmux session when it finishes
 # keys above.
 [adapter.review]
 model = "antigravity-manager/gemini-3.6-flash-high"  # REVIEW — primary (1M ctx, deep reasoning)
-# model = "nvidia/deepseek-ai/deepseek-v4-pro"     # REVIEW — fallback1
-# model = "zai-coding-plan/glm-5.1"                # REVIEW — fallback2
+# model = "antigravity-manager/claude-opus-4-6-thinking" # REVIEW — fallback1
+# model = "nvidia/mistralai/mistral-large-3-675b-instruct-2512" # REVIEW — fallback2 (NIM Heavy Reasoning)
 
 [adapter.triage]
 model = "antigravity-manager/gemini-3.6-flash-high" # TRIAGE — primary
-# model = "nvidia/deepseek-ai/deepseek-v4-pro"        # TRIAGE — fallback1
-# model = "zai-coding-plan/glm-5-turbo"              # TRIAGE — fallback2
+# model = "antigravity-manager/claude-sonnet-4-6"    # TRIAGE — fallback1
+# model = "nvidia/nvidia/llama-3.1-nemotron-ultra-253b-v1" # TRIAGE — fallback2 (NIM Native Reasoning)
 
 [sweep]
 # Deferred-work sweep: triage + execute open deferred-work.md entries.
