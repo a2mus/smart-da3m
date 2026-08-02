@@ -114,6 +114,113 @@ class DashboardAggregator:
         activities.sort(key=lambda x: x["timestamp"], reverse=True)
         return activities[:limit]
 
+    def generate_insights(self, mastery_profiles: List[Any]) -> List[Dict[str, Any]]:
+        """
+        Generate plain-language smart insights from student competency profiles (zero raw scores).
+
+        Returns structured insight items referencing human-readable competency names,
+        qualitative mastery levels, and non-numeric descriptive text.
+        """
+        if not mastery_profiles:
+            return [{
+                "id": "insight-default",
+                "type": "GENERAL",
+                "text": "Child hasn't completed any assessments yet.",
+                "competency_id": None,
+                "competency_name": None,
+                "mastery_level": "NOT_STARTED",
+            }]
+
+        insights = []
+
+        def extract_info(item):
+            if isinstance(item, dict):
+                c_id = item.get("competency_id") or item.get("competencyId") or "UNKNOWN"
+                m_level = item.get("mastery_level") or item.get("masteryLevel") or "NOT_STARTED"
+            else:
+                c_id = getattr(item, "competency_id", "UNKNOWN")
+                m_level = getattr(item, "mastery_level", "NOT_STARTED")
+                if hasattr(m_level, "value"):
+                    m_level = m_level.value
+            return str(c_id), str(m_level).upper()
+
+        COMPETENCY_NAMES = {
+            "ARAB_TAA_MARBUTA": "تاء مربوطة (Taa Marbuta)",
+            "ARAB_ORAL_EXPR": "التعبير الشفهي (Oral Expression)",
+            "ARAB_READING_COMP": "القراءة والفهم (Reading Comprehension)",
+            "ARAB_VOCABULARY": "المفردات والتراكيب (Vocabulary)",
+            "MATH_ADDITION": "الجمع والطرح (Addition & Subtraction)",
+            "MATH_MULTIPLICATION": "الضرب والقسمة (Multiplication & Division)",
+            "MATH_GEOMETRY": "الأشكال الهندسية (Geometry & Shapes)",
+            "MATH_FRACTIONS": "الكسور (Fractions)",
+            "FREN_GRAMMAR": "Grammaire française (French Grammar)",
+            "FREN_VOCAB": "Vocabulaire (French Vocabulary)",
+            "SCI_LIVING_THINGS": "الكائنات الحية (Living Things)",
+            "SCI_PHYSICAL": "الظواهر الفيزيائية (Physical Phenomena)",
+        }
+
+        def get_competency_name(cid: str) -> str:
+            if cid in COMPETENCY_NAMES:
+                return COMPETENCY_NAMES[cid]
+            return cid.replace("_", " ").title()
+
+        strengths = []
+        gaps = []
+        in_progress = []
+
+        for item in mastery_profiles:
+            cid, mlevel = extract_info(item)
+            cname = get_competency_name(cid)
+
+            if mlevel in ["MASTERED", "PROFICIENT"]:
+                strengths.append((cid, cname, mlevel))
+            elif mlevel in ["ATTEMPTED", "NOT_STARTED"]:
+                gaps.append((cid, cname, mlevel))
+            elif mlevel == "FAMILIAR":
+                in_progress.append((cid, cname, mlevel))
+
+        for idx, (cid, cname, mlevel) in enumerate(strengths[:2]):
+            insights.append({
+                "id": f"insight-strength-{idx}",
+                "type": "STRENGTH",
+                "text": f"Child demonstrates strong concept mastery in {cname}.",
+                "competency_id": cid,
+                "competency_name": cname,
+                "mastery_level": mlevel,
+            })
+
+        for idx, (cid, cname, mlevel) in enumerate(gaps[:2]):
+            insights.append({
+                "id": f"insight-gap-{idx}",
+                "type": "GAP",
+                "text": f"Child needs targeted practice in {cname} to build confidence.",
+                "competency_id": cid,
+                "competency_name": cname,
+                "mastery_level": mlevel,
+            })
+
+        if in_progress:
+            cid, cname, mlevel = in_progress[0]
+            insights.append({
+                "id": "insight-progress-0",
+                "type": "PROGRESS",
+                "text": f"Child is steadily building familiarity with {cname}.",
+                "competency_id": cid,
+                "competency_name": cname,
+                "mastery_level": mlevel,
+            })
+
+        if not insights:
+            insights.append({
+                "id": "insight-general-0",
+                "type": "GENERAL",
+                "text": "Child is making steady qualitative progress across all competencies.",
+                "competency_id": None,
+                "competency_name": None,
+                "mastery_level": "FAMILIAR",
+            })
+
+        return insights
     def generate_summary_message(self, subjects: List[Dict[str, Any]]) -> str:
         """Generate qualitative summary message for parent."""
         if not subjects:
@@ -243,6 +350,8 @@ class DashboardAggregator:
 
         subjects = await self.get_child_subjects(student_id)
         activities = await self.get_recent_activities(student_id)
+        profiles = await self.repo.get_child_competency_profiles(student_id)
+        insights = self.generate_insights(profiles if profiles else subjects)
         summary = self.generate_summary_message(subjects)
         recommendations = self.generate_recommendations(subjects)
         try:
@@ -263,6 +372,7 @@ class DashboardAggregator:
             "subjects": subjects,
             "recent_activities": activities,
             "summary": summary,
+            "insights": insights,
             "recommendations": recommendations,
             "daily_recommendation": daily_recommendation,
             "overall_progress": round(avg_score, 1),

@@ -36,6 +36,18 @@ export interface Recommendation {
   competencyId?: string
 }
 
+export interface InsightMessage {
+  id: string
+  type: 'STRENGTH' | 'GAP' | 'PROGRESS' | 'GENERAL' | string
+  text: string
+  competencyId?: string
+  competency_id?: string
+  competencyName?: string
+  competency_name?: string
+  masteryLevel?: string
+  mastery_level?: string
+}
+
 export interface Activity {
   type: string
   title: string
@@ -49,6 +61,7 @@ export interface ChildDashboardData {
   overallProgress?: number
   overall_progress?: number
   subjects: SubjectData[]
+  insights?: InsightMessage[]
   recommendations: Recommendation[]
   daily_recommendation?: Recommendation
   dailyRecommendation?: Recommendation
@@ -108,6 +121,7 @@ export const dashboardService = {
       dailyRecommendation: dailyRec,
       recent_activities: data.recentActivities || data.recent_activities || [],
       recentActivities: data.recentActivities || data.recent_activities || [],
+      insights: data.insights || [],
       subjects: (data.subjects || []).map((s) => ({
         ...s,
         competency_id: s.competencyId || s.competency_id || '',
