@@ -351,6 +351,26 @@ const togglePreview = () => {
             {{ option || t('expert.emptyOption') }}
           </div>
         </div>
+
+        <div
+          v-else-if="form.content.type === 'image_choice'"
+          class="grid grid-cols-2 gap-4"
+        >
+          <div
+            v-for="(option, index) in optionsList"
+            :key="index"
+            class="p-3 rounded-lg border-2 border-outline-variant hover:border-primary flex flex-col items-center justify-center bg-surface-bright"
+          >
+            <img
+              v-if="option"
+              :src="option"
+              :alt="`Option ${index + 1}`"
+              class="max-h-24 object-contain rounded-md mb-2"
+              @error="($event.target as HTMLImageElement).src = '/placeholder-image.png'"
+            >
+            <span class="text-xs text-on-surface-variant">{{ option || t('expert.emptyOption') }}</span>
+          </div>
+        </div>
       </div>
 
       <!-- Actions -->

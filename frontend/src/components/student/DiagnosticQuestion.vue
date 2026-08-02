@@ -6,7 +6,7 @@ export interface QuestionData {
   text: string
   difficulty_level: number
   options?: string[]
-  type: 'multiple_choice' | 'numeric'
+  type: 'multiple_choice' | 'image_choice' | 'numeric'
 }
 
 const props = defineProps<{
@@ -61,9 +61,32 @@ const difficultyLabel = computed(() => {
       </button>
     </div>
 
+    <!-- Image choice options -->
+    <div
+      v-else-if="question.type === 'image_choice' && question.options"
+      class="grid grid-cols-2 gap-4"
+    >
+      <button
+        v-for="(option, i) in question.options"
+        :key="i"
+        class="bg-surface-container-lowest border-2 border-outline-variant hover:border-primary
+               rounded-2xl p-4 flex flex-col items-center justify-center
+               hover:bg-primary/5 active:scale-[0.98] transition-all duration-200"
+        @click="emit('answer', i)"
+      >
+        <img
+          :src="option"
+          :alt="`Option ${i + 1}`"
+          class="max-h-32 object-contain rounded-lg mb-2"
+          @error="($event.target as HTMLImageElement).src = '/placeholder-image.png'"
+        >
+        <span class="text-sm font-medium text-on-surface-variant">خيار {{ i + 1 }}</span>
+      </button>
+    </div>
+
     <!-- Numeric input -->
     <div
-      v-else
+      v-else-if="question.type === 'numeric'"
       class="text-center"
     >
       <input
