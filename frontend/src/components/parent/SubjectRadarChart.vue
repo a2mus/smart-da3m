@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  subjects: { name: string; score: number; competency_id: string }[]
+  subjects: { name: string; score: number; competency_id?: string; competencyId?: string }[]
 }>()
 </script>
 
@@ -18,7 +18,7 @@ defineProps<{
     >
       <div
         v-for="s in subjects"
-        :key="s.competency_id"
+        :key="s.competency_id || s.competencyId || s.name"
         class="flex items-center gap-3"
       >
         <span class="w-24 text-sm font-medium text-ink-700 truncate text-end">{{ s.name }}</span>

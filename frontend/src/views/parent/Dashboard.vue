@@ -1,52 +1,25 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppHeader from '@/components/common/AppHeader.vue'
-import { dashboardService, type ChildDashboardData, type ChildSummary } from '@/services/dashboardService'
 import SubjectRadarChart from '@/components/parent/SubjectRadarChart.vue'
 import InsightCard from '@/components/parent/InsightCard.vue'
+import { useDashboardStore } from '@/stores/dashboardStore'
 
 const { t } = useI18n()
+const dashboardStore = useDashboardStore()
 
-const children = ref<ChildSummary[]>([])
-const selectedChildId = ref<string>('')
-const childData = ref<ChildDashboardData | null>(null)
-const loading = ref(true)
-const error = ref<string | null>(null)
+const children = computed(() => dashboardStore.children)
+const selectedChildId = computed(() => dashboardStore.selectedChildId)
+const childData = computed(() => dashboardStore.currentChildData)
+const loading = computed(() => dashboardStore.loading)
+const error = computed(() => dashboardStore.error)
 
-const fetchChildren = async () => {
-  try {
-    children.value = await dashboardService.getChildrenList()
-    if (children.value.length > 0 && !selectedChildId.value) {
-      selectedChildId.value = children.value[0].child_id
-      await fetchChildData()
-    }
-  } catch (err) {
-    error.value = t('errors.fetchFailed')
-    console.error('Failed to fetch children:', err)
-  }
+const selectChild = (childId: string) => {
+  dashboardStore.selectChild(childId)
 }
 
-const fetchChildData = async () => {
-  if (!selectedChildId.value) return
-  loading.value = true
-  error.value = null
-  try {
-    childData.value = await dashboardService.getChildDetails(selectedChildId.value)
-  } catch (err) {
-    error.value = t('errors.fetchFailed')
-    console.error('Failed to fetch child data:', err)
-  } finally {
-    loading.value = false
-  }
-}
-
-const selectChild = async (childId: string) => {
-  selectedChildId.value = childId
-  await fetchChildData()
-}
-
-const getMasteryColor = (level: string) => {
+const getMasteryColor = (level?: string) => {
   switch (level) {
     case 'MASTERED': return 'bg-mint-500'
     case 'PROFICIENT': return 'bg-teal-500'
@@ -71,14 +44,16 @@ const formatRelativeTime = (timestamp: string) => {
   const now = new Date()
   const diff = now.getTime() - date.getTime()
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  
+
   if (days === 0) return t('time.today')
   if (days === 1) return t('time.yesterday')
   if (days < 7) return t('time.daysAgo', { days })
   return date.toLocaleDateString()
 }
 
-onMounted(fetchChildren)
+onMounted(() => {
+  dashboardStore.fetchChildren()
+})
 </script>
 
 <template>
@@ -90,7 +65,7 @@ onMounted(fetchChildren)
         <h1 class="text-xl font-bold text-teal-700">
           {{ t('parent.dashboard') }}
         </h1>
-        
+
         <!-- Child Selector -->
         <div
           v-if="children.length > 1"
@@ -98,21 +73,21 @@ onMounted(fetchChildren)
         >
           <button
             v-for="child in children"
-            :key="child.child_id"
+            :key="child.childId || child.child_id"
             :class="[
               'flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-colors',
-              selectedChildId === child.child_id
+              selectedChildId === (child.childId || child.child_id)
                 ? 'bg-teal-500 text-on-primary'
                 : 'bg-ink-100 text-ink-700 hover:bg-ink-200'
             ]"
-            @click="selectChild(child.child_id)"
+            @click="selectChild(child.childId || child.child_id || '')"
           >
             <span class="w-8 h-8 bg-surface/20 rounded-full flex items-center justify-center text-sm">
               {{ child.name.charAt(0) }}
             </span>
             <span class="text-sm font-medium">{{ child.name }}</span>
             <span
-              v-if="child.needs_attention"
+              v-if="child.needsAttention || child.needs_attention"
               class="w-2 h-2 bg-rose-500 rounded-full"
             />
           </button>
@@ -167,18 +142,20 @@ onMounted(fetchChildren)
           <p class="text-ink-600 text-sm leading-relaxed">
             {{ childData.summary }}
           </p>
-          
+
           <!-- Overall Progress -->
           <div class="mt-4 flex items-center gap-3">
             <div class="flex-1">
               <div class="flex justify-between text-sm mb-1">
                 <span class="text-ink-600">{{ t('parent.overallProgress') }}</span>
-                <span class="font-semibold text-teal-600">{{ Math.round(childData.overall_progress) }}%</span>
+                <span class="font-semibold text-teal-600">
+                  {{ Math.round(childData.overallProgress ?? childData.overall_progress ?? 0) }}%
+                </span>
               </div>
               <div class="h-2 bg-ink-200 rounded-full overflow-hidden">
-                <div 
+                <div
                   class="h-full bg-teal-500 rounded-full transition-all duration-500"
-                  :style="{ width: `${childData.overall_progress}%` }"
+                  :style="{ width: `${childData.overallProgress ?? childData.overall_progress ?? 0}%` }"
                 />
               </div>
             </div>
@@ -190,7 +167,7 @@ onMounted(fetchChildren)
           <h3 class="text-lg font-bold text-ink-800 mb-4">
             {{ t('parent.subjectBalance') }}
           </h3>
-          <SubjectRadarChart 
+          <SubjectRadarChart
             :subjects="childData.subjects"
             class="w-full"
           />
@@ -204,11 +181,11 @@ onMounted(fetchChildren)
           <div class="space-y-3">
             <div
               v-for="subject in childData.subjects"
-              :key="subject.competency_id"
+              :key="subject.competencyId || subject.competency_id"
               class="flex items-center gap-3 p-3 bg-ink-50 rounded-xl"
             >
-              <div 
-                :class="['w-3 h-3 rounded-full', getMasteryColor(subject.mastery_level)]"
+              <div
+                :class="['w-3 h-3 rounded-full', getMasteryColor(subject.masteryLevel || subject.mastery_level)]"
               />
               <div class="flex-1">
                 <div class="flex justify-between items-center">
@@ -216,7 +193,7 @@ onMounted(fetchChildren)
                   <span class="text-sm text-ink-600">{{ subject.score }}%</span>
                 </div>
                 <div class="text-xs text-ink-500 capitalize">
-                  {{ t(`mastery.${subject.mastery_level.toLowerCase()}`) }}
+                  {{ t(`mastery.${(subject.masteryLevel || subject.mastery_level || '').toLowerCase()}`) }}
                 </div>
               </div>
             </div>
@@ -225,7 +202,7 @@ onMounted(fetchChildren)
 
         <!-- Recommendations -->
         <div
-          v-if="childData.recommendations.length > 0"
+          v-if="childData.recommendations && childData.recommendations.length > 0"
           class="bg-surface rounded-2xl p-5 shadow-soft"
         >
           <h3 class="text-lg font-bold text-ink-800 mb-4">
@@ -245,7 +222,7 @@ onMounted(fetchChildren)
 
         <!-- Recent Activities -->
         <div
-          v-if="childData.recent_activities.length > 0"
+          v-if="(childData.recentActivities || childData.recent_activities || []).length > 0"
           class="bg-surface rounded-2xl p-5 shadow-soft"
         >
           <h3 class="text-lg font-bold text-ink-800 mb-4">
@@ -253,7 +230,7 @@ onMounted(fetchChildren)
           </h3>
           <div class="grid grid-cols-2 gap-3">
             <div
-              v-for="activity in childData.recent_activities.slice(0, 4)"
+              v-for="activity in (childData.recentActivities || childData.recent_activities || []).slice(0, 4)"
               :key="activity.timestamp"
               class="p-3 bg-ink-50 rounded-xl"
             >

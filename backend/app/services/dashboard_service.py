@@ -1,27 +1,22 @@
 """
 Dashboard service for aggregating parent dashboard data.
-Pulls data from diagnostic, remediation, and competency sources.
+Pulls data from diagnostic, remediation, and competency sources via DashboardRepo.
 """
 
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.content import Module
-from app.models.diagnostic import (
-    CompetencyProfile,
-    DiagnosticSession,
-    MasteryLevel,
-)
-from app.models.remediation import RemediationPath
-from app.models.user import User, UserRole
+from app.models.diagnostic import MasteryLevel
+from app.models.user import User
+from app.repositories.dashboard_repo import DashboardRepo
 
 
 class DashboardAggregator:
     """
-    Aggregates dashboard data for parents.
+    Aggregates dashboard data for parents using DashboardRepo.
 
     Pulls together:
     - Child profiles and progress
@@ -30,41 +25,27 @@ class DashboardAggregator:
     - Smart recommendations
     """
 
-    def __init__(self, db: AsyncSession):
+    def __init__(
+        self,
+        db: AsyncSession,
+        tenant_id: Optional[UUID] = None,
+        repo: Optional[DashboardRepo] = None,
+    ):
         self.db = db
+        self.tenant_id = tenant_id
+        self.repo = repo or DashboardRepo(db, tenant_id=tenant_id)
 
-    async def get_children_for_parent(
-        self, parent_id: UUID
-    ) -> List[User]:
+    async def get_children_for_parent(self, parent_id: UUID) -> List[User]:
         """Get all children for a parent."""
-        result = await self.db.execute(
-            select(User).where(
-                User.parent_id == parent_id,
-                User.role == UserRole.STUDENT,
-            )
-        )
-        return list(result.scalars().all())
+        return await self.repo.get_children_for_parent(parent_id)
 
-    async def get_child_subjects(
-        self, student_id: UUID
-    ) -> List[Dict[str, Any]]:
+    async def get_child_subjects(self, student_id: UUID) -> List[Dict[str, Any]]:
         """Get subject competency data for a child."""
-        result = await self.db.execute(
-            select(CompetencyProfile).where(
-                CompetencyProfile.student_id == student_id
-            )
-        )
-        profiles = result.scalars().all()
+        profiles = await self.repo.get_child_competency_profiles(student_id)
 
         subjects = []
         for profile in profiles:
-            # Map competency_id to subject name
-            # In production, this would query a subject/competency mapping table
-            subject_name = self._map_competency_to_subject(
-                profile.competency_id
-            )
-
-            # Convert mastery level to score (0-100)
+            subject_name = self._map_competency_to_subject(profile.competency_id)
             score = self._mastery_to_score(profile.mastery_level)
 
             subjects.append({
@@ -81,7 +62,6 @@ class DashboardAggregator:
 
     def _map_competency_to_subject(self, competency_id: str) -> str:
         """Map a competency ID to a human-readable subject name."""
-        # Simple mapping - in production would use database lookup
         if "MATH" in competency_id:
             return "Mathematics"
         elif "ARAB" in competency_id:
@@ -110,59 +90,38 @@ class DashboardAggregator:
         """Get recent learning activities for a child."""
         activities = []
 
-        # Get recent diagnostic sessions
-        result = await self.db.execute(
-            select(DiagnosticSession)
-            .where(DiagnosticSession.student_id == student_id)
-            .order_by(DiagnosticSession.started_at.desc())
-            .limit(limit)
-        )
-        sessions = result.scalars().all()
-
+        sessions = await self.repo.get_recent_diagnostic_sessions(student_id, limit=limit)
         for session in sessions:
             activities.append({
                 "type": "DIAGNOSTIC",
-                "title": f"Completed diagnostic assessment",
+                "title": "Completed diagnostic assessment",
                 "timestamp": session.completed_at.isoformat()
                 if session.completed_at
                 else session.started_at.isoformat(),
                 "status": "completed" if session.completed_at else "in_progress",
             })
 
-        # Get recent remediation paths
-        result = await self.db.execute(
-            select(RemediationPath)
-            .where(RemediationPath.student_id == student_id)
-            .order_by(RemediationPath.started_at.desc())
-            .limit(limit)
-        )
-        paths = result.scalars().all()
-
+        paths = await self.repo.get_recent_remediation_paths(student_id, limit=limit)
         for path in paths:
             if path.atoms_completed and len(path.atoms_completed) > 0:
                 activities.append({
                     "type": "REMEDIATION",
-                    "title": f"Learning activity completed",
+                    "title": "Learning activity completed",
                     "timestamp": path.started_at.isoformat(),
                     "progress": len(path.atoms_completed),
                 })
 
-        # Sort by timestamp descending
         activities.sort(key=lambda x: x["timestamp"], reverse=True)
         return activities[:limit]
 
-    def generate_summary_message(
-        self, subjects: List[Dict[str, Any]]
-    ) -> str:
+    def generate_summary_message(self, subjects: List[Dict[str, Any]]) -> str:
         """Generate qualitative summary message for parent."""
         if not subjects:
             return "Your child hasn't started any assessments yet."
 
-        # Find strongest and weakest subjects
         strongest = max(subjects, key=lambda x: x["score"])
         weakest = min(subjects, key=lambda x: x["score"])
 
-        # Generate appropriate message
         if strongest["score"] >= 80 and weakest["score"] >= 60:
             return f"Great progress! Your child excels in {strongest['name']} and is doing well across all subjects."
         elif strongest["score"] >= 80:
@@ -170,7 +129,7 @@ class DashboardAggregator:
         elif weakest["score"] < 40:
             return f"Your child is making progress. Focus on {weakest['name']} with short daily practice sessions."
         else:
-            return f"Your child is steadily improving. Keep encouraging their efforts in all subjects!"
+            return "Your child is steadily improving. Keep encouraging their efforts in all subjects!"
 
     def generate_recommendations(
         self, subjects: List[Dict[str, Any]]
@@ -194,7 +153,6 @@ class DashboardAggregator:
                     "priority": "medium",
                 })
 
-        # Add general recommendation
         recommendations.append({
             "title": "Encourage Regular Practice",
             "description": "Celebrate your child's efforts and progress to keep them motivated.",
@@ -202,40 +160,29 @@ class DashboardAggregator:
             "priority": "low",
         })
 
-        return recommendations[:3]  # Limit to top 3
+        return recommendations[:3]
 
-    async def get_child_dashboard_data(
-        self, student_id: UUID
-    ) -> Dict[str, Any]:
+    async def get_child_dashboard_data(self, student_id: UUID) -> Dict[str, Any]:
         """Get complete dashboard data for a child."""
-        # Get student info
-        result = await self.db.execute(
-            select(User).where(User.id == student_id)
-        )
-        student = result.scalar_one_or_none()
-
+        student = await self.repo.get_child_by_id(student_id)
         if not student:
             raise ValueError(f"Student {student_id} not found")
 
-        # Get subjects
         subjects = await self.get_child_subjects(student_id)
-
-        # Get activities
         activities = await self.get_recent_activities(student_id)
-
-        # Generate insights
         summary = self.generate_summary_message(subjects)
         recommendations = self.generate_recommendations(subjects)
 
-        # Calculate overall progress
         if subjects:
             avg_score = sum(s["score"] for s in subjects) / len(subjects)
         else:
             avg_score = 0
 
+        student_name = getattr(student, "full_name", None) or getattr(student, "email", None) or f"Student {str(student_id)[:8]}"
+
         return {
             "id": str(student_id),
-            "name": f"Student {str(student_id)[:8]}",  # Placeholder name
+            "name": student_name,
             "subjects": subjects,
             "recent_activities": activities,
             "summary": summary,
@@ -244,9 +191,7 @@ class DashboardAggregator:
             "last_active": activities[0]["timestamp"] if activities else None,
         }
 
-    async def get_parent_dashboard(
-        self, parent_id: UUID
-    ) -> Dict[str, Any]:
+    async def get_parent_dashboard(self, parent_id: UUID) -> Dict[str, Any]:
         """Get complete dashboard for a parent."""
         children = await self.get_children_for_parent(parent_id)
 
@@ -263,5 +208,5 @@ class DashboardAggregator:
         }
 
 
-# Add missing import
-from datetime import datetime, timezone
+# Alias DashboardService to DashboardAggregator for compatibility
+DashboardService = DashboardAggregator
