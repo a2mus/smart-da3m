@@ -88,7 +88,7 @@ function startPassport() {
   currentView.value = 'passport'
 }
 
-function handlePassportCompleted(evaluation: PassportEvaluation) {
+function handlePassportCompleted(_evaluation: PassportEvaluation) {
   currentView.value = 'results'
 }
 

@@ -2,54 +2,35 @@
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { contentService, type Module } from '@/services/contentService'
+import { useContentStore } from '@/stores/contentStore'
+import { type Module } from '@/services/contentService'
 import ModuleEditor from '@/components/expert/ModuleEditor.vue'
 
 const { t } = useI18n()
 const router = useRouter()
+const contentStore = useContentStore()
 
-const modules = ref<Module[]>([])
-const loading = ref(false)
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const selectedModule = ref<Module | null>(null)
-const error = ref<string | null>(null)
 
-const filteredModules = computed(() => modules.value)
+const modules = computed(() => contentStore.modules)
 
-const fetchModules = async () => {
-  loading.value = true
-  error.value = null
+const handleCreateModule = async (moduleData: any) => {
   try {
-    const response = await contentService.getModules()
-    modules.value = response.items || []
-  } catch (err) {
-    error.value = t('errors.fetchFailed')
-    console.error('Failed to fetch modules:', err)
-  } finally {
-    loading.value = false
-  }
-}
-
-const handleCreateModule = async (moduleData: Omit<Module, 'id' | 'created_at' | 'updated_at'>) => {
-  try {
-    await contentService.createModule(moduleData)
+    await contentStore.createModule(moduleData)
     showCreateModal.value = false
-    await fetchModules()
   } catch (err) {
-    error.value = t('errors.createFailed')
     console.error('Failed to create module:', err)
   }
 }
 
-const handleUpdateModule = async (moduleData: Partial<Module> & { id: string }) => {
+const handleUpdateModule = async (moduleData: any) => {
   try {
-    await contentService.updateModule(moduleData.id, moduleData)
+    await contentStore.updateModule(moduleData.id, moduleData)
     showEditModal.value = false
     selectedModule.value = null
-    await fetchModules()
   } catch (err) {
-    error.value = t('errors.updateFailed')
     console.error('Failed to update module:', err)
   }
 }
@@ -60,12 +41,10 @@ const handleEditModule = (module: Module) => {
 }
 
 const handleDeleteModule = async (moduleId: string) => {
-  if (!confirm(t('expert.confirmDelete'))) return
+  if (!confirm(t('expert.confirmDelete', 'Are you sure you want to delete this module?'))) return
   try {
-    await contentService.deleteModule(moduleId)
-    await fetchModules()
+    await contentStore.deleteModule(moduleId)
   } catch (err) {
-    error.value = t('errors.deleteFailed')
     console.error('Failed to delete module:', err)
   }
 }
@@ -80,55 +59,57 @@ const closeModals = () => {
   selectedModule.value = null
 }
 
-onMounted(() => fetchModules())
+onMounted(() => {
+  contentStore.fetchModules()
+})
 </script>
 
 <template>
-  <div class="min-h-screen p-6">
-    <div class="nurturing-card p-6">
+  <div class="min-h-screen p-6 bg-surface">
+    <div class="bg-surface-bright rounded-2xl p-6 shadow-soft border border-outline-variant">
       <!-- Header -->
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-primary-700">
-          {{ t('expert.modules') }}
+        <h1 class="text-2xl font-bold text-primary">
+          {{ t('expert.modules', 'Curriculum Modules') }}
         </h1>
         <button
-          class="btn-primary flex items-center gap-2"
+          class="bg-primary text-on-primary px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-primary/90 transition-colors font-medium shadow-sm"
           @click="showCreateModal = true"
         >
           <span>+</span>
-          {{ t('expert.createModule') }}
+          {{ t('expert.createModule', 'Create Module') }}
         </button>
       </div>
 
       <!-- Error Message -->
       <div
-        v-if="error"
-        class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4"
+        v-if="contentStore.error"
+        class="bg-error-container text-error px-4 py-3 rounded-xl mb-4"
       >
-        {{ error }}
+        {{ contentStore.error }}
       </div>
 
       <!-- Loading State -->
       <div
-        v-if="loading"
+        v-if="contentStore.loading"
         class="text-center py-12"
       >
-        <div class="animate-spin inline-block w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full" />
-        <p class="mt-2 text-warm-600">
+        <div class="animate-spin inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+        <p class="mt-2 text-on-surface-variant">
           {{ t('common.loading') }}
         </p>
       </div>
 
       <!-- Empty State -->
       <div
-        v-else-if="filteredModules.length === 0"
-        class="text-center py-12 text-warm-600"
+        v-else-if="modules.length === 0"
+        class="text-center py-12 text-on-surface-variant"
       >
         <p class="text-lg">
-          {{ t('expert.noModules') }}
+          {{ t('expert.noModules', 'No modules found.') }}
         </p>
         <p class="text-sm mt-1">
-          {{ t('expert.createFirstModule') }}
+          {{ t('expert.createFirstModule', 'Click "Create Module" to add your first curriculum module.') }}
         </p>
       </div>
 
@@ -138,52 +119,58 @@ onMounted(() => fetchModules())
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
       >
         <div
-          v-for="module in filteredModules"
-          :key="module.id"
-          class="bg-warm-50 rounded-xl p-5 hover:shadow-md transition-shadow border-2 border-transparent hover:border-primary-200"
+          v-for="mod in modules"
+          :key="mod.id"
+          class="bg-surface-container-low rounded-xl p-5 hover:shadow-md transition-shadow border border-outline-variant"
         >
           <div class="flex justify-between items-start mb-3">
             <span
               :class="[
-                'px-2 py-1 text-xs font-medium rounded-full',
-                module.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                'px-2.5 py-1 text-xs font-medium rounded-full',
+                mod.status === 'PUBLISHED' ? 'bg-tertiary-container text-tertiary' : 'bg-secondary-container text-secondary'
               ]"
             >
-              {{ module.status === 'PUBLISHED' ? t('expert.published') : t('expert.draft') }}
+              {{ mod.status === 'PUBLISHED' ? t('expert.published', 'Published') : t('expert.draft', 'Draft') }}
             </span>
             <div class="flex gap-1">
               <button
-                class="p-1.5 text-warm-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                :title="t('expert.edit')"
-                @click="handleEditModule(module)"
+                class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-primary-container/20 rounded-lg transition-colors"
+                :title="t('expert.edit', 'Edit')"
+                @click="handleEditModule(mod)"
               >
                 ✎
               </button>
               <button
-                class="p-1.5 text-warm-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                :title="t('expert.delete')"
-                @click="handleDeleteModule(module.id)"
+                class="p-1.5 text-on-surface-variant hover:text-error hover:bg-error-container/20 rounded-lg transition-colors"
+                :title="t('expert.delete', 'Delete')"
+                @click="handleDeleteModule(mod.id)"
               >
                 🗑
               </button>
             </div>
           </div>
-          <h3 class="font-semibold text-warm-800 mb-1">
-            {{ module.subject }}
+          <h3 class="font-semibold text-on-surface mb-1 text-start">
+            {{ mod.title || mod.subject }}
           </h3>
-          <p class="text-sm text-warm-600 mb-2">
-            {{ module.grade_level }}
+          <p
+            v-if="mod.description"
+            class="text-xs text-on-surface-variant mb-2 text-start line-clamp-2"
+          >
+            {{ mod.description }}
           </p>
-          <p class="text-sm text-warm-500 mb-3">
-            {{ module.domain }}
+          <p class="text-sm text-on-surface-variant mb-1 text-start">
+            {{ mod.grade_level }} • {{ mod.subject }}
+          </p>
+          <p class="text-sm text-on-surface-variant mb-3 text-start">
+            {{ mod.domain }}
           </p>
           <div class="flex items-center justify-between">
-            <code class="text-xs bg-warm-100 px-2 py-1 rounded text-warm-600">{{ module.competency_id }}</code>
+            <code class="text-xs bg-surface-container-high px-2 py-1 rounded text-on-surface-variant">{{ mod.competency_id }}</code>
             <button
-              class="text-sm text-primary-600 hover:text-primary-700 font-medium"
-              @click="handleManageQuestions(module.id)"
+              class="text-sm text-primary hover:underline font-medium"
+              @click="handleManageQuestions(mod.id)"
             >
-              {{ t('expert.manageQuestions') }} →
+              {{ t('expert.manageQuestions', 'Manage Questions') }} →
             </button>
           </div>
         </div>

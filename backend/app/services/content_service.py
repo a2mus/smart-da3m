@@ -32,6 +32,8 @@ class ContentService:
     async def create_module(self, module_data: ModuleCreate, organization_id: Optional[UUID] = None) -> Module:
         """Create a new curriculum module."""
         module_kwargs = {
+            "title": module_data.title,
+            "description": module_data.description,
             "subject": module_data.subject,
             "grade_level": module_data.grade_level,
             "domain": module_data.domain,
@@ -74,15 +76,15 @@ class ContentService:
 
     async def create_question(self, question_data: QuestionCreate, organization_id: Optional[UUID] = None) -> Question:
         """Create a new question."""
+        org_id = organization_id or UUID("00000000-0000-0000-0000-000000000000")
         q_kwargs = {
             "module_id": question_data.module_id,
+            "organization_id": org_id,
             "content": question_data.content.model_dump(),
             "difficulty_level": question_data.difficulty_level,
             "target_misconception_id": question_data.target_misconception_id,
             "estimated_time_sec": question_data.estimated_time_sec,
         }
-        if organization_id:
-            q_kwargs["organization_id"] = organization_id
         return await self.repo.create_question(**q_kwargs)
 
     async def get_question(self, question_id: UUID) -> Optional[Question]:

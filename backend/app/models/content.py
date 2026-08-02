@@ -39,6 +39,8 @@ class Module(Base):
         nullable=False,
         index=True,
     )
+    title = Column(String(200), nullable=True, index=True)
+    description = Column(Text, nullable=True)
     subject = Column(String(100), nullable=False, index=True)
     grade_level = Column(String(50), nullable=False, index=True)
     domain = Column(String(200), nullable=False)

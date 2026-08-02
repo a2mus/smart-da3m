@@ -50,7 +50,7 @@ async def create_module(
     Only experts can create modules.
     """
     service = ContentService(db)
-    module = await service.create_module(module_data)
+    module = await service.create_module(module_data, organization_id=current_user.organization_id)
     return module
 
 
@@ -163,7 +163,7 @@ async def create_question(
 ) -> QuestionResponse:
     """Create a new question in a module's question bank."""
     service = ContentService(db)
-    question = await service.create_question(question_data)
+    question = await service.create_question(question_data, organization_id=current_user.organization_id)
     return question
 
 
@@ -272,7 +272,7 @@ async def bulk_import_questions(
 ) -> BulkQuestionResponse:
     """Bulk import questions into a module."""
     service = ContentService(db)
-    questions, errors = await service.bulk_create_questions(bulk_data)
+    questions, errors = await service.bulk_create_questions(bulk_data, organization_id=current_user.organization_id)
 
     return BulkQuestionResponse(
         imported_count=len(questions),
@@ -296,7 +296,7 @@ async def create_knowledge_atom(
 ) -> KnowledgeAtomResponse:
     """Create a new knowledge atom for remediation."""
     service = ContentService(db)
-    atom = await service.create_knowledge_atom(atom_data)
+    atom = await service.create_knowledge_atom(atom_data, organization_id=current_user.organization_id)
     return atom
 
 

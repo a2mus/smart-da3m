@@ -81,12 +81,15 @@ async def get_current_expert(
 ) -> User:
     """Dependency to ensure user is an expert."""
     from app.models.user import UserRole
+    from app.core.tenant import set_active_organization_id
 
     if current_user.role != UserRole.EXPERT:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient permissions. Expert access required.",
         )
+    if hasattr(current_user, "organization_id") and current_user.organization_id:
+        set_active_organization_id(current_user.organization_id)
     return current_user
 
 

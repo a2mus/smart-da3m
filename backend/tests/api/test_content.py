@@ -3,22 +3,61 @@ Integration tests for content API endpoints (T014).
 Tests for Module and Question CRUD operations.
 """
 
+from uuid import uuid4
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.content import Module, ModuleStatus, Question
+from app.api.deps import get_current_expert_user
+from app.core.tenant import reset_active_organization_id, set_active_organization_id
+from app.main import app
+from app.models.content import KnowledgeAtom, Module, ModuleStatus, Question, RemediationType
+from app.models.organization import Organization, OrganizationMember, OrganizationType
 from app.models.user import User, UserRole
 
 
 @pytest.fixture
-async def expert_user(db: AsyncSession) -> User:
+async def test_org(db: AsyncSession) -> Organization:
+    """Create a test organization."""
+    org = Organization(
+        name="Content Test School",
+        type=OrganizationType.SCHOOL,
+    )
+    db.add(org)
+    await db.commit()
+    await db.refresh(org)
+    return org
+
+
+@pytest.fixture(autouse=True)
+def set_org_context(test_org: Organization):
+    """Set active tenant organization for queries."""
+    token = set_active_organization_id(test_org.id)
+    yield
+    reset_active_organization_id(token)
+
+
+@pytest.fixture
+async def expert_user(db: AsyncSession, test_org: Organization) -> User:
     """Create an expert user for testing."""
     user = User(
-        email="expert@test.com",
+        email=f"expert-{uuid4()}@test.com",
         hashed_password="hashed_password",
         role=UserRole.EXPERT,
     )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+
+    member = OrganizationMember(
+        organization_id=test_org.id,
+        user_id=user.id,
+        role=UserRole.EXPERT,
+    )
+    db.add(member)
+    await db.commit()
+    user.organization_id = test_org.id
+    return user
     db.add(user)
     await db.commit()
     await db.refresh(user)
@@ -26,12 +65,16 @@ async def expert_user(db: AsyncSession) -> User:
 
 
 @pytest.fixture
-async def auth_headers(expert_user: User) -> dict:
-    """Generate auth headers for the expert user."""
-    # Note: In real tests, this would use proper JWT generation
-    # For now, we'll use a mock token structure
+async def auth_headers(expert_user: User, test_org: Organization) -> dict:
+    """Generate auth headers and override dependency for the expert user."""
+    def get_expert_override():
+        set_active_organization_id(test_org.id)
+        return expert_user
+
+    app.dependency_overrides[get_current_expert_user] = get_expert_override
     return {
         "Authorization": f"Bearer test-token-{expert_user.id}",
+        "X-Organization-Id": str(test_org.id),
         "Content-Type": "application/json",
     }
 
@@ -44,6 +87,8 @@ class TestModuleEndpoints:
     ) -> None:
         """Test creating a new curriculum module."""
         module_data = {
+            "title": "Module 1",
+            "description": "Intro module",
             "subject": "Mathematics",
             "grade_level": "السنة 4",
             "domain": "Numbers & Operations",
@@ -70,6 +115,7 @@ class TestModuleEndpoints:
         self, async_client: AsyncClient
     ) -> None:
         """Test that creating a module requires authentication."""
+        app.dependency_overrides.clear()
         module_data = {
             "subject": "Mathematics",
             "grade_level": "السنة 4",
@@ -85,12 +131,13 @@ class TestModuleEndpoints:
         assert response.status_code == 401
 
     async def test_list_modules(
-        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession
+        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession, test_org: Organization
     ) -> None:
         """Test listing all modules."""
         # Create test modules
         modules = [
             Module(
+                organization_id=test_org.id,
                 subject="Mathematics",
                 grade_level="السنة 4",
                 domain="Numbers & Operations",
@@ -98,6 +145,7 @@ class TestModuleEndpoints:
                 status=ModuleStatus.PUBLISHED,
             ),
             Module(
+                organization_id=test_org.id,
                 subject="Mathematics",
                 grade_level="السنة 4",
                 domain="Geometry",
@@ -116,15 +164,16 @@ class TestModuleEndpoints:
 
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
-        assert len(data) >= 2
+        assert "items" in data
+        assert len(data["items"]) >= 2
 
     async def test_get_module_by_id(
-        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession
+        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession, test_org: Organization
     ) -> None:
         """Test getting a specific module by ID."""
         # Create a test module
         module = Module(
+            organization_id=test_org.id,
             subject="Mathematics",
             grade_level="السنة 4",
             domain="Numbers & Operations",
@@ -147,11 +196,12 @@ class TestModuleEndpoints:
         assert data["competency_id"] == module.competency_id
 
     async def test_update_module(
-        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession
+        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession, test_org: Organization
     ) -> None:
         """Test updating a module."""
         # Create a test module
         module = Module(
+            organization_id=test_org.id,
             subject="Mathematics",
             grade_level="السنة 4",
             domain="Numbers & Operations",
@@ -180,11 +230,12 @@ class TestModuleEndpoints:
         assert data["subject"] == module.subject  # Unchanged
 
     async def test_delete_module(
-        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession
+        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession, test_org: Organization
     ) -> None:
         """Test deleting a module."""
         # Create a test module
         module = Module(
+            organization_id=test_org.id,
             subject="Mathematics",
             grade_level="السنة 4",
             domain="Numbers & Operations",
@@ -214,11 +265,12 @@ class TestQuestionEndpoints:
     """Test suite for Question API endpoints."""
 
     async def test_create_question(
-        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession
+        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession, test_org: Organization
     ) -> None:
         """Test creating a new question."""
         # First create a module
         module = Module(
+            organization_id=test_org.id,
             subject="Mathematics",
             grade_level="السنة 4",
             domain="Numbers & Operations",
@@ -256,11 +308,12 @@ class TestQuestionEndpoints:
         assert "id" in data
 
     async def test_list_questions_by_module(
-        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession
+        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession, test_org: Organization
     ) -> None:
         """Test listing questions filtered by module."""
         # Create module and questions
         module = Module(
+            organization_id=test_org.id,
             subject="Mathematics",
             grade_level="السنة 4",
             domain="Numbers & Operations",
@@ -272,6 +325,7 @@ class TestQuestionEndpoints:
 
         questions = [
             Question(
+                organization_id=test_org.id,
                 module_id=module.id,
                 content={"text": f"Question {i}"},
                 difficulty_level=i,
@@ -290,15 +344,16 @@ class TestQuestionEndpoints:
 
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
-        assert len(data) == 3
+        assert "items" in data
+        assert len(data["items"]) == 3
 
     async def test_bulk_import_questions(
-        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession
+        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession, test_org: Organization
     ) -> None:
         """Test bulk importing questions via JSON."""
         # Create a module first
         module = Module(
+            organization_id=test_org.id,
             subject="Mathematics",
             grade_level="السنة 4",
             domain="Numbers & Operations",
@@ -313,11 +368,13 @@ class TestQuestionEndpoints:
             "module_id": str(module.id),
             "questions": [
                 {
+                    "module_id": str(module.id),
                     "content": {"text": "Question 1"},
                     "difficulty_level": 2,
                     "estimated_time_sec": 45,
                 },
                 {
+                    "module_id": str(module.id),
                     "content": {"text": "Question 2"},
                     "difficulty_level": 3,
                     "target_misconception_id": "MATH-TEST-01",
@@ -369,17 +426,17 @@ class TestKnowledgeAtomEndpoints:
         assert "id" in data
 
     async def test_list_knowledge_atoms_by_competency(
-        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession
+        self, async_client: AsyncClient, auth_headers: dict, db: AsyncSession, test_org: Organization
     ) -> None:
         """Test listing knowledge atoms filtered by competency."""
-        from app.models.content import KnowledgeAtom, RemediationType
 
         # Create knowledge atoms
         atoms = [
             KnowledgeAtom(
+                organization_id=test_org.id,
                 competency_id="MATH-4-NUM-01",
                 remediation_type=RemediationType.AUDIO_VISUAL,
-                content={"title": f"Atom {i}"},
+                content={"title": f"Atom {i}", "description": "desc"},
             )
             for i in range(3)
         ]
@@ -394,5 +451,5 @@ class TestKnowledgeAtomEndpoints:
 
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
-        assert len(data) == 3
+        assert "items" in data
+        assert len(data["items"]) == 3

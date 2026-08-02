@@ -97,6 +97,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, allowedRoles: ['EXPERT'] }
   },
   {
+    path: '/expert/modules/:id/questions',
+    name: 'ModuleQuestions',
+    component: () => import('@/views/expert/ModuleList.vue'),
+    meta: { requiresAuth: true, allowedRoles: ['EXPERT'] }
+  },
+  {
     path: '/expert/analytics',
     name: 'ExpertAnalytics',
     component: () => import('@/views/expert/Analytics.vue'),

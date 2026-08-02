@@ -52,9 +52,9 @@
         {{ remediationStore.error }}
       </div>
 
-      <!-- Start Pathway Prompt (VALIDATED state) -->
+      <!-- Start Pathway Prompt (COMPLETED or IN_PROGRESS state) -->
       <div
-        v-else-if="pathway && pathway.status === 'VALIDATED'"
+        v-else-if="pathway && (pathway.status as string) === 'VALIDATED'"
         class="rounded-2xl bg-surface-bright p-8 text-center border border-outline-variant"
       >
         <h2 class="text-xl font-bold text-on-surface mb-2">
@@ -181,7 +181,7 @@ const progressPercent = computed(() => remediationStore.progressPercent)
 
 const pathStatusText = computed(() => {
   if (!pathway.value) return ''
-  switch (pathway.value.status) {
+  switch (pathway.value.status as string) {
     case 'VALIDATED': return 'مؤكد من الخبير'
     case 'IN_PROGRESS': return 'قيد التنفيذ'
     case 'COMPLETED': return 'مكتمل'
@@ -191,7 +191,7 @@ const pathStatusText = computed(() => {
 
 const statusBadgeClass = computed(() => {
   if (!pathway.value) return ''
-  switch (pathway.value.status) {
+  switch (pathway.value.status as string) {
     case 'VALIDATED': return 'bg-primary-fixed text-primary'
     case 'IN_PROGRESS': return 'bg-secondary-container text-secondary'
     case 'COMPLETED': return 'bg-tertiary-container text-tertiary'

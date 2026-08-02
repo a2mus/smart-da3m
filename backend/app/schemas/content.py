@@ -16,6 +16,8 @@ from app.models.content import ModuleStatus, RemediationType
 class ModuleBase(BaseModel):
     """Base schema for modules."""
 
+    title: Optional[str] = Field(None, max_length=200)
+    description: Optional[str] = Field(None)
     subject: str = Field(..., min_length=1, max_length=100)
     grade_level: str = Field(..., min_length=1, max_length=50)
     domain: str = Field(..., min_length=1, max_length=200)
@@ -31,6 +33,8 @@ class ModuleCreate(ModuleBase):
 class ModuleUpdate(BaseModel):
     """Schema for updating a module."""
 
+    title: Optional[str] = Field(None, max_length=200)
+    description: Optional[str] = Field(None)
     subject: Optional[str] = Field(None, min_length=1, max_length=100)
     grade_level: Optional[str] = Field(None, min_length=1, max_length=50)
     domain: Optional[str] = Field(None, min_length=1, max_length=200)

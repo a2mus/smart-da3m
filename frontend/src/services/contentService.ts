@@ -2,6 +2,8 @@ import { api } from './api'
 
 export interface Module {
   id: string
+  title?: string
+  description?: string
   subject: string
   grade_level: string
   domain: string
@@ -12,6 +14,8 @@ export interface Module {
 }
 
 export interface ModuleCreate {
+  title?: string
+  description?: string
   subject: string
   grade_level: string
   domain: string

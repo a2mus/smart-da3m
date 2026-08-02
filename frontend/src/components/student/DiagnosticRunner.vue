@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { diagnosticService, type Question, type AnswerSubmitResponse } from '@/services/diagnosticService'
@@ -9,7 +9,7 @@ import { useOfflineSync } from '@/composables/useOfflineSync'
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { isOnline, isSyncing, queueAnswer, syncNow } = useOfflineSync()
+const { isOnline, isSyncing, queueAnswer } = useOfflineSync()
 
 const moduleId = computed(() => route.params.moduleId as string)
 const sessionId = ref<string>('')

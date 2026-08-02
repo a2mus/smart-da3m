@@ -4,7 +4,9 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-interface ModuleForm {
+export interface ModuleForm {
+  title?: string
+  description?: string
   subject: string
   grade_level: string
   domain: string
@@ -16,6 +18,8 @@ interface Props {
   mode: 'create' | 'edit'
   module?: {
     id: string
+    title?: string
+    description?: string
     subject: string
     grade_level: string
     domain: string
@@ -36,6 +40,8 @@ const emit = defineEmits<{
 }>()
 
 const form = reactive<ModuleForm>({
+  title: props.module?.title ?? '',
+  description: props.module?.description ?? '',
   subject: props.module?.subject ?? '',
   grade_level: props.module?.grade_level ?? '',
   domain: props.module?.domain ?? '',
@@ -90,8 +96,8 @@ const handleCancel = () => {
 </script>
 
 <template>
-  <div class="bg-warm-50 rounded-2xl p-6 shadow-soft">
-    <h2 class="text-2xl font-bold text-primary-700 mb-6">
+  <div class="bg-surface-bright rounded-2xl p-6 shadow-soft border border-outline-variant">
+    <h2 class="text-2xl font-bold text-primary mb-6 text-start">
       {{ title }}
     </h2>
 
@@ -99,11 +105,47 @@ const handleCancel = () => {
       class="space-y-5"
       @submit.prevent="handleSubmit"
     >
+      <!-- Title -->
+      <div>
+        <label
+          for="title"
+          class="block text-sm font-medium text-on-surface mb-1 text-start"
+        >
+          {{ t('expert.moduleTitle', 'Module Title') }}
+        </label>
+        <input
+          id="title"
+          v-model="form.title"
+          type="text"
+          data-testid="title-input"
+          class="w-full px-4 py-2.5 rounded-xl border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary-container outline-none transition-all bg-surface-container-low text-on-surface"
+          :placeholder="t('expert.titlePlaceholder', 'Enter module title')"
+        >
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label
+          for="description"
+          class="block text-sm font-medium text-on-surface mb-1 text-start"
+        >
+          {{ t('expert.moduleDescription', 'Description') }}
+        </label>
+        <textarea
+          id="description"
+          v-model="form.description"
+          rows="3"
+          data-testid="description-input"
+          class="w-full px-4 py-2.5 rounded-xl border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary-container outline-none transition-all bg-surface-container-low text-on-surface"
+          :placeholder="t('expert.descriptionPlaceholder', 'Enter module description')"
+        />
+      </div>
+
       <!-- Subject -->
       <div>
         <label
           for="subject"
-          class="block text-sm font-medium text-warm-700 mb-1"
+          class="block text-sm font-medium text-on-surface mb-1 text-start"
         >
           {{ t('expert.subject') }}
         </label>
@@ -112,13 +154,13 @@ const handleCancel = () => {
           v-model="form.subject"
           type="text"
           data-testid="subject-input"
-          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-surface-bright"
-          :class="{ 'border-red-400': errors.subject }"
+          class="w-full px-4 py-2.5 rounded-xl border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary-container outline-none transition-all bg-surface-container-low text-on-surface"
+          :class="{ 'border-error': errors.subject }"
           :placeholder="t('expert.subjectPlaceholder')"
         >
         <p
           v-if="errors.subject"
-          class="error-message text-red-500 text-sm mt-1"
+          class="error-message text-error text-sm mt-1 text-start"
         >
           {{ errors.subject }}
         </p>
@@ -128,7 +170,7 @@ const handleCancel = () => {
       <div>
         <label
           for="grade_level"
-          class="block text-sm font-medium text-warm-700 mb-1"
+          class="block text-sm font-medium text-on-surface mb-1 text-start"
         >
           {{ t('expert.gradeLevel') }}
         </label>
@@ -136,8 +178,8 @@ const handleCancel = () => {
           id="grade_level"
           v-model="form.grade_level"
           data-testid="grade-level-input"
-          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-surface-bright"
-          :class="{ 'border-red-400': errors.grade_level }"
+          class="w-full px-4 py-2.5 rounded-xl border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary-container outline-none transition-all bg-surface-container-low text-on-surface"
+          :class="{ 'border-error': errors.grade_level }"
         >
           <option value="">
             {{ t('expert.selectGrade') }}
@@ -160,7 +202,7 @@ const handleCancel = () => {
         </select>
         <p
           v-if="errors.grade_level"
-          class="error-message text-red-500 text-sm mt-1"
+          class="error-message text-error text-sm mt-1 text-start"
         >
           {{ errors.grade_level }}
         </p>
@@ -170,7 +212,7 @@ const handleCancel = () => {
       <div>
         <label
           for="domain"
-          class="block text-sm font-medium text-warm-700 mb-1"
+          class="block text-sm font-medium text-on-surface mb-1 text-start"
         >
           {{ t('expert.domain') }}
         </label>
@@ -179,13 +221,13 @@ const handleCancel = () => {
           v-model="form.domain"
           type="text"
           data-testid="domain-input"
-          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-surface-bright"
-          :class="{ 'border-red-400': errors.domain }"
+          class="w-full px-4 py-2.5 rounded-xl border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary-container outline-none transition-all bg-surface-container-low text-on-surface"
+          :class="{ 'border-error': errors.domain }"
           :placeholder="t('expert.domainPlaceholder')"
         >
         <p
           v-if="errors.domain"
-          class="error-message text-red-500 text-sm mt-1"
+          class="error-message text-error text-sm mt-1 text-start"
         >
           {{ errors.domain }}
         </p>
@@ -195,7 +237,7 @@ const handleCancel = () => {
       <div>
         <label
           for="competency_id"
-          class="block text-sm font-medium text-warm-700 mb-1"
+          class="block text-sm font-medium text-on-surface mb-1 text-start"
         >
           {{ t('expert.competency') }}
         </label>
@@ -204,57 +246,54 @@ const handleCancel = () => {
           v-model="form.competency_id"
           type="text"
           data-testid="competency-input"
-          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-surface-bright font-mono text-sm"
-          :class="{ 'border-red-400': errors.competency_id }"
-          placeholder="MATH-4-NUM-01"
+          class="w-full px-4 py-2.5 rounded-xl border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary-container outline-none transition-all bg-surface-container-low text-on-surface"
+          :class="{ 'border-error': errors.competency_id }"
+          :placeholder="t('expert.competencyPlaceholder')"
         >
         <p
           v-if="errors.competency_id"
-          class="error-message text-red-500 text-sm mt-1"
+          class="error-message text-error text-sm mt-1 text-start"
         >
           {{ errors.competency_id }}
         </p>
       </div>
 
       <!-- Status -->
-      <div v-if="isEditMode">
+      <div>
         <label
           for="status"
-          class="block text-sm font-medium text-warm-700 mb-1"
+          class="block text-sm font-medium text-on-surface mb-1 text-start"
         >
-          {{ t('expert.status') }}
+          {{ t('expert.status', 'Status') }}
         </label>
         <select
           id="status"
           v-model="form.status"
-          data-testid="status-input"
-          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-surface-bright"
+          class="w-full px-4 py-2.5 rounded-xl border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary-container outline-none transition-all bg-surface-container-low text-on-surface"
         >
           <option value="DRAFT">
-            {{ t('expert.draft') }}
+            {{ t('expert.draft', 'Draft') }}
           </option>
           <option value="PUBLISHED">
-            {{ t('expert.published') }}
+            {{ t('expert.published', 'Published') }}
           </option>
         </select>
       </div>
 
-      <!-- Actions -->
-      <div class="flex gap-3 pt-4">
-        <button
-          type="submit"
-          data-testid="submit-button"
-          class="flex-1 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-on-primary font-semibold rounded-xl transition-colors shadow-soft"
-        >
-          {{ t('expert.save') }}
-        </button>
+      <!-- Buttons -->
+      <div class="flex justify-end gap-3 pt-4">
         <button
           type="button"
-          data-testid="cancel-button"
-          class="px-6 py-3 bg-warm-200 hover:bg-warm-300 text-warm-700 font-semibold rounded-xl transition-colors"
+          class="px-5 py-2.5 rounded-xl border border-outline-variant hover:bg-surface-container text-on-surface transition-colors font-medium"
           @click="handleCancel"
         >
-          {{ t('expert.cancel') }}
+          {{ t('common.cancel') }}
+        </button>
+        <button
+          type="submit"
+          class="px-5 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary/90 transition-colors font-medium shadow-sm"
+        >
+          {{ isEditMode ? t('common.save') : t('common.create') }}
         </button>
       </div>
     </form>
