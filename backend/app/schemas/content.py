@@ -192,3 +192,35 @@ class KnowledgeAtomListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+# ==================== Unified Bulk Import Schemas ====================
+
+class BulkImportRowError(BaseModel):
+    """Schema for row-level error reporting during bulk import."""
+
+    row: int
+    reason: str
+
+
+class BulkImportItem(BaseModel):
+    """Schema representing an item row for bulk import (question, module, or atom)."""
+
+    entity_type: str = Field("question", description="Type of entity: question, module, knowledge_atom")
+    module_id: Optional[UUID] = None
+    data: Dict[str, Any]
+
+
+class BulkImportRequest(BaseModel):
+    """Schema for unified bulk import request payload."""
+
+    items: List[BulkImportItem]
+
+
+class BulkImportResponse(BaseModel):
+    """Schema for unified bulk import response."""
+
+    created: int
+    failed: int
+    errors: List[BulkImportRowError] = []
+

@@ -10,6 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.content import KnowledgeAtom, Module, ModuleStatus, Question
 from app.repositories.content_repo import ContentRepository
 from app.schemas.content import (
+    BulkImportRequest,
+    BulkImportResponse,
+    BulkImportRowError,
     BulkQuestionCreate,
     KnowledgeAtomCreate,
     KnowledgeAtomUpdate,
@@ -194,3 +197,81 @@ class ContentService:
     async def delete_knowledge_atom(self, atom_id: UUID) -> bool:
         """Delete a knowledge atom."""
         return await self.repo.delete_knowledge_atom(atom_id)
+
+    async def bulk_import_content(
+        self, payload: BulkImportRequest, organization_id: Optional[UUID] = None
+    ) -> BulkImportResponse:
+        """Bulk import questions, modules, or knowledge atoms with per-row validation and partial success."""
+        created_count = 0
+        failed_count = 0
+        errors: List[BulkImportRowError] = []
+
+        target_org_id = organization_id or UUID("00000000-0000-0000-0000-000000000000")
+
+        for row_idx, item in enumerate(payload.items, start=1):
+            try:
+                entity_type = (item.entity_type or "question").lower()
+                if entity_type == "question":
+                    module_id = item.module_id or item.data.get("module_id")
+                    if not module_id:
+                        errors.append(BulkImportRowError(row=row_idx, reason="Missing required module_id for question"))
+                        failed_count += 1
+                        continue
+
+                    question_data = QuestionCreate(
+                        module_id=UUID(str(module_id)),
+                        content=item.data.get("content", {}),
+                        difficulty_level=item.data.get("difficulty_level", 3),
+                        target_misconception_id=item.data.get("target_misconception_id"),
+                        estimated_time_sec=item.data.get("estimated_time_sec", 60),
+                    )
+
+                    await self.repo.create_question(
+                        module_id=question_data.module_id,
+                        organization_id=target_org_id,
+                        content=question_data.content.model_dump(),
+                        difficulty_level=question_data.difficulty_level,
+                        target_misconception_id=question_data.target_misconception_id,
+                        estimated_time_sec=question_data.estimated_time_sec,
+                    )
+                    created_count += 1
+
+                elif entity_type in ("atom", "knowledge_atom"):
+                    atom_data = KnowledgeAtomCreate(
+                        competency_id=item.data.get("competency_id", ""),
+                        remediation_type=item.data.get("remediation_type", "MICRO_LESSON"),
+                        content=item.data.get("content", {}),
+                    )
+                    await self.repo.create_knowledge_atom(
+                        organization_id=target_org_id,
+                        competency_id=atom_data.competency_id,
+                        remediation_type=atom_data.remediation_type,
+                        content=atom_data.content.model_dump(),
+                    )
+                    created_count += 1
+
+                elif entity_type == "module":
+                    mod_data = ModuleCreate(
+                        title=item.data.get("title", ""),
+                        description=item.data.get("description", ""),
+                        subject=item.data.get("subject", "ARABIC"),
+                        grade_level=item.data.get("grade_level", "Y1"),
+                        domain=item.data.get("domain", ""),
+                        competency_id=item.data.get("competency_id", "COMP-01"),
+                        status=item.data.get("status", ModuleStatus.DRAFT),
+                    )
+                    await self.create_module(mod_data, organization_id=target_org_id)
+                    created_count += 1
+                else:
+                    errors.append(BulkImportRowError(row=row_idx, reason=f"Unsupported entity type: {entity_type}"))
+                    failed_count += 1
+            except Exception as exc:
+                failed_count += 1
+                errors.append(BulkImportRowError(row=row_idx, reason=str(exc)))
+
+        return BulkImportResponse(
+            created=created_count,
+            failed=failed_count,
+            errors=errors,
+        )
+

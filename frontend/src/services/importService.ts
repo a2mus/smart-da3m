@@ -107,12 +107,29 @@ class ImportService {
         }
       }
 
-      const result = await contentService.bulkImportQuestions(moduleId, questions)
+      const bulkItems = questions.map((q) => ({
+        entity_type: 'question',
+        module_id: moduleId,
+        data: {
+          content: q.content,
+          difficulty_level: q.difficulty_level,
+          target_misconception_id: q.target_misconception_id,
+          estimated_time_sec: q.estimated_time_sec,
+        },
+      }))
+
+      const result = await contentService.bulkImportContent(bulkItems)
+      const combinedErrors = [...errors]
+      if (result.errors && result.errors.length > 0) {
+        result.errors.forEach((err) => {
+          combinedErrors.push({ row: err.row, error: err.reason })
+        })
+      }
 
       return {
-        success: true,
-        importedCount: result.imported_count,
-        errors,
+        success: result.created > 0,
+        importedCount: result.created,
+        errors: combinedErrors,
       }
     } catch (err) {
       return {
@@ -154,12 +171,29 @@ class ImportService {
         }
       }
 
-      const result = await contentService.bulkImportQuestions(moduleId, validQuestions)
+      const bulkItems = validQuestions.map((q) => ({
+        entity_type: 'question',
+        module_id: moduleId,
+        data: {
+          content: q.content,
+          difficulty_level: q.difficulty_level,
+          target_misconception_id: q.target_misconception_id,
+          estimated_time_sec: q.estimated_time_sec,
+        },
+      }))
+
+      const result = await contentService.bulkImportContent(bulkItems)
+      const combinedErrors = [...errors]
+      if (result.errors && result.errors.length > 0) {
+        result.errors.forEach((err) => {
+          combinedErrors.push({ row: err.row, error: err.reason })
+        })
+      }
 
       return {
-        success: true,
-        importedCount: result.imported_count,
-        errors,
+        success: result.created > 0,
+        importedCount: result.created,
+        errors: combinedErrors,
       }
     } catch (err) {
       return {

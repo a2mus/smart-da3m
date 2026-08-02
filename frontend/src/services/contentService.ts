@@ -129,6 +129,11 @@ class ContentService {
     return response.data
   }
 
+  async bulkImportContent(items: Array<{ entity_type?: string; module_id?: string; data: Record<string, any> }>): Promise<{ created: number; failed: number; errors: Array<{ row: number; reason: string }> }> {
+    const response = await api.post('/content/bulk-import', { items })
+    return response.data
+  }
+
   // Knowledge Atom CRUD
   async getKnowledgeAtoms(competencyId?: string): Promise<PaginatedResponse<KnowledgeAtom>> {
     const params = competencyId ? { competency_id: competencyId } : {}

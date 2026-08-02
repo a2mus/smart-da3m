@@ -12,6 +12,8 @@ from app.api.deps import get_current_expert_user, get_db
 from app.models.content import ModuleStatus
 from app.models.user import User
 from app.schemas.content import (
+    BulkImportRequest,
+    BulkImportResponse,
     BulkQuestionCreate,
     BulkQuestionResponse,
     KnowledgeAtomCreate,
@@ -279,6 +281,23 @@ async def bulk_import_questions(
         imported_ids=[q.id for q in questions],
         errors=errors if errors else None,
     )
+
+
+@router.post(
+    "/bulk-import",
+    response_model=BulkImportResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Unified bulk import content",
+)
+async def bulk_import_content(
+    payload: BulkImportRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_expert_user),
+) -> BulkImportResponse:
+    """Bulk import questions, modules, or atoms with per-row validation and partial success reporting."""
+    service = ContentService(db)
+    return await service.bulk_import_content(payload, organization_id=current_user.organization_id)
+
 
 
 # ==================== Knowledge Atom Endpoints ====================

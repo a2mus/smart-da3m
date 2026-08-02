@@ -76,7 +76,7 @@ development_status:
   epic-6: backlog
   6-1-expert-module-crud-via-repository-layer: done
   6-2-question-bank-knowledge-atom-management: done
-  6-3-bulk-import-with-per-row-validation: backlog
+  6-3-bulk-import-with-per-row-validation: done
   6-4-ai-assisted-content-drafting-fr-8a: backlog
   epic-6-retrospective: optional
 
