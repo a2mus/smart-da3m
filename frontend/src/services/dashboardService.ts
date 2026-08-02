@@ -28,6 +28,12 @@ export interface Recommendation {
   description: string
   duration?: string
   priority: 'high' | 'medium' | 'low'
+  activity_type?: string
+  activityType?: string
+  off_platform?: boolean
+  offPlatform?: boolean
+  competency_id?: string
+  competencyId?: string
 }
 
 export interface Activity {
@@ -44,6 +50,8 @@ export interface ChildDashboardData {
   overall_progress?: number
   subjects: SubjectData[]
   recommendations: Recommendation[]
+  daily_recommendation?: Recommendation
+  dailyRecommendation?: Recommendation
   recentActivities?: Activity[]
   recent_activities?: Activity[]
 }
@@ -91,10 +99,13 @@ export const dashboardService = {
   async getChildDetails(childId: string): Promise<ChildDashboardData> {
     const response = await api.get<ChildDashboardData>(`/dashboard/children/${childId}`)
     const data = response.data
+    const dailyRec = data.dailyRecommendation || data.daily_recommendation || undefined
     return {
       ...data,
       overall_progress: data.overallProgress ?? data.overall_progress ?? 0,
       overallProgress: data.overallProgress ?? data.overall_progress ?? 0,
+      daily_recommendation: dailyRec,
+      dailyRecommendation: dailyRec,
       recent_activities: data.recentActivities || data.recent_activities || [],
       recentActivities: data.recentActivities || data.recent_activities || [],
       subjects: (data.subjects || []).map((s) => ({

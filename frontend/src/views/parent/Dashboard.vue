@@ -200,6 +200,27 @@ onMounted(() => {
           </div>
         </div>
 
+        <!-- Daily Reinforcement Recommendation (Off-Platform Activity) -->
+        <div
+          v-if="(childData.daily_recommendation || childData.dailyRecommendation)?.title"
+          class="bg-surface rounded-2xl p-5 shadow-soft border-2 border-teal-500/20"
+        >
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-bold text-teal-800">
+              التوصية اليومية (نشاط منزلي)
+            </h3>
+            <span class="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full">
+              نشاط بدون شاشة
+            </span>
+          </div>
+          <InsightCard
+            :title="(childData.daily_recommendation || childData.dailyRecommendation)!.title"
+            :description="(childData.daily_recommendation || childData.dailyRecommendation)!.description"
+            :duration="(childData.daily_recommendation || childData.dailyRecommendation)!.duration"
+            :priority="(childData.daily_recommendation || childData.dailyRecommendation)!.priority"
+          />
+        </div>
+
         <!-- Recommendations -->
         <div
           v-if="childData.recommendations && childData.recommendations.length > 0"

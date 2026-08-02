@@ -89,7 +89,7 @@ development_status:
   8-1-real-dashboard-api-replace-mock-dashboardservice: done
   8-2-subject-strength-radar-chart-with-vue-chartjs: done
   8-3-smart-insight-messages-zero-raw-scores: backlog
-  8-4-daily-reinforcement-recommendation: backlog
+  8-4-daily-reinforcement-recommendation: done
   epic-8-retrospective: optional
 
   epic-9: backlog

@@ -162,6 +162,79 @@ class DashboardAggregator:
 
         return recommendations[:3]
 
+    async def generate_daily_recommendation(
+        self, student_id: UUID, subjects: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Generate exactly one off-platform reinforcement activity recommendation per child per day."""
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        cache_key = f"{student_id}_{today_str}"
+
+        if hasattr(self, "_daily_cache") and cache_key in self._daily_cache:
+            return self._daily_cache[cache_key]
+
+        failed_comp = None
+        if hasattr(self.repo, "get_latest_failed_competency"):
+            failed_comp = await self.repo.get_latest_failed_competency(student_id)
+
+        OFF_PLATFORM_TEMPLATES = [
+            {
+                "competency_key": "ARABIC",
+                "title": "Practice writing تاء مربوطة with sand tray",
+                "description": "Practice writing تاء مربوطة with your child for 10 minutes using a sand tray or finger paint to reinforce letter endings.",
+                "duration": "10 minutes",
+                "priority": "high",
+                "activity_type": "OFF_PLATFORM",
+                "off_platform": True,
+            },
+            {
+                "competency_key": "MATH",
+                "title": "Counting physical kitchen objects",
+                "description": "Count 10 household items or toys with your child and practice grouping them into sets of 5 to strengthen number sense.",
+                "duration": "10 minutes",
+                "priority": "medium",
+                "activity_type": "OFF_PLATFORM",
+                "off_platform": True,
+            },
+            {
+                "competency_key": "FRENCH",
+                "title": "Daily vocabulary flashcard game",
+                "description": "Play a 10-minute quiet naming game with household items in French to boost vocabulary retention.",
+                "duration": "10 minutes",
+                "priority": "medium",
+                "activity_type": "OFF_PLATFORM",
+                "off_platform": True,
+            },
+        ]
+
+        if failed_comp:
+            comp_id_upper = (str(failed_comp.competency_id) if failed_comp.competency_id else "").upper()
+            selected = next(
+                (t for t in OFF_PLATFORM_TEMPLATES if t["competency_key"] in comp_id_upper),
+                OFF_PLATFORM_TEMPLATES[0],
+            )
+            rec = {
+                **selected,
+                "competency_id": str(failed_comp.competency_id) if failed_comp.competency_id else None,
+            }
+        else:
+            valid_subjects = [
+                s for s in (subjects or [])
+                if isinstance(s, dict) and isinstance(s.get("score"), (int, float)) and s.get("name")
+            ]
+            weakest = min(valid_subjects, key=lambda x: x["score"]) if valid_subjects else None
+            subject_name = (weakest["name"] if weakest else "").upper()
+            if "MATH" in subject_name or "حساب" in subject_name or "رياضيات" in subject_name:
+                rec = OFF_PLATFORM_TEMPLATES[1]
+            elif "FRENCH" in subject_name or "فرنسية" in subject_name:
+                rec = OFF_PLATFORM_TEMPLATES[2]
+            else:
+                rec = OFF_PLATFORM_TEMPLATES[0]
+
+        if not hasattr(self, "_daily_cache"):
+            self._daily_cache = {}
+        self._daily_cache[cache_key] = rec
+        return rec
+
     async def get_child_dashboard_data(self, student_id: UUID) -> Dict[str, Any]:
         """Get complete dashboard data for a child."""
         student = await self.repo.get_child_by_id(student_id)
@@ -172,6 +245,10 @@ class DashboardAggregator:
         activities = await self.get_recent_activities(student_id)
         summary = self.generate_summary_message(subjects)
         recommendations = self.generate_recommendations(subjects)
+        try:
+            daily_recommendation = await self.generate_daily_recommendation(student_id, subjects)
+        except Exception:
+            daily_recommendation = None
 
         if subjects:
             avg_score = sum(s["score"] for s in subjects) / len(subjects)
@@ -187,6 +264,7 @@ class DashboardAggregator:
             "recent_activities": activities,
             "summary": summary,
             "recommendations": recommendations,
+            "daily_recommendation": daily_recommendation,
             "overall_progress": round(avg_score, 1),
             "last_active": activities[0]["timestamp"] if activities else None,
         }

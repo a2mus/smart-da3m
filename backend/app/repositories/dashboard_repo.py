@@ -8,7 +8,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.diagnostic import CompetencyProfile, DiagnosticSession
+from app.models.diagnostic import CompetencyProfile, DiagnosticSession, MasteryLevel
 from app.models.organization import OrganizationMember
 from app.models.remediation import RemediationPath
 from app.models.user import User, UserRole
@@ -98,3 +98,24 @@ class DashboardRepo(BaseRepository[User]):
 
         result = await self.db.execute(query)
         return list(result.scalars().all())
+
+    async def get_latest_failed_competency(
+        self, student_id: UUID
+    ) -> Optional[CompetencyProfile]:
+        """Fetch student's most recently assessed failed/attempted competency profile."""
+        query = (
+            select(CompetencyProfile)
+            .where(
+                CompetencyProfile.student_id == student_id,
+                CompetencyProfile.mastery_level.in_(
+                    [MasteryLevel.NOT_STARTED, MasteryLevel.ATTEMPTED]
+                ),
+            )
+            .order_by(CompetencyProfile.last_assessed.desc())
+            .limit(1)
+        )
+        if self.tenant_id is not None and hasattr(CompetencyProfile, "organization_id"):
+            query = query.where(CompetencyProfile.organization_id == self.tenant_id)
+
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()

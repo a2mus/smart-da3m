@@ -36,6 +36,10 @@ class Recommendation(BaseModel):
     description: str
     duration: str
     priority: str  # high, medium, low
+    activity_type: Optional[str] = "OFF_PLATFORM"
+    off_platform: Optional[bool] = True
+    competency_id: Optional[str] = None
+    error_type: Optional[str] = None
 
 
 class ChildDashboardData(BaseModel):
@@ -47,6 +51,7 @@ class ChildDashboardData(BaseModel):
     recent_activities: List[RecentActivity]
     summary: str
     recommendations: List[Recommendation]
+    daily_recommendation: Optional[Recommendation] = None
     overall_progress: float
     last_active: Optional[str] = None
 

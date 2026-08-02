@@ -133,6 +133,44 @@ class TestDashboardRepoAndEndpoints:
         assert data["children"][0]["id"] == str(student_user.id)
         assert len(data["children"][0]["subjects"]) == 1
         assert data["children"][0]["subjects"][0]["score"] == 75
+        assert "daily_recommendation" in data["children"][0]
+        assert data["children"][0]["daily_recommendation"]["off_platform"] is True
+
+    async def test_daily_reinforcement_recommendation_caching(
+        self,
+        async_client: AsyncClient,
+        auth_headers_parent: dict,
+        student_user: User,
+        sample_organization: Organization,
+        db: AsyncSession,
+    ) -> None:
+        """Test story 8.4 daily reinforcement recommendation generation and caching."""
+        profile = CompetencyProfile(
+            organization_id=sample_organization.id,
+            student_id=student_user.id,
+            competency_id="ARABIC-GRAMMAR-01",
+            mastery_level=MasteryLevel.ATTEMPTED,
+            p_learned=0.2,
+        )
+        db.add(profile)
+        await db.commit()
+
+        res1 = await async_client.get(
+            "/api/v1/dashboard/overview",
+            headers=auth_headers_parent,
+        )
+        assert res1.status_code == 200
+        rec1 = res1.json()["children"][0]["daily_recommendation"]
+        assert rec1["off_platform"] is True
+        assert "competency_id" in rec1
+
+        res2 = await async_client.get(
+            "/api/v1/dashboard/overview",
+            headers=auth_headers_parent,
+        )
+        assert res2.status_code == 200
+        rec2 = res2.json()["children"][0]["daily_recommendation"]
+        assert rec1["title"] == rec2["title"]
 
     async def test_get_children_list_endpoint(
         self,
