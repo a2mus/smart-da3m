@@ -6,7 +6,7 @@ import SubjectRadarChart from '@/components/parent/SubjectRadarChart.vue'
 import InsightCard from '@/components/parent/InsightCard.vue'
 import { useDashboardStore } from '@/stores/dashboardStore'
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
 const dashboardStore = useDashboardStore()
 
 const children = computed(() => dashboardStore.children)
@@ -48,7 +48,7 @@ const formatRelativeTime = (timestamp: string) => {
   if (days === 0) return t('time.today')
   if (days === 1) return t('time.yesterday')
   if (days < 7) return t('time.daysAgo', { days })
-  return date.toLocaleDateString()
+  return date.toLocaleDateString(locale.value === 'fr' ? 'fr-FR' : 'ar-DZ')
 }
 
 onMounted(() => {

@@ -5,7 +5,7 @@ import { useAlertStore } from '@/stores/alertStore'
 import { useSSE } from '@/composables/useSSE'
 import { alertService } from '@/services/alertService'
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
 const alertStore = useAlertStore()
 
 // Initialize real-time SSE event listener
@@ -112,7 +112,7 @@ onMounted(() => {
             </p>
             <div class="flex items-center justify-between mt-2">
               <p class="text-xs opacity-70">
-                {{ new Date(a.createdAt || a.created_at || '').toLocaleDateString() }}
+                {{ new Date(a.createdAt || a.created_at || '').toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'ar-DZ') }}
               </p>
               <div class="flex gap-2">
                 <button

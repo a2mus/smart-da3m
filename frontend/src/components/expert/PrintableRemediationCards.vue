@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import type { StudentRemediationCard } from '@/services/analyticsService'
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
 
 defineProps<{
   cards: StudentRemediationCard[]
@@ -105,7 +105,7 @@ const handlePrint = () => {
               {{ t('remediation.cardType', 'بطاقة معالجة فردية') }}
             </span>
             <p class="text-[10px] text-on-surface-variant mt-1">
-              {{ new Date(card.generated_at).toLocaleDateString('ar-DZ') }}
+              {{ new Date(card.generated_at).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'ar-DZ') }}
             </p>
           </div>
         </div>
