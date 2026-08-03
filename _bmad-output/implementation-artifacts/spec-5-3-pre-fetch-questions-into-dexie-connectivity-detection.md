@@ -54,11 +54,11 @@ warnings: []
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `frontend/src/stores/offlineModule.ts` -- Export and wire `cacheQuestions`, `getCachedQuestions`, `getPendingSyncSessions`, `markSessionSynced`, and session status updates -- Enables offline question caching and session lifecycle management.
-- [ ] `frontend/src/services/diagnosticService.ts` -- Implement `preFetchModuleQuestions()` and update `getNextQuestion()` to fallback to Dexie when offline -- Enables offline question retrieval for students.
-- [ ] `frontend/src/components/NetworkStatusIndicator.vue` -- Create visual status indicator component for online/offline state using semantic design tokens and logical CSS -- Informs student of connectivity state cleanly.
-- [ ] `frontend/src/views/student/DiagnosticRunner.vue` -- Wire `NetworkStatusIndicator.vue` and question pre-fetching into the diagnostic execution loop -- Provides uninterrupted student experience during network drops.
-- [ ] `frontend/src/tests/offlineSync.test.ts` -- Add unit tests for `cacheQuestions`, `getPendingSyncSessions`, `markSessionSynced`, and offline question resolution -- Verifies offline store and service integration.
+- [x] `frontend/src/stores/offlineModule.ts` -- Export and wire `cacheQuestions`, `getCachedQuestions`, `getPendingSyncSessions`, `markSessionSynced`, and session status updates -- Enables offline question caching and session lifecycle management.
+- [x] `frontend/src/services/diagnosticService.ts` -- Implement `preFetchModuleQuestions()` and update `getNextQuestion()` to fallback to Dexie when offline -- Enables offline question retrieval for students.
+- [x] `frontend/src/components/NetworkStatusIndicator.vue` -- Create visual status indicator component for online/offline state using semantic design tokens and logical CSS -- Informs student of connectivity state cleanly.
+- [x] `frontend/src/views/student/DiagnosticRunner.vue` -- Wire `NetworkStatusIndicator.vue` and question pre-fetching into the diagnostic execution loop -- Provides uninterrupted student experience during network drops.
+- [x] `frontend/src/tests/offlineSync.test.ts` -- Add unit tests for `cacheQuestions`, `getPendingSyncSessions`, `markSessionSynced`, and offline question resolution -- Verifies offline store and service integration.
 
 **Acceptance Criteria:**
 - Given `cacheQuestions()` exists in `offlineModule.ts`, when a diagnostic session starts, then the next N questions are pre-fetched and cached in Dexie.

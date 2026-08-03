@@ -61,8 +61,12 @@ export class OfflineDatabase extends Dexie {
 export const offlineDB = new OfflineDatabase()
 
 class OfflineModuleStore {
-  async cacheQuestions(_moduleId: string, questions: OfflineQuestion[]): Promise<void> {
-    await offlineDB.questions.bulkPut(questions)
+  async cacheQuestions(moduleId: string, questions: OfflineQuestion[]): Promise<void> {
+    const questionsToCache = questions.map((q) => ({
+      ...q,
+      module_id: q.module_id || moduleId,
+    }))
+    await offlineDB.questions.bulkPut(questionsToCache)
   }
 
   async getCachedQuestions(moduleId: string): Promise<OfflineQuestion[]> {

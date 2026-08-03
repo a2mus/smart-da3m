@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { diagnosticService, type Question, type AnswerSubmitResponse } from '@/services/diagnosticService'
 import { offlineStore } from '@/stores/offlineModule'
 import { useOfflineSync } from '@/composables/useOfflineSync'
+import NetworkStatusIndicator from '@/components/NetworkStatusIndicator.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -53,24 +54,49 @@ const masteryLabels: Record<string, string> = {
   MASTERED: 'متمكن',
 }
 
+const startDiagnosticOffline = async () => {
+  const firstQuestion = await diagnosticService.getNextQuestionOffline(moduleId.value, 0)
+  if (firstQuestion) {
+    sessionId.value = `offline-${Date.now()}`
+    currentQuestion.value = firstQuestion
+    questionNumber.value = 1
+  } else {
+    throw new Error('No cached questions available for offline session.')
+  }
+}
+
 const startDiagnostic = async () => {
   isLoading.value = true
   error.value = null
   try {
-    const response = await diagnosticService.startDiagnostic(moduleId.value)
-    sessionId.value = response.session_id
-    currentQuestion.value = response.question
-    questionNumber.value = response.question_number
+    await diagnosticService.preFetchModuleQuestions(moduleId.value)
+
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      await startDiagnosticOffline()
+    } else {
+      try {
+        const response = await diagnosticService.startDiagnostic(moduleId.value)
+        sessionId.value = response.session_id
+        currentQuestion.value = response.question
+        questionNumber.value = response.question_number
+      } catch (netErr) {
+        console.warn('Starting online diagnostic failed, trying offline fallback:', netErr)
+        await startDiagnosticOffline()
+      }
+    }
+
     startTime.value = Date.now()
 
-    await offlineStore.createOfflineSession({
-      id: sessionId.value,
-      student_id: 'current-student',
-      module_id: moduleId.value,
-      status: 'IN_PROGRESS',
-      started_at: new Date(),
-      answers: [],
-    })
+    if (sessionId.value) {
+      await offlineStore.createOfflineSession({
+        id: sessionId.value,
+        student_id: 'current-student',
+        module_id: moduleId.value,
+        status: 'IN_PROGRESS',
+        started_at: new Date(),
+        answers: [],
+      })
+    }
   } catch (err) {
     error.value = t('diagnostic.error')
     console.error('Failed to start diagnostic:', err)
@@ -133,6 +159,26 @@ const submitAnswer = async () => {
   } catch (err) {
     console.warn('Network submission failed, answer retained in offline queue:', err)
     showFeedback.value = false
+
+    const nextQ = await diagnosticService.getNextQuestionOffline(moduleId.value, questionNumber.value)
+    if (nextQ) {
+      currentQuestion.value = nextQ
+      questionNumber.value++
+      selectedAnswer.value = ''
+      startTime.value = Date.now()
+    } else {
+      isComplete.value = true
+      results.value = {
+        is_correct: true,
+        error_classification: 'NONE',
+        current_mastery: 0.8,
+        mastery_level: 'PROFICIENT',
+        next_question: null,
+        is_complete: true,
+        accuracy: 1.0,
+      }
+      await offlineStore.completeOfflineSession(sessionId.value)
+    }
   } finally {
     isSubmitting.value = false
   }
@@ -180,21 +226,8 @@ onMounted(() => {
     dir="rtl"
   >
     <div class="max-w-3xl mx-auto">
-      <!-- Offline / Syncing Banner -->
-      <div
-        v-if="!isOnline || isSyncing"
-        data-testid="offline-banner"
-        class="bg-secondary-container text-on-surface-variant border border-outline-variant px-4 py-2 rounded-xl mb-4 flex items-center justify-between text-sm"
-      >
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined text-secondary">{{ isOnline ? 'sync' : 'wifi_off' }}</span>
-          <span>{{ isOnline ? 'جاري المزامنة...' : 'أنت تفاعلي حالياً دون اتصال — سيتم حفظ إجاباتك ومزامنتها لاحقاً' }}</span>
-        </div>
-        <span
-          v-if="isSyncing"
-          class="animate-spin material-symbols-outlined text-primary"
-        >progress_activity</span>
-      </div>
+      <!-- Network Status Indicator -->
+      <NetworkStatusIndicator class="mb-4 rounded-xl overflow-hidden" />
       <!-- Loading State -->
       <div
         v-if="isLoading"

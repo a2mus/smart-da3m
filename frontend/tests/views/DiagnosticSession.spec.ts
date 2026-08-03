@@ -45,6 +45,8 @@ vi.mock('@/services/diagnosticService', () => ({
     submitAnswer: vi.fn(),
     getResults: vi.fn(),
     startDiagnostic: vi.fn(),
+    preFetchModuleQuestions: vi.fn().mockResolvedValue([]),
+    getNextQuestionOffline: vi.fn().mockResolvedValue(null),
   },
 }))
 

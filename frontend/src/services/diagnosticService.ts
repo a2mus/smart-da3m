@@ -1,4 +1,5 @@
 import { api } from './api'
+import { offlineStore, type OfflineQuestion } from '@/stores/offlineModule'
 
 export interface DiagnosticSession {
   id: string
@@ -67,6 +68,67 @@ export interface CompetencyProfile {
 }
 
 class DiagnosticService {
+  async preFetchModuleQuestions(moduleId: string): Promise<Question[]> {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const cached = await offlineStore.getCachedQuestions(moduleId)
+      return cached.map((q) => ({
+        id: q.id,
+        content: q.content,
+        difficulty_level: q.difficulty_level,
+        estimated_time_sec: q.estimated_time_sec,
+      }))
+    }
+
+    try {
+      let rawQuestions: any = []
+      try {
+        const response = await api.get('/diagnostic/questions', { params: { module_id: moduleId } })
+        rawQuestions = response.data
+      } catch {
+        const response = await api.get(`/diagnostic/module/${moduleId}/questions`)
+        rawQuestions = response.data
+      }
+
+      const questionList: Question[] = Array.isArray(rawQuestions)
+        ? rawQuestions
+        : (rawQuestions?.questions || rawQuestions?.items || [])
+
+      const offlineQuestions: OfflineQuestion[] = questionList.map((q) => ({
+        id: q.id,
+        module_id: moduleId,
+        content: q.content,
+        difficulty_level: q.difficulty_level,
+        estimated_time_sec: q.estimated_time_sec,
+      }))
+
+      await offlineStore.cacheQuestions(moduleId, offlineQuestions)
+      return questionList
+    } catch (err) {
+      console.warn('Failed to pre-fetch questions online, falling back to cache:', err)
+      const cached = await offlineStore.getCachedQuestions(moduleId)
+      return cached.map((q) => ({
+        id: q.id,
+        content: q.content,
+        difficulty_level: q.difficulty_level,
+        estimated_time_sec: q.estimated_time_sec,
+      }))
+    }
+  }
+
+  async getNextQuestionOffline(moduleId: string, currentIndex: number): Promise<Question | null> {
+    const cached = await offlineStore.getCachedQuestions(moduleId)
+    if (!cached || cached.length === 0 || currentIndex < 0 || currentIndex >= cached.length) {
+      return null
+    }
+    const q = cached[currentIndex]
+    return {
+      id: q.id,
+      content: q.content,
+      difficulty_level: q.difficulty_level,
+      estimated_time_sec: q.estimated_time_sec,
+    }
+  }
+
   async startDiagnostic(moduleId: string): Promise<StartDiagnosticResponse> {
     const response = await api.post('/diagnostic/start', { module_id: moduleId })
     return response.data
