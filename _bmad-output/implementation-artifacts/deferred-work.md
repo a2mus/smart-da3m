@@ -19,7 +19,8 @@ status: open
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md"), 2026-08-03
 location: backend/app/api/endpoints/analytics.py
 reason: GET and POST /heatmap in backend/app/api/endpoints/analytics.py fallback to get_optional_active_organization_id() or zero-UUID sentinel 00000000-0000-0000-0000-000000000000 if user has no org attribute.
-status: open
+status: done 2026-08-03
+resolution: resolved by sweep bundle dw-analytics-tenant-fallback-unification
 
 ### DW-4: AnalyticsService._mastery_to_score evaluates p_learned > 0 rather than explicit non-null checks
 
@@ -75,11 +76,13 @@ status: open
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-4-printable-remediation-cards.md"), 2026-08-03
 location: backend/app/api/endpoints/analytics.py
 reason: GET /remediation-cards in backend/app/api/endpoints/analytics.py falls back to get_optional_active_organization_id() or zero-UUID sentinel 00000000-0000-0000-0000-000000000000 if User instance lacks organization_id attribute.
-status: open
+status: done 2026-08-03
+resolution: resolved by sweep bundle dw-analytics-tenant-fallback-unification
 
 ### DW-12: AnalyticsService.get_remediation_cards invokes set_active_organization_id without resetting context variable post-request
 
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-4-printable-remediation-cards.md"), 2026-08-03
 location: backend/app/services/analytics_service.py
 reason: In backend/app/services/analytics_service.py line 138, set_active_organization_id is called without storing or resetting the Token returned by ContextVar.set.
-status: open
+status: done 2026-08-03
+resolution: resolved by sweep bundle dw-analytics-tenant-fallback-unification

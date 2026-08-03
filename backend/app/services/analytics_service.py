@@ -31,7 +31,7 @@ class AnalyticsService:
         self.engine = RemediationEngine()
 
     async def get_heatmap(
-        self, organization_id: UUID, module_id: Optional[UUID] = None
+        self, organization_id: Optional[UUID] = None, module_id: Optional[UUID] = None
     ) -> HeatmapResponse:
         """
         Fetch and format heatmap data for an organization, optionally filtered by module.
@@ -89,7 +89,7 @@ class AnalyticsService:
 
     async def auto_group_students(
         self,
-        organization_id: UUID,
+        organization_id: Optional[UUID] = None,
         filters: Optional[HeatmapFilters] = None,
         group_by: str = "competency",
     ) -> AutoGroupResponse:
@@ -128,76 +128,78 @@ class AnalyticsService:
 
     async def get_remediation_cards(
         self,
-        organization_id: UUID,
+        organization_id: Optional[UUID] = None,
         student_id: Optional[UUID] = None,
         student_ids: Optional[List[UUID]] = None,
     ) -> RemediationCardsResponse:
         from datetime import datetime, timezone
-        from app.core.tenant import set_active_organization_id
+        from app.core.tenant import reset_active_organization_id, set_active_organization_id
 
-        set_active_organization_id(organization_id)
-
-        profiles = await self.repo.get_remediation_cards_data(
-            organization_id=organization_id,
-            student_id=student_id,
-            student_ids=student_ids,
-        )
-        students = await self.repo.get_students_for_heatmap(organization_id)
-        student_map = {
-            s.id: s.email.split("@")[0] if s.email else f"Student {str(s.id)[:8]}"
-            for s in students
-        }
-
-        if student_id is not None and student_id not in student_map:
-            from fastapi import HTTPException
-            raise HTTPException(status_code=404, detail="Student not found in organization")
-
-        grouped: dict[UUID, List[CompetencyProfile]] = {}
-        for p in profiles:
-            grouped.setdefault(p.student_id, []).append(p)
-
-        cards: List[StudentRemediationCard] = []
-        now_iso = datetime.now(timezone.utc).isoformat()
-
-        for sid, p_list in grouped.items():
-            s_name = student_map.get(sid, f"Student {str(sid)[:8]}")
-            failed_competencies = sorted(list(set(p.competency_id for p in p_list)))
-            error_classifications = [
-                "CONCEPTUAL" if p.mastery_level == MasteryLevel.NOT_STARTED else "PROCESS"
-                for p in p_list
-            ]
-            unique_errors = sorted(list(set(error_classifications)))
-
-            atoms = [
-                RemediationAtomItem(
-                    id=f"atom-{comp}",
-                    title=f"كبسولة معالجة للكفاءة: {comp}",
-                    description=f"وحدة معرفية داعمة لمعالجة التعثر في {comp}",
-                    content_type="MICRO_LESSON",
-                )
-                for comp in failed_competencies
-            ]
-
-            cards.append(
-                StudentRemediationCard(
-                    student_id=sid,
-                    student_name=s_name,
-                    grade_level="Primary",
-                    failed_competencies=failed_competencies,
-                    error_classifications=unique_errors,
-                    recommended_atoms=atoms,
-                    generated_at=now_iso,
-                )
+        token = set_active_organization_id(organization_id)
+        try:
+            profiles = await self.repo.get_remediation_cards_data(
+                organization_id=organization_id,
+                student_id=student_id,
+                student_ids=student_ids,
             )
+            students = await self.repo.get_students_for_heatmap(organization_id)
+            student_map = {
+                s.id: s.email.split("@")[0] if s.email else f"Student {str(s.id)[:8]}"
+                for s in students
+            }
 
-        return RemediationCardsResponse(
-            cards=cards,
-            total_cards=len(cards),
-        )
+            if student_id is not None and student_id not in student_map:
+                from fastapi import HTTPException
+                raise HTTPException(status_code=404, detail="Student not found in organization")
+
+            grouped: dict[UUID, List[CompetencyProfile]] = {}
+            for p in profiles:
+                grouped.setdefault(p.student_id, []).append(p)
+
+            cards: List[StudentRemediationCard] = []
+            now_iso = datetime.now(timezone.utc).isoformat()
+
+            for sid, p_list in grouped.items():
+                s_name = student_map.get(sid, f"Student {str(sid)[:8]}")
+                failed_competencies = sorted(list(set(p.competency_id for p in p_list)))
+                error_classifications = [
+                    "CONCEPTUAL" if p.mastery_level == MasteryLevel.NOT_STARTED else "PROCESS"
+                    for p in p_list
+                ]
+                unique_errors = sorted(list(set(error_classifications)))
+
+                atoms = [
+                    RemediationAtomItem(
+                        id=f"atom-{comp}",
+                        title=f"كبسولة معالجة للكفاءة: {comp}",
+                        description=f"وحدة معرفية داعمة لمعالجة التعثر في {comp}",
+                        content_type="MICRO_LESSON",
+                    )
+                    for comp in failed_competencies
+                ]
+
+                cards.append(
+                    StudentRemediationCard(
+                        student_id=sid,
+                        student_name=s_name,
+                        grade_level="Primary",
+                        failed_competencies=failed_competencies,
+                        error_classifications=unique_errors,
+                        recommended_atoms=atoms,
+                        generated_at=now_iso,
+                    )
+                )
+
+            return RemediationCardsResponse(
+                cards=cards,
+                total_cards=len(cards),
+            )
+        finally:
+            reset_active_organization_id(token)
 
     async def export_report(
         self,
-        organization_id: UUID,
+        organization_id: Optional[UUID],
         report_type: str,
         export_format: str,
         filters: Optional[HeatmapFilters] = None,
@@ -206,28 +208,30 @@ class AnalyticsService:
         """
         Delegate report exporting to ReportExporter with organization tenant isolation.
         """
-        from app.core.tenant import set_active_organization_id
+        from app.core.tenant import reset_active_organization_id, set_active_organization_id
         from app.services.report_exporter import ReportExporter
 
-        set_active_organization_id(organization_id)
-
-        exporter = ReportExporter(self.db)
-        if export_format == "csv":
-            return await exporter.export_csv(
-                report_type=report_type,
-                filters=filters,
-                student_ids=student_ids,
-                organization_id=organization_id,
-            )
-        elif export_format == "pdf":
-            return await exporter.export_pdf(
-                report_type=report_type,
-                filters=filters,
-                student_ids=student_ids,
-                organization_id=organization_id,
-            )
-        else:
-            raise ValueError(f"Unsupported format: {export_format}")
+        token = set_active_organization_id(organization_id)
+        try:
+            exporter = ReportExporter(self.db)
+            if export_format == "csv":
+                return await exporter.export_csv(
+                    report_type=report_type,
+                    filters=filters,
+                    student_ids=student_ids,
+                    organization_id=organization_id,
+                )
+            elif export_format == "pdf":
+                return await exporter.export_pdf(
+                    report_type=report_type,
+                    filters=filters,
+                    student_ids=student_ids,
+                    organization_id=organization_id,
+                )
+            else:
+                raise ValueError(f"Unsupported format: {export_format}")
+        finally:
+            reset_active_organization_id(token)
 
     @staticmethod
     def _mastery_to_color(mastery: MasteryLevel) -> str:

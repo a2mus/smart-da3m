@@ -21,32 +21,32 @@ class AnalyticsRepo(BaseRepository[CompetencyProfile]):
         super().__init__(CompetencyProfile, db)
 
     async def get_heatmap_data(
-        self, organization_id: UUID, module_id: Optional[UUID] = None
+        self, organization_id: Optional[UUID], module_id: Optional[UUID] = None
     ) -> List[CompetencyProfile]:
         """
         Fetch competency profiles for students within an organization,
         optionally filtered by module_id.
         """
-        query = select(CompetencyProfile).where(
-            CompetencyProfile.organization_id == organization_id
-        )
+        query = select(CompetencyProfile)
+        if organization_id is not None:
+            query = query.where(CompetencyProfile.organization_id == organization_id)
 
         if module_id is not None:
-            student_ids_subquery = (
-                select(DiagnosticSession.student_id)
-                .where(
-                    DiagnosticSession.organization_id == organization_id,
-                    DiagnosticSession.module_id == module_id,
-                )
-                .distinct()
+            student_ids_subquery = select(DiagnosticSession.student_id).where(
+                DiagnosticSession.module_id == module_id,
             )
+            if organization_id is not None:
+                student_ids_subquery = student_ids_subquery.where(
+                    DiagnosticSession.organization_id == organization_id
+                )
+            student_ids_subquery = student_ids_subquery.distinct()
             query = query.where(CompetencyProfile.student_id.in_(student_ids_subquery))
 
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
     async def get_students_for_heatmap(
-        self, organization_id: UUID, module_id: Optional[UUID] = None
+        self, organization_id: Optional[UUID], module_id: Optional[UUID] = None
     ) -> List[User]:
         """
         Fetch student users within an organization,
@@ -56,20 +56,21 @@ class AnalyticsRepo(BaseRepository[CompetencyProfile]):
             select(User)
             .join(OrganizationMember, OrganizationMember.user_id == User.id)
             .where(
-                OrganizationMember.organization_id == organization_id,
                 OrganizationMember.role == UserRole.STUDENT,
             )
         )
+        if organization_id is not None:
+            query = query.where(OrganizationMember.organization_id == organization_id)
 
         if module_id is not None:
-            student_ids_subquery = (
-                select(DiagnosticSession.student_id)
-                .where(
-                    DiagnosticSession.organization_id == organization_id,
-                    DiagnosticSession.module_id == module_id,
-                )
-                .distinct()
+            student_ids_subquery = select(DiagnosticSession.student_id).where(
+                DiagnosticSession.module_id == module_id,
             )
+            if organization_id is not None:
+                student_ids_subquery = student_ids_subquery.where(
+                    DiagnosticSession.organization_id == organization_id
+                )
+            student_ids_subquery = student_ids_subquery.distinct()
             query = query.where(User.id.in_(student_ids_subquery))
 
         result = await self.db.execute(query)
@@ -77,7 +78,7 @@ class AnalyticsRepo(BaseRepository[CompetencyProfile]):
 
     async def get_auto_group_data(
         self,
-        organization_id: UUID,
+        organization_id: Optional[UUID],
         student_ids: Optional[List[UUID]] = None,
         competency_ids: Optional[List[str]] = None,
     ) -> List[CompetencyProfile]:
@@ -86,11 +87,12 @@ class AnalyticsRepo(BaseRepository[CompetencyProfile]):
         in the given organization.
         """
         query = select(CompetencyProfile).where(
-            CompetencyProfile.organization_id == organization_id,
             CompetencyProfile.mastery_level.in_(
                 [MasteryLevel.NOT_STARTED, MasteryLevel.ATTEMPTED]
             ),
         )
+        if organization_id is not None:
+            query = query.where(CompetencyProfile.organization_id == organization_id)
 
         if student_ids:
             query = query.where(CompetencyProfile.student_id.in_(student_ids))
@@ -103,16 +105,17 @@ class AnalyticsRepo(BaseRepository[CompetencyProfile]):
 
     async def get_remediation_cards_data(
         self,
-        organization_id: UUID,
+        organization_id: Optional[UUID],
         student_id: Optional[UUID] = None,
         student_ids: Optional[List[UUID]] = None,
     ) -> List[CompetencyProfile]:
         query = select(CompetencyProfile).where(
-            CompetencyProfile.organization_id == organization_id,
             CompetencyProfile.mastery_level.in_(
                 [MasteryLevel.NOT_STARTED, MasteryLevel.ATTEMPTED]
             ),
         )
+        if organization_id is not None:
+            query = query.where(CompetencyProfile.organization_id == organization_id)
 
         if student_id is not None:
             query = query.where(CompetencyProfile.student_id == student_id)

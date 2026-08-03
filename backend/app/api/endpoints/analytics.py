@@ -38,6 +38,16 @@ from app.services.report_exporter import ReportExporter
 router = APIRouter()
 
 
+def _resolve_tenant_organization_id(current_user: User) -> Optional[UUID]:
+    """
+    Resolve active organization ID for tenant context from current_user or request context.
+    Eliminates hardcoded zero-UUID sentinels by returning the explicit tenant ID or None.
+    """
+    from app.core.tenant import get_optional_active_organization_id
+
+    return getattr(current_user, "organization_id", None) or get_optional_active_organization_id()
+
+
 @router.get("/remediation-cards", response_model=RemediationCardsResponse)
 async def get_remediation_cards(
     student_id: Optional[UUID] = Query(None),
@@ -48,10 +58,7 @@ async def get_remediation_cards(
     Get printable remediation cards data for individual students or all students with gaps.
     Delegates to AnalyticsService for real tenant-isolated remediation card payload generation.
     """
-    from app.core.tenant import get_optional_active_organization_id
-    org_id = getattr(current_user, "organization_id", None) or get_optional_active_organization_id()
-    if not org_id:
-        org_id = UUID("00000000-0000-0000-0000-000000000000")
+    org_id = _resolve_tenant_organization_id(current_user)
     service = AnalyticsService(db)
     return await service.get_remediation_cards(organization_id=org_id, student_id=student_id)
 
@@ -66,10 +73,7 @@ async def get_competency_heatmap_get(
     Get competency heatmap data for expert analytics via GET.
     Delegates to AnalyticsService for real tenant-isolated data.
     """
-    from app.core.tenant import get_optional_active_organization_id
-    org_id = getattr(current_user, "organization_id", None) or get_optional_active_organization_id()
-    if not org_id:
-        org_id = UUID("00000000-0000-0000-0000-000000000000")
+    org_id = _resolve_tenant_organization_id(current_user)
     service = AnalyticsService(db)
     return await service.get_heatmap(organization_id=org_id, module_id=module_id)
 
@@ -85,10 +89,7 @@ async def get_competency_heatmap(
     Get competency heatmap data for expert analytics.
     Delegates to AnalyticsService for real tenant-isolated data.
     """
-    from app.core.tenant import get_optional_active_organization_id
-    org_id = getattr(current_user, "organization_id", None) or get_optional_active_organization_id()
-    if not org_id:
-        org_id = UUID("00000000-0000-0000-0000-000000000000")
+    org_id = _resolve_tenant_organization_id(current_user)
     service = AnalyticsService(db)
     return await service.get_heatmap(organization_id=org_id, module_id=module_id)
 
@@ -137,10 +138,7 @@ async def auto_group_students(
             detail=f"Invalid group_by value: {group_by}",
         )
 
-    from app.core.tenant import get_optional_active_organization_id
-    org_id = getattr(current_user, "organization_id", None) or get_optional_active_organization_id()
-    if not org_id:
-        org_id = UUID("00000000-0000-0000-0000-000000000000")
+    org_id = _resolve_tenant_organization_id(current_user)
 
     service = AnalyticsService(db)
     return await service.auto_group_students(
@@ -341,10 +339,7 @@ async def export_analytics_get(
             detail=f"Unsupported format: {format}",
         )
 
-    from app.core.tenant import get_optional_active_organization_id
-    org_id = getattr(current_user, "organization_id", None) or get_optional_active_organization_id()
-    if not org_id:
-        org_id = UUID("00000000-0000-0000-0000-000000000000")
+    org_id = _resolve_tenant_organization_id(current_user)
 
     service = AnalyticsService(db)
     try:
@@ -385,10 +380,7 @@ async def export_analytics(
             detail=f"Unsupported format: {request.format}",
         )
 
-    from app.core.tenant import get_optional_active_organization_id
-    org_id = getattr(current_user, "organization_id", None) or get_optional_active_organization_id()
-    if not org_id:
-        org_id = UUID("00000000-0000-0000-0000-000000000000")
+    org_id = _resolve_tenant_organization_id(current_user)
 
     service = AnalyticsService(db)
     try:
