@@ -315,7 +315,7 @@ So that **I can use the platform without a school and create child accounts**.
 **And** an `Organization` (type=HOUSEHOLD) is auto-created with name `"{Parent Name}'s Household"`
 **And** an `OrganizationMember` row links the parent to this org with role=PARENT
 **And** the parent can create child accounts within this household org
-**And** the parent is redirected to the parent dashboard with the household org as active context
+**And** the parent is redirected to `/parent` (not `/parent/dashboard`) with the household org as active context (`Register.vue` Line 53 uses `router.push('/parent')`)
 
 ---
 
@@ -352,6 +352,26 @@ So that **expert-only endpoints actually work for experts**.
 **And** an expert token calling an analytics endpoint returns 200, not 403
 **And** a student token calling an analytics endpoint returns 403
 **And** all role-checking functions across the codebase are audited for the same enum case bug
+**And** the `auth.ts` store replaces `useI18n()` (which requires Vue setup context) with `i18n.global.t` for any locale-dependent string access outside components
+
+---
+
+### Story 1.9: Parent PIN Management Modal
+
+As a **parent**,
+I want **to view and reset my child's 4-digit PIN from my dashboard**,
+So that **I can help my child log in if they forget their PIN**.
+
+**Acceptance Criteria:**
+
+**Given** the parent is on their dashboard
+**When** they tap "Manage Children & PINs" in the header/child selector
+**Then** a modal shows each child's name and current PIN (masked, with reveal toggle)
+**And** the parent can generate a new random PIN per child
+**And** the new PIN is persisted via `POST /api/v1/auth/children/{id}/pin`
+**And** the modal uses i18n keys for all labels
+**And** only the parent who "owns" the child can view/reset the PIN (enforced by RBAC + `parent_id` check)
+**And** the PIN reveal uses a temporary display (auto-hides after 5 seconds)
 
 ---
 
@@ -417,6 +437,7 @@ So that **questions target my real knowledge boundary, not a hardcoded 0.5**.
 **And** the next-question selector uses the real mastery estimate, not 0.5
 **And** error classification uses the engine's `ErrorClassifier`, not inline logic
 **And** the `DiagnosticEngine.sessions` in-memory dict is removed entirely — the session is read from DB each call
+**And** the student dashboard (`student/Dashboard.vue`) checks for an active diagnostic session (`status=IN_PROGRESS`) on mount and renders a prominent, dismissible "Resume Diagnostic (Question N/M)" banner that navigates back to `DiagnosticRunner.vue`
 
 ---
 
@@ -764,6 +785,7 @@ So that **I can build the content structure for diagnostics and remediation**.
 **And** an expert can edit and publish modules
 **And** a student/parent calling content-mutation endpoints gets 403
 **And** the `ModuleEditor.vue` view is fully functional (not a stub), using the real `contentStore`
+**And** the question builder in `ModuleEditor.vue` includes a side-by-side collapsible "Live Preview" toggle showing real-time student-facing rendering for all item types
 **And** the dead route `/expert/modules/:id/questions` is fixed or removed
 
 ---
@@ -892,6 +914,8 @@ So that **I see actual progress, not placeholder mock data**.
 **And** `dashboardService.ts` calls the real API (no more `Promise.resolve(mockChildren)`)
 **And** the parent sees only their own children's data (enforced by tenant + parent_id)
 **And** `src/stores/dashboardStore.ts` manages the dashboard state reactively
+**And** `dashboardService.ts` normalizes API responses defensively: `(response.data.items || response.data).map(...)`
+**And** when no diagnostic data exists for any child, the dashboard renders an onboarding checklist (Step 1: PIN, Step 2: Diagnostic, Step 3: View insights) instead of blank charts
 
 ---
 
@@ -1071,15 +1095,33 @@ So that **RTL layout is correct and maintainable**.
 
 ---
 
+### Story 10.3: Global Language Toggle in App Header
+
+As a **user on any page**,
+I want **a permanent Arabic ↔ Français toggle in the app header**,
+So that **I can switch language from any screen without navigating to a settings page**.
+
+**Acceptance Criteria:**
+
+**Given** the user is on any authenticated page
+**When** they view the app header (`AppHeader.vue`)
+**Then** a toggle switch labeled `العربية ↔ Français` is visible
+**And** tapping it switches locale, `dir` attribute, and all UI text instantly (per FR-28)
+**And** the toggle is visible on all screen sizes (including mobile)
+**And** the selected language persists in `localStorage`
+**And** the toggle uses logical CSS (no physical direction utilities)
+
+---
+
 ## Summary
 
 | Metric | Count |
 |--------|-------|
 | **Total Epics** | 10 |
-| **Wave 1 (Structural)** | 2 epics, 12 stories |
+| **Wave 1 (Structural)** | 2 epics, 13 stories |
 | **Wave 2 (Core Loop)** | 3 epics, 14 stories |
-| **Wave 3 (Feature Completion)** | 5 epics, 13 stories |
-| **Total Stories** | 39 |
+| **Wave 3 (Feature Completion)** | 5 epics, 14 stories |
+| **Total Stories** | 41 |
 | **FRs Covered** | 30/30 (100%) |
 | **ADs Addressed** | 7/7 (100%) |
 | **OQs Resolved** | OQ-4 (Story 4.3), OQ-10 (Story 3.5, confirmed absent) |
