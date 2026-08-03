@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAnalyticsStore } from '@/stores/analyticsStore'
 import type { HeatmapResponse, HeatmapCell } from '@/services/analyticsService'
@@ -23,6 +23,15 @@ onMounted(() => {
     analyticsStore.fetchHeatmap(props.moduleId)
   }
 })
+
+watch(
+  () => props.moduleId,
+  (newModuleId) => {
+    if (!props.data) {
+      analyticsStore.fetchHeatmap(newModuleId)
+    }
+  }
+)
 
 const currentData = computed(() => props.data ?? analyticsStore.heatmapData)
 const isLoading = computed(() => props.loading ?? analyticsStore.loading)

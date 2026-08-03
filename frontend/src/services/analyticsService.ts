@@ -5,7 +5,7 @@ export interface HeatmapCell {
   student_name?: string
   competency_id: string
   mastery_level: string
-  p_learned?: number
+  p_learned: number
   color?: string
   score: number
 }
@@ -33,7 +33,7 @@ export interface StudentGroup {
 
 export interface MetricsResponse {
   gap_reduction_rate: number
-  mastery_speed_days?: number
+  mastery_speed_days: number
   retention_rate: number
   resilience_score: number
 }

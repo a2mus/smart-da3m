@@ -37,7 +37,8 @@ resolution: resolved by sweep bundle dw-analytics-endpoint-service-cleanup
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md"), 2026-08-03
 location: frontend/src/components/analytics/CompetencyHeatmap.vue
 reason: Component fetches heatmap in onMounted but does not watch props.moduleId when parent dynamically changes module filter.
-status: open
+status: done 2026-08-03
+resolution: resolved by sweep bundle dw-frontend-heatmap-and-types
 
 ### DW-6: AnalyticsService.get_heatmap derives student display name from email prefix when name is absent
 
@@ -60,7 +61,8 @@ resolution: resolved by sweep bundle dw-analytics-endpoint-service-cleanup
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md"), 2026-08-03
 location: frontend/src/services/analyticsService.ts
 reason: HeatmapCell and MetricsResponse interfaces in frontend/src/services/analyticsService.ts mark p_learned and mastery_speed_days as optional.
-status: open
+status: done 2026-08-03
+resolution: resolved by sweep bundle dw-frontend-heatmap-and-types
 
 ### DW-9: Duplicate static _mastery_to_color and _mastery_to_score functions exist in analytics.py endpoint module
 
@@ -93,3 +95,8 @@ location: backend/app/services/analytics_service.py
 reason: In backend/app/services/analytics_service.py line 138, set_active_organization_id is called without storing or resetting the Token returned by ContextVar.set.
 status: done 2026-08-03
 resolution: resolved by sweep bundle dw-analytics-tenant-fallback-unification
+
+- source_spec: `D:\Developpement\Projets\WEB\smart-da3m\_bmad-output\implementation-artifacts\spec-frontend-heatmap-and-types.md`
+  summary: Backend MetricResponse schema returns `mastery_speed` while frontend MetricsResponse interface expects `mastery_speed_days`.
+  evidence: `backend/app/schemas/analytics.py` defines `mastery_speed: float` (line 90), whereas `frontend/src/services/analyticsService.ts` defines `mastery_speed_days: number` (line 36).
+
