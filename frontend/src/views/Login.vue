@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import type { UserRole } from '@/types/auth'
 import RolePicker from '@/components/common/RolePicker.vue'
 import PinInput from '@/components/common/PinInput.vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
@@ -32,7 +34,7 @@ function backToRoles() {
 
 async function handleEmailLogin() {
   if (!email.value || !password.value) {
-    error.value = 'يرجى إدخال البريد الإلكتروني وكلمة المرور'
+    error.value = t('auth.enterEmail')
     return
   }
   isLoading.value = true
@@ -43,7 +45,7 @@ async function handleEmailLogin() {
       const target = redirectPath.value || { name: authStore.getDefaultRouteForRole() }
       router.push(target)
     } else {
-      error.value = authStore.error || 'فشل تسجيل الدخول'
+      error.value = authStore.error || t('auth.invalidCredentials')
     }
   } finally {
     isLoading.value = false
@@ -52,7 +54,7 @@ async function handleEmailLogin() {
 
 async function handlePinLogin() {
   if (!parentEmail.value || pinCode.value.length < 4) {
-    error.value = 'يرجى إدخال البريد الإلكتروني للولي والرمز السري'
+    error.value = t('auth.enterPin')
     return
   }
   isLoading.value = true
@@ -63,7 +65,7 @@ async function handlePinLogin() {
       const target = redirectPath.value || { name: 'StudentDashboard' }
       router.push(target)
     } else {
-      error.value = authStore.error || 'الرمز السري غير صحيح'
+      error.value = authStore.error || t('auth.invalidCredentials')
     }
   } finally {
     isLoading.value = false
@@ -90,14 +92,14 @@ async function handlePinLogin() {
             menu_book
           </span>
           <h1 class="text-3xl font-black text-[#00535b] dark:text-teal-500">
-            إحسان
+            {{ t('app.name') }}
           </h1>
         </div>
         <h2 class="text-2xl font-bold text-on-surface">
-          {{ selectedRole ? 'تسجيل الدخول' : 'مرحباً بعودتك' }}
+          {{ selectedRole ? t('auth.login') : t('auth.welcomeBack') }}
         </h2>
         <p class="text-on-surface-variant mt-1">
-          {{ selectedRole ? '' : 'اختر دورك للمتابعة' }}
+          {{ selectedRole ? '' : t('auth.selectRoleToContinue') }}
         </p>
       </div>
 
@@ -120,11 +122,11 @@ async function handlePinLogin() {
           @click="backToRoles"
         >
           <span class="material-symbols-outlined text-lg">arrow_back</span>
-          <span class="text-sm">تغيير الدور</span>
+          <span class="text-sm">{{ t('auth.changeRole') }}</span>
         </button>
 
         <h3 class="text-xl font-bold text-on-surface mb-6 text-center">
-          {{ selectedRole === 'STUDENT' ? 'تسجيل دخول التلميذ' : selectedRole === 'PARENT' ? 'تسجيل دخول ولي الأمر' : 'تسجيل دخول الخبير' }}
+          {{ selectedRole === 'STUDENT' ? t('auth.studentLogin') : selectedRole === 'PARENT' ? t('auth.parentLogin') : t('auth.expertLogin') }}
         </h3>
 
         <!-- Parent / Expert: Email + Password -->
@@ -134,7 +136,7 @@ async function handlePinLogin() {
           @submit.prevent="handleEmailLogin"
         >
           <div>
-            <label class="block text-sm font-medium text-on-surface-variant mb-1">البريد الإلكتروني</label>
+            <label class="block text-sm font-medium text-on-surface-variant mb-1">{{ t('auth.email') }}</label>
             <input
               v-model="email"
               type="email"
@@ -147,7 +149,7 @@ async function handlePinLogin() {
             >
           </div>
           <div>
-            <label class="block text-sm font-medium text-on-surface-variant mb-1">كلمة المرور</label>
+            <label class="block text-sm font-medium text-on-surface-variant mb-1">{{ t('auth.password') }}</label>
             <input
               v-model="password"
               type="password"
@@ -180,9 +182,9 @@ async function handlePinLogin() {
               class="inline-flex items-center gap-2"
             >
               <span class="animate-spin material-symbols-outlined text-lg">progress_activity</span>
-              جاري الدخول...
+              {{ t('auth.loggingIn') }}
             </span>
-            <span v-else>تسجيل الدخول</span>
+            <span v-else>{{ t('auth.login') }}</span>
           </button>
 
           <!-- Social login -->
@@ -191,7 +193,7 @@ async function handlePinLogin() {
               <div class="w-full border-t border-outline-variant" />
             </div>
             <div class="relative flex justify-center text-sm">
-              <span class="px-4 bg-surface-container text-on-surface-variant">أو</span>
+              <span class="px-4 bg-surface-container text-on-surface-variant">{{ t('auth.or') }}</span>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-3">
@@ -219,7 +221,7 @@ async function handlePinLogin() {
           @submit.prevent="handlePinLogin"
         >
           <div>
-            <label class="block text-sm font-medium text-on-surface-variant mb-1">البريد الإلكتروني لولي الأمر</label>
+            <label class="block text-sm font-medium text-on-surface-variant mb-1">{{ t('auth.parentEmailLabel') }}</label>
             <input
               v-model="parentEmail"
               type="email"
@@ -232,7 +234,7 @@ async function handlePinLogin() {
             >
           </div>
           <div>
-            <label class="block text-sm font-medium text-on-surface-variant mb-3 text-center">الرمز السري (٤-٦ أرقام)</label>
+            <label class="block text-sm font-medium text-on-surface-variant mb-3 text-center">{{ t('auth.pinCodeLabel') }}</label>
             <PinInput
               v-model="pinCode"
               :length="6"
@@ -259,9 +261,9 @@ async function handlePinLogin() {
               class="inline-flex items-center gap-2"
             >
               <span class="animate-spin material-symbols-outlined text-lg">progress_activity</span>
-              جاري الدخول...
+              {{ t('auth.loggingIn') }}
             </span>
-            <span v-else>دخول</span>
+            <span v-else>{{ t('auth.loginAction') }}</span>
           </button>
         </form>
 
@@ -270,12 +272,12 @@ async function handlePinLogin() {
           v-if="selectedRole !== 'STUDENT'"
           class="text-center text-sm text-on-surface-variant mt-6"
         >
-          ليس لديك حساب؟
+          {{ t('auth.noAccount') }}
           <router-link
             to="/register"
             class="text-primary font-bold hover:underline"
           >
-            سجل الآن
+            {{ t('auth.registerNow') }}
           </router-link>
         </p>
       </div>

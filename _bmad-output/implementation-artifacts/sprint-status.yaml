@@ -100,6 +100,6 @@ development_status:
   epic-9-retrospective: optional
 
   epic-10: backlog
-  10-1-extract-all-hardcoded-strings-into-i18n-keys: backlog
+  10-1-extract-all-hardcoded-strings-into-i18n-keys: done
   10-2-rtl-ltr-compliance-verification-lint-enforcement: backlog
   epic-10-retrospective: optional

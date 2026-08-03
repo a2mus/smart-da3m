@@ -104,7 +104,7 @@ onMounted(loadQuestions)
       >
         <div class="animate-spin inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full" />
         <p class="mt-3 text-on-surface-variant">
-          {{ t('passport.loading', 'جاري تحميل اختبار الجواز...') }}
+          {{ t('passport.loading') }}
         </p>
       </div>
 
@@ -130,7 +130,7 @@ onMounted(loadQuestions)
             🏆
           </div>
           <h2 class="text-3xl font-bold text-tertiary mb-2">
-            {{ t('passport.congratulations', 'مبروك! اجتزت التقييم بنجاح') }}
+            {{ t('passport.congratulations') }}
           </h2>
           <p class="text-on-surface-variant">
             {{ results.message }}
@@ -146,7 +146,7 @@ onMounted(loadQuestions)
             💪
           </div>
           <h2 class="text-2xl font-bold text-on-surface mb-2">
-            {{ t('passport.keepTrying', 'واصل المحاولة! أنت على وشك الإتقان') }}
+            {{ t('passport.keepTrying') }}
           </h2>
           <p class="text-on-surface-variant">
             {{ results.message }}
@@ -164,7 +164,7 @@ onMounted(loadQuestions)
                 {{ Math.round(results.accuracy * 100) }}%
               </div>
               <div class="text-sm text-on-surface-variant">
-                {{ t('passport.accuracy', 'نسبة الدقة') }}
+                {{ t('passport.accuracy') }}
               </div>
             </div>
             <div class="text-center p-4 bg-surface-container rounded-xl">
@@ -172,18 +172,18 @@ onMounted(loadQuestions)
                 {{ results.correct_count }}/{{ results.total_questions }}
               </div>
               <div class="text-sm text-on-surface-variant">
-                {{ t('passport.questions', 'الأسئلة الصحيحة') }}
+                {{ t('passport.questions') }}
               </div>
             </div>
           </div>
 
           <div class="border-t border-outline-variant pt-4">
             <div class="flex justify-between items-center mb-2">
-              <span class="text-on-surface-variant">{{ t('passport.previousLevel', 'المستوى السابق') }}</span>
+              <span class="text-on-surface-variant">{{ t('passport.previousLevel') }}</span>
               <span class="font-medium text-on-surface">{{ results.previous_mastery_level }}</span>
             </div>
             <div class="flex justify-between items-center">
-              <span class="text-on-surface-variant">{{ t('passport.newLevel', 'المستوى الجديد') }}</span>
+              <span class="text-on-surface-variant">{{ t('passport.newLevel') }}</span>
               <span class="font-bold text-primary">{{ results.new_mastery_level }}</span>
             </div>
           </div>
@@ -197,7 +197,7 @@ onMounted(loadQuestions)
               ⭐
             </div>
             <div class="font-semibold text-secondary">
-              {{ t('passport.badgeEarned', 'حصلت على شارة الإتقان!') }}
+              {{ t('passport.badgeEarned') }}
             </div>
           </div>
         </div>
@@ -209,13 +209,13 @@ onMounted(loadQuestions)
             class="px-6 py-3 bg-surface-container hover:bg-surface-container-high text-on-surface font-semibold rounded-xl transition-colors"
             @click="retryAssessment"
           >
-            {{ t('passport.retry', 'إعادة المحاولة') }}
+            {{ t('passport.retry') }}
           </button>
           <button
             class="px-6 py-3 bg-primary hover:opacity-90 text-on-primary font-semibold rounded-xl transition-colors"
             @click="finishAssessment"
           >
-            {{ t('passport.finish', 'إنهاء التقييم') }}
+            {{ t('passport.finish') }}
           </button>
         </div>
       </div>
@@ -228,7 +228,7 @@ onMounted(loadQuestions)
         <!-- Header -->
         <div class="mb-6">
           <div class="flex justify-between items-center mb-2">
-            <span class="text-sm text-on-surface-variant">{{ t('passport.question', 'السؤال') }} {{ currentIndex + 1 }} {{ t('passport.of', 'من') }} {{ questions.length }}</span>
+            <span class="text-sm text-on-surface-variant">{{ t('passport.question') }} {{ currentIndex + 1 }} {{ t('passport.of') }} {{ questions.length }}</span>
             <span class="text-sm text-on-surface-variant">{{ Math.round(progress) }}%</span>
           </div>
           <div class="h-2 bg-surface-container rounded-full overflow-hidden">
@@ -242,7 +242,7 @@ onMounted(loadQuestions)
         <!-- Passport Badge -->
         <div class="flex items-center gap-2 mb-6 p-3 bg-primary-container rounded-xl">
           <span class="text-2xl">🛂</span>
-          <span class="font-semibold text-primary">{{ t('passport.assessmentBadge', 'اختبار الجواز البيداغوجي') }}</span>
+          <span class="font-semibold text-primary">{{ t('passport.assessmentBadge') }}</span>
         </div>
 
         <!-- Question -->
@@ -280,7 +280,7 @@ onMounted(loadQuestions)
               v-model="selectedAnswer"
               type="text"
               class="w-full p-4 rounded-xl border-2 border-outline-variant focus:border-primary bg-surface outline-none transition-all"
-              :placeholder="t('passport.enterAnswer', 'أدخل إجابتك هنا...')"
+              :placeholder="t('passport.enterAnswer')"
             >
           </div>
         </div>
@@ -295,7 +295,7 @@ onMounted(loadQuestions)
             v-if="isSubmitting"
             class="animate-spin"
           >⟳</span>
-          {{ isSubmitting ? t('passport.submitting', 'جاري التسجيل...') : (currentIndex < questions.length - 1 ? t('passport.next', 'التالي') : t('passport.finish', 'إنهاء')) }}
+          {{ isSubmitting ? t('passport.submitting') : (currentIndex < questions.length - 1 ? t('passport.next') : t('passport.finish')) }}
         </button>
       </div>
     </div>

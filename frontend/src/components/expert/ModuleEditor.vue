@@ -284,6 +284,7 @@ const handleCancel = () => {
       <div class="flex justify-end gap-3 pt-4">
         <button
           type="button"
+          data-testid="cancel-button"
           class="px-5 py-2.5 rounded-xl border border-outline-variant hover:bg-surface-container text-on-surface transition-colors font-medium"
           @click="handleCancel"
         >
@@ -291,6 +292,7 @@ const handleCancel = () => {
         </button>
         <button
           type="submit"
+          data-testid="submit-button"
           class="px-5 py-2.5 rounded-xl bg-primary text-on-primary hover:bg-primary/90 transition-colors font-medium shadow-sm"
         >
           {{ isEditMode ? t('common.save') : t('common.create') }}

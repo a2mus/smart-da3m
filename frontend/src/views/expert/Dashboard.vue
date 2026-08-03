@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const stats = ref({
   totalModules: 12,
@@ -15,10 +18,10 @@ const stats = ref({
   >
     <div class="max-w-4xl mx-auto">
       <h1 class="text-3xl font-black text-teal-700 mb-2">
-        لوحة تحكم الخبير
+        {{ t('expert.dashboardTitle') }}
       </h1>
       <p class="text-ink-500 mb-8">
-        مرحباً بك في مساحة العمل البيداغوجية
+        {{ t('expert.welcomeSubtitle') }}
       </p>
 
       <!-- Stats -->
@@ -29,7 +32,7 @@ const stats = ref({
             {{ stats.totalModules }}
           </p>
           <p class="text-sm text-ink-500 mt-1">
-            وحدة تعليمية
+            {{ t('expert.learningUnit') }}
           </p>
         </div>
         <div class="bg-surface-container rounded-2xl p-6 text-center border border-ink-100">
@@ -38,7 +41,7 @@ const stats = ref({
             {{ stats.totalStudents }}
           </p>
           <p class="text-sm text-ink-500 mt-1">
-            تلميذ
+            {{ t('expert.studentUnit') }}
           </p>
         </div>
         <div class="bg-surface-container rounded-2xl p-6 text-center border border-ink-100">
@@ -47,7 +50,7 @@ const stats = ref({
             {{ stats.pendingAlerts }}
           </p>
           <p class="text-sm text-ink-500 mt-1">
-            تنبيه معلق
+            {{ t('expert.pendingAlert') }}
           </p>
         </div>
       </div>
@@ -62,10 +65,10 @@ const stats = ref({
           <span class="material-symbols-outlined text-4xl text-teal-600 group-hover:scale-110 transition-transform">library_books</span>
           <div>
             <p class="font-bold text-ink-800 text-lg">
-              إدارة المحتوى
+              {{ t('expert.contentManagement') }}
             </p>
             <p class="text-sm text-ink-500">
-              إنشاء وتعديل الوحدات والموارد
+              {{ t('expert.contentManagementDesc') }}
             </p>
           </div>
         </router-link>
@@ -77,10 +80,10 @@ const stats = ref({
           <span class="material-symbols-outlined text-4xl text-teal-600 group-hover:scale-110 transition-transform">insights</span>
           <div>
             <p class="font-bold text-ink-800 text-lg">
-              التحليلات
+              {{ t('expert.analyticsTitle') }}
             </p>
             <p class="text-sm text-ink-500">
-              خرائط حرارية وتجميع التلاميذ
+              {{ t('expert.analyticsDesc') }}
             </p>
           </div>
         </router-link>

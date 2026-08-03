@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -30,15 +33,15 @@
           <a
             class="font-['Tajawal'] text-lg font-bold tracking-tight text-[#006D77] border-b-4 border-[#8c4e35] pb-1 hover:scale-105 transition-transform duration-300"
             href="#"
-          >الرئيسية</a>
+          >{{ t('nav.home') }}</a>
           <a
             class="font-['Tajawal'] text-lg font-bold tracking-tight text-stone-400 hover:scale-105 transition-transform duration-300"
             href="#"
-          >مساراتي</a>
+          >{{ t('student.myPathways') }}</a>
           <a
             class="font-['Tajawal'] text-lg font-bold tracking-tight text-stone-400 hover:scale-105 transition-transform duration-300"
             href="#"
-          >المكتبة</a>
+          >{{ t('student.library') }}</a>
         </nav>
         <div class="text-2xl font-black text-[#006D77] dark:text-teal-400 italic">
           Ihsane Learning
@@ -50,7 +53,7 @@
       <!-- Right Section: Journey Path (Learning Nodes) - Responsive Order 2 -->
       <section class="col-span-1 border-t pt-8 md:border-t-0 md:pt-0 md:col-span-5 flex flex-col gap-6 relative order-2 md:order-1">
         <h2 class="text-4xl font-black text-secondary mb-4">
-          خريطة التعلم
+          {{ t('student.learningMap') }}
         </h2>
         <div class="bg-surface-container-low rounded-[3rem] p-6 md:p-12 h-full relative overflow-hidden min-h-[400px]">
           <!-- Path Graphics -->
@@ -71,8 +74,8 @@
             <!-- Node 1: Completed -->
             <div class="flex items-center gap-6 md:self-end md:translate-x-4">
               <div class="flex flex-col text-start">
-                <span class="text-lg font-bold text-secondary">الجمع</span>
-                <span class="text-sm text-stone-500 font-label">مكتمل</span>
+                <span class="text-lg font-bold text-secondary">{{ t('student.addition') }}</span>
+                <span class="text-sm text-stone-500 font-label">{{ t('common.completed') }}</span>
               </div>
               <div class="w-16 h-16 md:w-20 md:h-20 bg-secondary rounded-[2.5rem] flex items-center justify-center shadow-lg shadow-secondary/20">
                 <span
@@ -92,8 +95,8 @@
                 >explore</span>
               </div>
               <div class="flex flex-col">
-                <span class="text-3xl font-black text-primary">الكسور</span>
-                <span class="text-lg font-bold text-primary-container">المهمة الحالية</span>
+                <span class="text-3xl font-black text-primary">{{ t('student.fractions') }}</span>
+                <span class="text-lg font-bold text-primary-container">{{ t('student.currentTask') }}</span>
               </div>
             </div>
             <!-- Node 3: Future -->
@@ -105,8 +108,8 @@
                 >lock</span>
               </div>
               <div class="flex flex-col">
-                <span class="text-xl font-bold text-stone-600">الضرب</span>
-                <span class="text-sm text-stone-500 font-label">قريباً</span>
+                <span class="text-xl font-bold text-stone-600">{{ t('student.multiplication') }}</span>
+                <span class="text-sm text-stone-500 font-label">{{ t('student.comingSoon') }}</span>
               </div>
             </div>
           </div>
@@ -119,10 +122,10 @@
         <div class="bg-gradient-to-br from-primary to-primary-container rounded-[3rem] p-6 md:p-10 flex flex-col md:flex-row items-center justify-between shadow-[0_20px_50px_rgba(0,83,91,0.15)] relative overflow-hidden text-center md:text-end gap-6 md:gap-0">
           <div class="relative z-10 w-full">
             <h1 class="text-4xl md:text-6xl font-black text-on-primary mb-2">
-              مرحباً يا بطل!
+              {{ t('student.welcomeHero') }}
             </h1>
             <p class="text-primary-fixed text-xl md:text-2xl font-bold">
-              أنت تقوم بعمل رائع اليوم
+              {{ t('student.doingGreat') }}
             </p>
             <div class="mt-8 inline-flex items-center gap-4 bg-surface-bright/20 backdrop-blur-md rounded-full px-6 py-3 border border-#faf9f6/10 w-full max-w-sm ms-auto me-auto md:me-0 md:ms-auto">
               <span
@@ -130,7 +133,7 @@
                 data-icon="workspace_premium"
                 style="font-variation-settings: 'FILL' 1;"
               >workspace_premium</span>
-              <span class="text-on-primary font-bold text-xl min-w-16">المستوى 2</span>
+              <span class="text-on-primary font-bold text-xl min-w-16">{{ t('student.level') }} 2</span>
               <div class="w-full h-3 bg-surface-bright/30 rounded-full overflow-hidden">
                 <div class="w-3/4 h-full bg-tertiary-fixed shadow-[0_0_15px_#acefe7]" />
               </div>
@@ -157,12 +160,12 @@
           </div>
           <div class="flex-1 text-center md:text-end w-full">
             <div class="flex flex-col gap-2">
-              <span class="text-secondary font-black text-xl md:text-2xl">الوحدة الرابعة</span>
+              <span class="text-secondary font-black text-xl md:text-2xl">{{ t('student.module4') }}</span>
               <h3 class="text-5xl md:text-7xl font-black text-primary leading-tight">
-                الكسور
+                {{ t('student.fractions') }}
               </h3>
               <p class="text-on-surface-variant text-lg md:text-xl mt-2">
-                تعلم كيف تقسم الأشياء بالتساوي مع أصدقائك
+                {{ t('student.fractionsDescription') }}
               </p>
             </div>
             
@@ -188,10 +191,10 @@
             </div>
             <div class="text-center sm:text-end">
               <h4 class="text-xl md:text-2xl font-black text-secondary">
-                نصيحة من صديق
+                {{ t('student.friendTip') }}
               </h4>
               <p class="text-on-secondary-container font-bold italic">
-                "هل تعلم أن الكسور هي مجرد أجزاء من الكل؟"
+                {{ t('student.fractionsTip') }}
               </p>
             </div>
           </div>
@@ -213,28 +216,28 @@
           data-icon="home"
           style="font-variation-settings: 'FILL' 1;"
         >home</span>
-        <span class="font-['Tajawal'] font-black text-xs md:text-sm mt-1">الرئيسية</span>
+        <span class="font-['Tajawal'] font-black text-xs md:text-sm mt-1">{{ t('nav.home') }}</span>
       </button>
       <button class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-400 px-4 md:px-6 py-2 hover:text-[#006D77] transition-colors">
         <span
           class="material-symbols-outlined text-2xl md:text-3xl"
           data-icon="map"
         >map</span>
-        <span class="font-['Tajawal'] font-black text-xs md:text-sm mt-1">مساري</span>
+        <span class="font-['Tajawal'] font-black text-xs md:text-sm mt-1">{{ t('student.myPathway') }}</span>
       </button>
       <button class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-400 px-4 md:px-6 py-2 hover:text-[#006D77] transition-colors">
         <span
           class="material-symbols-outlined text-2xl md:text-3xl"
           data-icon="workspace_premium"
         >workspace_premium</span>
-        <span class="font-['Tajawal'] font-black text-xs md:text-sm mt-1">جوائزي</span>
+        <span class="font-['Tajawal'] font-black text-xs md:text-sm mt-1">{{ t('student.myRewards') }}</span>
       </button>
       <button class="flex flex-col items-center justify-center text-stone-500 dark:text-stone-400 px-4 md:px-6 py-2 hover:text-[#006D77] transition-colors">
         <span
           class="material-symbols-outlined text-2xl md:text-3xl"
           data-icon="local_library"
         >local_library</span>
-        <span class="font-['Tajawal'] font-black text-xs md:text-sm mt-1">المكتبة</span>
+        <span class="font-['Tajawal'] font-black text-xs md:text-sm mt-1">{{ t('student.library') }}</span>
       </button>
     </nav>
   </div>

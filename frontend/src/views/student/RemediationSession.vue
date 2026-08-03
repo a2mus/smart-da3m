@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useRemediationStore } from '@/stores/remediationStore'
 import { useOfflineSync } from '@/composables/useOfflineSync'
@@ -9,6 +10,7 @@ import PassportAssessment from '@/components/student/PassportAssessment.vue'
 import DifficultyMeter from '@/components/student/DifficultyMeter.vue'
 import type { PassportEvaluation } from '@/services/remediationService'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const remediationStore = useRemediationStore()
@@ -42,7 +44,7 @@ const pathwayAtoms = computed<PathwayAtom[]>(() => {
 
     return {
       id: atom.id,
-      title: atom.content?.title || 'كبسولة تعليمية',
+      title: atom.content?.title || t('remediation.learningAtom'),
       type: atom.remediation_type,
       status,
     }
@@ -120,7 +122,7 @@ onMounted(async () => {
     >
       <div class="flex items-center gap-2">
         <span class="material-symbols-outlined text-secondary">{{ isOnline ? 'sync' : 'wifi_off' }}</span>
-        <span>{{ isOnline ? 'جاري المزامنة...' : 'أنت تفاعلي حالياً دون اتصال — سيتم حفظ نتائجك ومزامنتها لاحقاً' }}</span>
+        <span>{{ isOnline ? t('remediation.offlineSyncing') : t('remediation.offlineBanner') }}</span>
       </div>
       <span
         v-if="isSyncing"
@@ -134,7 +136,7 @@ onMounted(async () => {
     >
       <div class="animate-spin inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full" />
       <p class="mt-3 text-on-surface-variant">
-        جاري تحميل مسار المعالجة...
+        {{ t('remediation.loading') }}
       </p>
     </div>
 
@@ -155,15 +157,15 @@ onMounted(async () => {
         class="text-on-surface-variant hover:text-primary mb-6 flex items-center gap-1"
         @click="currentView = 'overview'"
       >
-        <span class="material-symbols-outlined">arrow_back</span> العودة للمسار
+        <span class="material-symbols-outlined">arrow_back</span> {{ t('remediation.backToPathway') }}
       </button>
 
       <div class="bg-surface-container rounded-[2.5rem] p-8 shadow-lg">
         <span class="bg-primary/10 text-primary px-4 py-1 rounded-full text-sm font-bold inline-block mb-4">
-          {{ selectedAtomObj.remediation_type === 'AUDIO_VISUAL' ? '🎬 سمعي بصري' : selectedAtomObj.remediation_type === 'SIMULATION' ? '🎮 محاكاة' : '🧠 خريطة ذهنية' }}
+          {{ selectedAtomObj.remediation_type === 'AUDIO_VISUAL' ? t('remediation.audioVisual') : selectedAtomObj.remediation_type === 'SIMULATION' ? t('remediation.simulation') : t('remediation.mindMap') }}
         </span>
         <h2 class="text-2xl font-black text-on-surface mb-4">
-          {{ selectedAtomObj.content?.title || 'كبسولة تعليمية' }}
+          {{ selectedAtomObj.content?.title || t('remediation.learningAtom') }}
         </h2>
         <p class="text-on-surface-variant text-sm mb-6 leading-relaxed">
           {{ selectedAtomObj.content?.description }}
@@ -183,10 +185,10 @@ onMounted(async () => {
         >
           <span class="text-2xl">💆</span>
           <p class="text-amber-700 font-medium mt-1">
-            خذ نفساً عميقاً — أنت تبلي حسناً!
+            {{ t('remediation.takeDeepBreath') }}
           </p>
           <p class="text-xs text-amber-500 mt-1">
-            استرخ قليلاً ثم تابع
+            {{ t('remediation.relaxThenContinue') }}
           </p>
         </div>
 
@@ -200,7 +202,7 @@ onMounted(async () => {
             target="_blank"
             class="text-sm text-primary underline"
           >
-            عرض المصدر / المقطع التفاعلي
+            {{ t('remediation.viewSourceMedia') }}
           </a>
         </div>
 
@@ -210,7 +212,7 @@ onMounted(async () => {
                  hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50"
           @click="handleCompleteAtom"
         >
-          {{ remediationStore.actionLoading ? 'جاري التسجيل...' : 'أكملت التمرين ✓' }}
+          {{ remediationStore.actionLoading ? t('remediation.submitting') : t('remediation.completedExercise') }}
         </button>
       </div>
     </div>
@@ -221,7 +223,7 @@ onMounted(async () => {
         class="text-on-surface-variant hover:text-primary mb-4 flex items-center gap-1 max-w-3xl mx-auto"
         @click="currentView = 'overview'"
       >
-        <span class="material-symbols-outlined">arrow_back</span> العودة للمسار
+        <span class="material-symbols-outlined">arrow_back</span> {{ t('remediation.backToPathway') }}
       </button>
       <PassportAssessment
         :competency-id="competencyId"
@@ -250,23 +252,23 @@ onMounted(async () => {
         class="text-3xl font-black mb-3"
         :class="remediationStore.passportEvaluation?.passed ? 'text-primary' : 'text-on-surface'"
       >
-        {{ remediationStore.passportEvaluation?.passed ? 'أحسنت! 🎉' : 'واصل المحاولة! 💪' }}
+        {{ remediationStore.passportEvaluation?.passed ? t('remediation.wellDone') : t('remediation.keepGoing') }}
       </h2>
       <p class="text-on-surface-variant mb-2">
-        {{ remediationStore.passportEvaluation?.message || (remediationStore.passportEvaluation?.passed ? 'لقد اجتزت اختبار الجواز بنجاح' : 'لم تتجاوز اختبار الجواز هذه المرة') }}
+        {{ remediationStore.passportEvaluation?.message || (remediationStore.passportEvaluation?.passed ? t('remediation.passedMessage') : t('remediation.failedMessage')) }}
       </p>
       <p
         class="text-sm font-bold mb-8"
         :class="remediationStore.passportEvaluation?.passed ? 'text-tertiary' : 'text-secondary'"
       >
-        المستوى الجديد: {{ remediationStore.passportEvaluation?.new_mastery_level || 'متقن' }}
+        {{ t('remediation.newLevelLabel') }} {{ remediationStore.passportEvaluation?.new_mastery_level || t('mastery.mastered') }}
       </p>
       <button
         class="bg-primary text-on-primary px-10 py-4 rounded-2xl font-bold text-lg
                hover:bg-primary/90 active:scale-95 transition-all"
         @click="goBack"
       >
-        العودة للوحة التحكم
+        {{ t('remediation.backToDashboard') }}
       </button>
     </div>
 
@@ -274,7 +276,7 @@ onMounted(async () => {
     <div v-else>
       <PathwayOverview
         :atoms="pathwayAtoms"
-        :competency-name="`مسار المعالجة — ${competencyId}`"
+        :competency-name="`${t('remediation.title')} — ${competencyId}`"
         :can-take-passport="remediationStore.canTakePassport"
         @select="selectAtom"
         @passport="startPassport"
