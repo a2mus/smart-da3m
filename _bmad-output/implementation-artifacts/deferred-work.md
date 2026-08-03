@@ -1,38 +1,85 @@
 # Deferred Work Ledger
 
-- source_spec: `_bmad-output/implementation-artifacts/spec-8-4-daily-reinforcement-recommendation.md`
-  summary: Per-request DashboardAggregator instance scoping renders instance-level _daily_cache transient across HTTP requests.
-  evidence: DashboardAggregator is instantiated per request in backend/app/api/endpoints/dashboard.py, resetting _daily_cache on each request (though underlying calculation remains deterministic).
-- source_spec: `_bmad-output/implementation-artifacts/spec-8-4-daily-reinforcement-recommendation.md`
-  summary: CompetencyProfile.last_assessed NULL ordering in get_latest_failed_competency query.
-  evidence: get_latest_failed_competency orders by last_assessed.desc() without explicit NULL handling or filtering, which may sort NULLs first in PostgreSQL.
-- source_spec: `_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md`
-  summary: Analytics endpoints fallback to active tenant context or zero-UUID sentinel when current_user.organization_id is not set.
-  evidence: GET and POST /heatmap in backend/app/api/endpoints/analytics.py fallback to get_optional_active_organization_id() or zero-UUID sentinel 00000000-0000-0000-0000-000000000000 if user has no org attribute.
-- source_spec: `_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md`
-  summary: AnalyticsService._mastery_to_score evaluates p_learned > 0 rather than explicit non-null checks.
-  evidence: In backend/app/services/analytics_service.py, if p_learned is 0.0 for a non-NOT_STARTED profile, it falls through to mastery level dictionary defaults.
-- source_spec: `_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md`
-  summary: Frontend CompetencyHeatmap.vue does not watch props.moduleId for prop changes post-mount.
-  evidence: Component fetches heatmap in onMounted but does not watch props.moduleId when parent dynamically changes module filter.
-- source_spec: `_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md`
-  summary: AnalyticsService.get_heatmap derives student display name from email prefix when name is absent.
-  evidence: AnalyticsService formats student rows as s.email.split("@")[0], exposing email username as fallback display name.
-- source_spec: `_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md`
-  summary: Unused POST /heatmap HeatmapFilters body parameter is ignored in favor of query module_id.
-  evidence: POST /heatmap accepts HeatmapFilters body but forwards only organization_id and module_id to AnalyticsService.get_heatmap.
-- source_spec: `_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md`
-  summary: Frontend analyticsService.ts type definitions contain optional fields mismatching backend required schemas.
-  evidence: HeatmapCell and MetricsResponse interfaces in frontend/src/services/analyticsService.ts mark p_learned and mastery_speed_days as optional.
-- source_spec: `_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md`
-  summary: Duplicate static _mastery_to_color and _mastery_to_score functions exist in analytics.py endpoint module.
-  evidence: backend/app/api/endpoints/analytics.py retains unused module-level helper functions alongside AnalyticsService static methods.
-- source_spec: `_bmad-output/implementation-artifacts/spec-9-2-auto-grouping-into-remediation-groups.md`
-  summary: Legacy inline helper functions _group_by_competency and _group_by_error_type remain unreferenced in backend/app/api/endpoints/analytics.py.
-  evidence: POST /api/v1/analytics/auto-group delegates directly to AnalyticsService.auto_group_students, rendering inline grouping functions in analytics.py dead code.
-- source_spec: `_bmad-output/implementation-artifacts/spec-9-4-printable-remediation-cards.md`
-  summary: Analytics remediation-cards endpoint falls back to active tenant context or zero-UUID sentinel when current_user.organization_id is not set.
-  evidence: GET /remediation-cards in backend/app/api/endpoints/analytics.py falls back to get_optional_active_organization_id() or zero-UUID sentinel 00000000-0000-0000-0000-000000000000 if User instance lacks organization_id attribute.
-- source_spec: `_bmad-output/implementation-artifacts/spec-9-4-printable-remediation-cards.md`
-  summary: AnalyticsService.get_remediation_cards invokes set_active_organization_id without resetting context variable post-request.
-  evidence: In backend/app/services/analytics_service.py line 138, set_active_organization_id is called without storing or resetting the Token returned by ContextVar.set.
+### DW-1: Per-request DashboardAggregator instance scoping renders instance-level _daily_cache transient across HTTP requests
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-8-4-daily-reinforcement-recommendation.md"), 2026-08-03
+location: backend/app/api/endpoints/dashboard.py
+reason: DashboardAggregator is instantiated per request in backend/app/api/endpoints/dashboard.py, resetting _daily_cache on each request (though underlying calculation remains deterministic).
+status: open
+
+### DW-2: CompetencyProfile.last_assessed NULL ordering in get_latest_failed_competency query
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-8-4-daily-reinforcement-recommendation.md"), 2026-08-03
+location: backend/app/services/competency_service.py
+reason: get_latest_failed_competency orders by last_assessed.desc() without explicit NULL handling or filtering, which may sort NULLs first in PostgreSQL.
+status: open
+
+### DW-3: Analytics endpoints fallback to active tenant context or zero-UUID sentinel when current_user.organization_id is not set
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md"), 2026-08-03
+location: backend/app/api/endpoints/analytics.py
+reason: GET and POST /heatmap in backend/app/api/endpoints/analytics.py fallback to get_optional_active_organization_id() or zero-UUID sentinel 00000000-0000-0000-0000-000000000000 if user has no org attribute.
+status: open
+
+### DW-4: AnalyticsService._mastery_to_score evaluates p_learned > 0 rather than explicit non-null checks
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md"), 2026-08-03
+location: backend/app/services/analytics_service.py
+reason: In backend/app/services/analytics_service.py, if p_learned is 0.0 for a non-NOT_STARTED profile, it falls through to mastery level dictionary defaults.
+status: open
+
+### DW-5: Frontend CompetencyHeatmap.vue does not watch props.moduleId for prop changes post-mount
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md"), 2026-08-03
+location: frontend/src/components/analytics/CompetencyHeatmap.vue
+reason: Component fetches heatmap in onMounted but does not watch props.moduleId when parent dynamically changes module filter.
+status: open
+
+### DW-6: AnalyticsService.get_heatmap derives student display name from email prefix when name is absent
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md"), 2026-08-03
+location: backend/app/services/analytics_service.py
+reason: AnalyticsService formats student rows as s.email.split("@")[0], exposing email username as fallback display name.
+status: open
+
+### DW-7: Unused POST /heatmap HeatmapFilters body parameter is ignored in favor of query module_id
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md"), 2026-08-03
+location: backend/app/api/endpoints/analytics.py
+reason: POST /heatmap accepts HeatmapFilters body but forwards only organization_id and module_id to AnalyticsService.get_heatmap.
+status: open
+
+### DW-8: Frontend analyticsService.ts type definitions contain optional fields mismatching backend required schemas
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md"), 2026-08-03
+location: frontend/src/services/analyticsService.ts
+reason: HeatmapCell and MetricsResponse interfaces in frontend/src/services/analyticsService.ts mark p_learned and mastery_speed_days as optional.
+status: open
+
+### DW-9: Duplicate static _mastery_to_color and _mastery_to_score functions exist in analytics.py endpoint module
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md"), 2026-08-03
+location: backend/app/api/endpoints/analytics.py
+reason: backend/app/api/endpoints/analytics.py retains unused module-level helper functions alongside AnalyticsService static methods.
+status: open
+
+### DW-10: Legacy inline helper functions _group_by_competency and _group_by_error_type remain unreferenced in backend/app/api/endpoints/analytics.py
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-2-auto-grouping-into-remediation-groups.md"), 2026-08-03
+location: backend/app/api/endpoints/analytics.py
+reason: POST /api/v1/analytics/auto-group delegates directly to AnalyticsService.auto_group_students, rendering inline grouping functions in analytics.py dead code.
+status: open
+
+### DW-11: Analytics remediation-cards endpoint falls back to active tenant context or zero-UUID sentinel when current_user.organization_id is not set
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-4-printable-remediation-cards.md"), 2026-08-03
+location: backend/app/api/endpoints/analytics.py
+reason: GET /remediation-cards in backend/app/api/endpoints/analytics.py falls back to get_optional_active_organization_id() or zero-UUID sentinel 00000000-0000-0000-0000-000000000000 if User instance lacks organization_id attribute.
+status: open
+
+### DW-12: AnalyticsService.get_remediation_cards invokes set_active_organization_id without resetting context variable post-request
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-4-printable-remediation-cards.md"), 2026-08-03
+location: backend/app/services/analytics_service.py
+reason: In backend/app/services/analytics_service.py line 138, set_active_organization_id is called without storing or resetting the Token returned by ContextVar.set.
+status: open
