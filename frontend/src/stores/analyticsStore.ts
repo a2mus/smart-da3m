@@ -5,12 +5,15 @@ import {
   type HeatmapResponse,
   type StudentGroup,
   type MetricsResponse,
+  type StudentRemediationCard,
 } from '@/services/analyticsService'
 
 export const useAnalyticsStore = defineStore('analytics', () => {
   const heatmapData = ref<HeatmapResponse | null>(null)
   const studentGroups = ref<StudentGroup[]>([])
   const metrics = ref<MetricsResponse | null>(null)
+  const remediationCards = ref<StudentRemediationCard[]>([])
+  const showPrintCardsModal = ref<boolean>(false)
   const loading = ref<boolean>(false)
   const exporting = ref<boolean>(false)
   const error = ref<string | null>(null)
@@ -57,6 +60,25 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
   }
 
+  async function fetchRemediationCards(studentId?: string) {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await analyticsService.getRemediationCards(studentId)
+      remediationCards.value = res.cards || []
+    } catch (err: unknown) {
+      console.error('analyticsStore fetchRemediationCards error:', err)
+      error.value = err instanceof Error ? err.message : 'Failed to fetch remediation cards'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  function triggerPrintCards(studentId?: string) {
+    showPrintCardsModal.value = true
+    fetchRemediationCards(studentId)
+  }
+
   async function exportReport(format: 'pdf' | 'csv' = 'csv', reportType: string = 'heatmap') {
     exporting.value = true
     loading.value = true
@@ -85,6 +107,8 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     heatmapData,
     studentGroups,
     metrics,
+    remediationCards,
+    showPrintCardsModal,
     loading,
     exporting,
     error,
@@ -95,5 +119,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     toggleAutoGroupsOverlay,
     fetchMetrics,
     exportReport,
+    fetchRemediationCards,
+    triggerPrintCards,
   }
 })

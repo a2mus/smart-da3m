@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { useAnalyticsStore } from '@/stores/analyticsStore'
 import CompetencyHeatmap from '@/components/expert/CompetencyHeatmap.vue'
+import PrintableRemediationCards from '@/components/expert/PrintableRemediationCards.vue'
 
 const analyticsStore = useAnalyticsStore()
 
@@ -85,6 +86,13 @@ onMounted(() => {
         </div>
         <div class="flex items-center gap-3">
           <button
+            class="flex items-center gap-2 px-4 py-2.5 bg-primary-container text-on-primary-container hover:bg-primary-fixed font-bold text-sm rounded-xl border border-primary-container transition-all duration-200 shadow-sm"
+            @click="analyticsStore.triggerPrintCards()"
+          >
+            <span class="material-symbols-outlined text-lg">print</span>
+            <span>بطاقات المعالجة</span>
+          </button>
+          <button
             class="flex items-center gap-2 px-4 py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-primary font-bold text-sm rounded-xl border border-outline-variant/30 transition-all duration-200 shadow-sm disabled:opacity-50"
             :disabled="analyticsStore.exporting"
             @click="analyticsStore.exportReport('heatmap', 'csv')"
@@ -116,5 +124,19 @@ onMounted(() => {
         />
       </section>
     </main>
+
+    <!-- Printable Remediation Cards Overlay / Modal -->
+    <div
+      v-if="analyticsStore.showPrintCardsModal"
+      class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
+    >
+      <div class="max-w-5xl mx-auto my-8">
+        <PrintableRemediationCards
+          :cards="analyticsStore.remediationCards"
+          :loading="analyticsStore.loading"
+          @close="analyticsStore.showPrintCardsModal = false"
+        />
+      </div>
+    </div>
   </div>
 </template>

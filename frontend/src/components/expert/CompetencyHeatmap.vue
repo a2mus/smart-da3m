@@ -90,6 +90,10 @@ const handleExportPdf = () => {
 const handleExportCsv = () => {
   analyticsStore.exportReport('csv', 'heatmap')
 }
+
+const handlePrintCards = () => {
+  analyticsStore.triggerPrintCards()
+}
 </script>
 
 <template>
@@ -124,6 +128,15 @@ const handleExportCsv = () => {
         >
           <span class="i-lucide-file-spread-sheet w-3.5 h-3.5 text-tertiary" />
           {{ t('analytics.exportCsv', 'تصدير CSV') }}
+        </button>
+
+        <button
+          type="button"
+          class="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors bg-primary-container text-on-primary-container border border-primary-container hover:bg-primary-fixed flex items-center gap-1.5"
+          @click="handlePrintCards"
+        >
+          <span class="material-symbols-outlined text-sm text-primary">print</span>
+          {{ t('analytics.printRemediationCards', 'طباعة بطاقات المعالجة') }}
         </button>
       </div>
 

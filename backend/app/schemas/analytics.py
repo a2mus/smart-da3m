@@ -131,3 +131,33 @@ class ExportResponse(BaseModel):
     format: str
     report_type: str
     generated_at: str
+
+
+# ==================== Remediation Cards Schemas ====================
+
+class RemediationAtomItem(BaseModel):
+    """Recommended remediation knowledge atom item."""
+
+    id: Optional[str] = None
+    title: str
+    description: str
+    content_type: str = "EXPLANATION"
+
+
+class StudentRemediationCard(BaseModel):
+    """Remediation card for an individual student."""
+
+    student_id: UUID
+    student_name: str
+    grade_level: str = "Primary"
+    failed_competencies: List[str]
+    error_classifications: List[str]
+    recommended_atoms: List[RemediationAtomItem]
+    generated_at: str
+
+
+class RemediationCardsResponse(BaseModel):
+    """Response schema for remediation cards endpoint."""
+
+    cards: List[StudentRemediationCard]
+    total_cards: int

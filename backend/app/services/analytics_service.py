@@ -15,7 +15,10 @@ from app.schemas.analytics import (
     HeatmapCell,
     HeatmapFilters,
     HeatmapResponse,
+    RemediationAtomItem,
+    RemediationCardsResponse,
     StudentCompetencyRow,
+    StudentRemediationCard,
 )
 
 
@@ -121,6 +124,75 @@ class AnalyticsService:
             groups=groups,
             total_groups=len(groups),
             group_by=group_by,
+        )
+
+    async def get_remediation_cards(
+        self,
+        organization_id: UUID,
+        student_id: Optional[UUID] = None,
+        student_ids: Optional[List[UUID]] = None,
+    ) -> RemediationCardsResponse:
+        from datetime import datetime, timezone
+        from app.core.tenant import set_active_organization_id
+
+        set_active_organization_id(organization_id)
+
+        profiles = await self.repo.get_remediation_cards_data(
+            organization_id=organization_id,
+            student_id=student_id,
+            student_ids=student_ids,
+        )
+        students = await self.repo.get_students_for_heatmap(organization_id)
+        student_map = {
+            s.id: s.email.split("@")[0] if s.email else f"Student {str(s.id)[:8]}"
+            for s in students
+        }
+
+        if student_id is not None and student_id not in student_map:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Student not found in organization")
+
+        grouped: dict[UUID, List[CompetencyProfile]] = {}
+        for p in profiles:
+            grouped.setdefault(p.student_id, []).append(p)
+
+        cards: List[StudentRemediationCard] = []
+        now_iso = datetime.now(timezone.utc).isoformat()
+
+        for sid, p_list in grouped.items():
+            s_name = student_map.get(sid, f"Student {str(sid)[:8]}")
+            failed_competencies = sorted(list(set(p.competency_id for p in p_list)))
+            error_classifications = [
+                "CONCEPTUAL" if p.mastery_level == MasteryLevel.NOT_STARTED else "PROCESS"
+                for p in p_list
+            ]
+            unique_errors = sorted(list(set(error_classifications)))
+
+            atoms = [
+                RemediationAtomItem(
+                    id=f"atom-{comp}",
+                    title=f"كبسولة معالجة للكفاءة: {comp}",
+                    description=f"وحدة معرفية داعمة لمعالجة التعثر في {comp}",
+                    content_type="MICRO_LESSON",
+                )
+                for comp in failed_competencies
+            ]
+
+            cards.append(
+                StudentRemediationCard(
+                    student_id=sid,
+                    student_name=s_name,
+                    grade_level="Primary",
+                    failed_competencies=failed_competencies,
+                    error_classifications=unique_errors,
+                    recommended_atoms=atoms,
+                    generated_at=now_iso,
+                )
+            )
+
+        return RemediationCardsResponse(
+            cards=cards,
+            total_cards=len(cards),
         )
 
     async def export_report(

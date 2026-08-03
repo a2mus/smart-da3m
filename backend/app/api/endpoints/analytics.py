@@ -29,12 +29,31 @@ from app.schemas.analytics import (
     HeatmapFilters,
     HeatmapResponse,
     MetricResponse,
+    RemediationCardsResponse,
     StudentCompetencyRow,
 )
 from app.services.analytics_service import AnalyticsService
 from app.services.report_exporter import ReportExporter
 
 router = APIRouter()
+
+
+@router.get("/remediation-cards", response_model=RemediationCardsResponse)
+async def get_remediation_cards(
+    student_id: Optional[UUID] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_expert),
+) -> RemediationCardsResponse:
+    """
+    Get printable remediation cards data for individual students or all students with gaps.
+    Delegates to AnalyticsService for real tenant-isolated remediation card payload generation.
+    """
+    from app.core.tenant import get_optional_active_organization_id
+    org_id = getattr(current_user, "organization_id", None) or get_optional_active_organization_id()
+    if not org_id:
+        org_id = UUID("00000000-0000-0000-0000-000000000000")
+    service = AnalyticsService(db)
+    return await service.get_remediation_cards(organization_id=org_id, student_id=student_id)
 
 
 @router.get("/heatmap", response_model=HeatmapResponse)

@@ -30,3 +30,9 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-9-2-auto-grouping-into-remediation-groups.md`
   summary: Legacy inline helper functions _group_by_competency and _group_by_error_type remain unreferenced in backend/app/api/endpoints/analytics.py.
   evidence: POST /api/v1/analytics/auto-group delegates directly to AnalyticsService.auto_group_students, rendering inline grouping functions in analytics.py dead code.
+- source_spec: `_bmad-output/implementation-artifacts/spec-9-4-printable-remediation-cards.md`
+  summary: Analytics remediation-cards endpoint falls back to active tenant context or zero-UUID sentinel when current_user.organization_id is not set.
+  evidence: GET /remediation-cards in backend/app/api/endpoints/analytics.py falls back to get_optional_active_organization_id() or zero-UUID sentinel 00000000-0000-0000-0000-000000000000 if User instance lacks organization_id attribute.
+- source_spec: `_bmad-output/implementation-artifacts/spec-9-4-printable-remediation-cards.md`
+  summary: AnalyticsService.get_remediation_cards invokes set_active_organization_id without resetting context variable post-request.
+  evidence: In backend/app/services/analytics_service.py line 138, set_active_organization_id is called without storing or resetting the Token returned by ContextVar.set.
