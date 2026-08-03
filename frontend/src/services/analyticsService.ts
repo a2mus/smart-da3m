@@ -25,8 +25,15 @@ export interface StudentGroup {
 
 export interface MetricsResponse {
   total_students: number
-  overall_mastery_rate: number
-  at_risk_students_count: number
+  overall_mastery_rate?: number
+  at_risk_students_count?: number
+  gap_reduction_rate?: number
+  mastery_speed?: number
+  mastery_speed_days?: number
+  retention_rate?: number
+  effort_vs_results?: number
+  resilience_score?: number
+  total_assessments?: number
 }
 
 export interface ExportResponse {

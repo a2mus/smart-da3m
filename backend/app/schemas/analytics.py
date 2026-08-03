@@ -90,6 +90,9 @@ class MetricResponse(BaseModel):
     mastery_speed: float = Field(
         ..., description="Average sessions to achieve mastery"
     )
+    mastery_speed_days: Optional[float] = Field(
+        None, description="Average days to achieve mastery (aligned field)"
+    )
     retention_rate: float = Field(
         ..., description="Percentage retaining mastery after 1 week"
     )

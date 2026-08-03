@@ -101,5 +101,19 @@ resolution: resolved by sweep bundle dw-analytics-tenant-fallback-unification
 origin: migrated from legacy ledger ("spec-frontend-heatmap-and-types.md"), 2026-08-03
 location: backend/app/schemas/analytics.py, frontend/src/services/analyticsService.ts
 reason: Backend MetricResponse schema returns `mastery_speed` while frontend MetricsResponse interface expects `mastery_speed_days`. Evidence: `backend/app/schemas/analytics.py` defines `mastery_speed: float` (line 90), whereas `frontend/src/services/analyticsService.ts` defines `mastery_speed_days: number` (line 36).
-status: open
+status: done 2026-08-03
+resolution: resolved by sweep bundle dw-dw-metrics-response-field-alignment
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-metrics-response-field-alignment.md`
+  summary: Analytics endpoint get_platform_metrics empty profiles path returns mastery_speed_days as null while populated profiles path returns float.
+  evidence: backend/app/api/endpoints/analytics.py lines 155-163 omits mastery_speed_days in empty-profile MetricResponse initialization.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-metrics-response-field-alignment.md`
+  summary: Frontend MetricsResponse interface retains legacy fields overall_mastery_rate and at_risk_students_count not returned by backend MetricResponse schema.
+  evidence: frontend/src/services/analyticsService.ts retains overall_mastery_rate and at_risk_students_count optional properties whereas backend/app/schemas/analytics.py MetricResponse does not define them.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-metrics-response-field-alignment.md`
+  summary: Lack of HTTP integration test for mastery_speed_days response field on GET /analytics/metrics endpoint.
+  evidence: test_metric_response_schema_fields in backend/tests/api/test_rbac_analytics.py validates schema unit model dump but does not test HTTP response payload.
+
 
