@@ -85,23 +85,18 @@ development_status:
   7-2-image-choice-item-type-fr-8c: done
   epic-7-retrospective: optional
 
-  epic-8: in-progress
+  epic-8: done
   8-1-real-dashboard-api-replace-mock-dashboardservice: done
   8-2-subject-strength-radar-chart-with-vue-chartjs: done
-<<<<<<< HEAD
-  8-3-smart-insight-messages-zero-raw-scores: backlog
-  8-4-daily-reinforcement-recommendation: done
-=======
   8-3-smart-insight-messages-zero-raw-scores: done
-  8-4-daily-reinforcement-recommendation: backlog
->>>>>>> 91cbe7fc61a14acb6e06214d06791a9e8a2cd532
+  8-4-daily-reinforcement-recommendation: done
   epic-8-retrospective: optional
 
-  epic-9: backlog
+  epic-9: done
   9-1-real-competency-heatmap-data: done
   9-2-auto-grouping-into-remediation-groups: done
   9-3-report-export-pdf-csv-wire-orphaned-exporter: done
-  9-4-printable-remediation-cards: backlog
+  9-4-printable-remediation-cards: done
   epic-9-retrospective: optional
 
   epic-10: backlog
