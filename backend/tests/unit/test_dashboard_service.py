@@ -62,3 +62,20 @@ def test_generate_insights_mastery_level_enum():
     for insight in insights:
         assert insight["text"] != ""
         assert "%" not in insight["text"]
+
+
+@pytest.mark.asyncio
+async def test_daily_recommendation_cache_scoping():
+    DashboardAggregator.clear_daily_cache()
+    student_id = "00000000-0000-0000-0000-000000000001"
+
+    inst1 = DashboardAggregator(db=MagicMock())
+    inst1.repo.get_latest_failed_competency = MagicMock(return_value=None)
+    rec1 = await inst1.generate_daily_recommendation(student_id, [{"name": "Mathematics", "score": 30}])
+
+    inst2 = DashboardAggregator(db=MagicMock())
+    inst2.repo.get_latest_failed_competency = MagicMock(return_value=None)
+    rec2 = await inst2.generate_daily_recommendation(student_id, [{"name": "French", "score": 20}])
+
+    assert rec1 == rec2
+    DashboardAggregator.clear_daily_cache()

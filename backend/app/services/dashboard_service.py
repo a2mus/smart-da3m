@@ -25,6 +25,13 @@ class DashboardAggregator:
     - Smart recommendations
     """
 
+    _daily_cache: Dict[str, Dict[str, Any]] = {}
+
+    @classmethod
+    def clear_daily_cache(cls) -> None:
+        """Clear the shared daily recommendation cache."""
+        cls._daily_cache.clear()
+
     def __init__(
         self,
         db: AsyncSession,
@@ -276,8 +283,8 @@ class DashboardAggregator:
         today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         cache_key = f"{student_id}_{today_str}"
 
-        if hasattr(self, "_daily_cache") and cache_key in self._daily_cache:
-            return self._daily_cache[cache_key]
+        if cache_key in DashboardAggregator._daily_cache:
+            return DashboardAggregator._daily_cache[cache_key]
 
         failed_comp = None
         if hasattr(self.repo, "get_latest_failed_competency"):
@@ -337,9 +344,7 @@ class DashboardAggregator:
             else:
                 rec = OFF_PLATFORM_TEMPLATES[0]
 
-        if not hasattr(self, "_daily_cache"):
-            self._daily_cache = {}
-        self._daily_cache[cache_key] = rec
+        DashboardAggregator._daily_cache[cache_key] = rec
         return rec
 
     async def get_child_dashboard_data(self, student_id: UUID) -> Dict[str, Any]:

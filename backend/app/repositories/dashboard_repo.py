@@ -111,7 +111,7 @@ class DashboardRepo(BaseRepository[User]):
                     [MasteryLevel.NOT_STARTED, MasteryLevel.ATTEMPTED]
                 ),
             )
-            .order_by(CompetencyProfile.last_assessed.desc())
+            .order_by(CompetencyProfile.last_assessed.desc().nulls_last())
             .limit(1)
         )
         if self.tenant_id is not None and hasattr(CompetencyProfile, "organization_id"):

@@ -5,14 +5,16 @@
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-8-4-daily-reinforcement-recommendation.md"), 2026-08-03
 location: backend/app/api/endpoints/dashboard.py
 reason: DashboardAggregator is instantiated per request in backend/app/api/endpoints/dashboard.py, resetting _daily_cache on each request (though underlying calculation remains deterministic).
-status: open
+status: done 2026-08-03
+resolution: resolved by sweep bundle dw-dashboard-scoping-and-null-ordering
 
 ### DW-2: CompetencyProfile.last_assessed NULL ordering in get_latest_failed_competency query
 
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-8-4-daily-reinforcement-recommendation.md"), 2026-08-03
 location: backend/app/services/competency_service.py
 reason: get_latest_failed_competency orders by last_assessed.desc() without explicit NULL handling or filtering, which may sort NULLs first in PostgreSQL.
-status: open
+status: done 2026-08-03
+resolution: resolved by sweep bundle dw-dashboard-scoping-and-null-ordering
 
 ### DW-3: Analytics endpoints fallback to active tenant context or zero-UUID sentinel when current_user.organization_id is not set
 
