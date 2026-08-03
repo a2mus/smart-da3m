@@ -96,7 +96,10 @@ reason: In backend/app/services/analytics_service.py line 138, set_active_organi
 status: done 2026-08-03
 resolution: resolved by sweep bundle dw-analytics-tenant-fallback-unification
 
-- source_spec: `D:\Developpement\Projets\WEB\smart-da3m\_bmad-output\implementation-artifacts\spec-frontend-heatmap-and-types.md`
-  summary: Backend MetricResponse schema returns `mastery_speed` while frontend MetricsResponse interface expects `mastery_speed_days`.
-  evidence: `backend/app/schemas/analytics.py` defines `mastery_speed: float` (line 90), whereas `frontend/src/services/analyticsService.ts` defines `mastery_speed_days: number` (line 36).
+### DW-13: Backend MetricResponse schema returns `mastery_speed` while frontend MetricsResponse interface expects `mastery_speed_days`.
+
+origin: migrated from legacy ledger ("spec-frontend-heatmap-and-types.md"), 2026-08-03
+location: backend/app/schemas/analytics.py, frontend/src/services/analyticsService.ts
+reason: Backend MetricResponse schema returns `mastery_speed` while frontend MetricsResponse interface expects `mastery_speed_days`. Evidence: `backend/app/schemas/analytics.py` defines `mastery_speed: float` (line 90), whereas `frontend/src/services/analyticsService.ts` defines `mastery_speed_days: number` (line 36).
+status: open
 
