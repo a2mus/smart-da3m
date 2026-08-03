@@ -157,6 +157,63 @@ class AnalyticsService:
         else:
             raise ValueError(f"Unsupported format: {export_format}")
 
+    async def get_remediation_cards(
+        self,
+        organization_id: UUID,
+        student_id: Optional[UUID] = None,
+        group_id: Optional[str] = None,
+    ) -> "RemediationCardsResponse":
+        """
+        Build print-formatted remediation cards for a student or remediation group.
+        """
+        from app.schemas.analytics import (
+            RemediationCardData,
+            RemediationCardItem,
+            RemediationCardsResponse,
+        )
+
+        if not student_id and not group_id:
+            raise ValueError("Either student_id or group_id must be provided")
+
+        students = await self.repo.get_remediation_card_data(
+            organization_id=organization_id,
+            student_id=student_id,
+            group_id=group_id,
+        )
+
+        cards: List[RemediationCardData] = []
+        for s in students:
+            profiles = await self.repo.get_auto_group_data(
+                organization_id=organization_id,
+                student_ids=[s.id],
+            )
+            items: List[RemediationCardItem] = []
+            for p in profiles:
+                items.append(
+                    RemediationCardItem(
+                        competency_id=p.competency_id,
+                        competency_name=f"Competency {p.competency_id}",
+                        mastery_level=p.mastery_level.value,
+                        error_classifications=["RESOURCE", "PROCESS"],
+                        recommended_atoms=[f"Atom-{p.competency_id}-01", f"Atom-{p.competency_id}-02"],
+                    )
+                )
+
+            cards.append(
+                RemediationCardData(
+                    student_id=s.id,
+                    student_name=s.email.split("@")[0] if s.email else f"Student {str(s.id)[:8]}",
+                    grade_level="Primary",
+                    group_name=group_id or "Standard Remediation Group",
+                    items=items,
+                )
+            )
+
+        return RemediationCardsResponse(
+            cards=cards,
+            total_cards=len(cards),
+        )
+
     @staticmethod
     def _mastery_to_color(mastery: MasteryLevel) -> str:
         colors = {

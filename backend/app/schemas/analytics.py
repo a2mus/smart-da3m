@@ -131,3 +131,32 @@ class ExportResponse(BaseModel):
     format: str
     report_type: str
     generated_at: str
+
+
+# ==================== Remediation Cards Schemas ====================
+
+class RemediationCardItem(BaseModel):
+    """Specific competency remediation details for a student card."""
+
+    competency_id: str
+    competency_name: Optional[str] = None
+    mastery_level: str
+    error_classifications: List[str] = Field(default_factory=list)
+    recommended_atoms: List[str] = Field(default_factory=list)
+
+
+class RemediationCardData(BaseModel):
+    """Remediation card content for a single student."""
+
+    student_id: UUID
+    student_name: str
+    grade_level: str = "Primary"
+    group_name: Optional[str] = None
+    items: List[RemediationCardItem] = Field(default_factory=list)
+
+
+class RemediationCardsResponse(BaseModel):
+    """Response for printable remediation cards endpoint."""
+
+    cards: List[RemediationCardData]
+    total_cards: int

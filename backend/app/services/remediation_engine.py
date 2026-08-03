@@ -83,12 +83,27 @@ class RemediationEngine:
     ) -> Dict[str, Any]:
         from datetime import datetime, timezone
 
+        default_atoms = [
+            {
+                "id": uuid4(),
+                "title": f"Concept Overview: {competency_id}",
+                "content": f"Remediation content for group {student_group}",
+                "type": "CONCEPT",
+            },
+            {
+                "id": uuid4(),
+                "title": f"Interactive Practice: {competency_id}",
+                "content": f"Practice problems for group {student_group}",
+                "type": "PRACTICE",
+            },
+        ]
+
         path = {
             "id": uuid4(),
             "student_id": student_id,
             "competency_id": competency_id,
             "status": RemediationPathStatus.IN_PROGRESS,
-            "atoms": [],
+            "atoms": default_atoms,
             "atoms_completed": [],
             "started_at": datetime.now(timezone.utc),
             "current_difficulty": 5,

@@ -53,7 +53,8 @@ async def get_remediation_pathway(
     current_user: User = Depends(get_current_student),
 ) -> RemediationPathResponse:
     """Get or create a personalized remediation pathway."""
-    user_org_id = getattr(current_user, "organization_id", None)
+    from app.core.tenant import get_optional_active_organization_id
+    user_org_id = get_optional_active_organization_id() or getattr(current_user, "organization_id", None)
     if not user_org_id:
         result_org = await db.execute(
             select(Organization.id).limit(1)

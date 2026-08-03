@@ -36,6 +36,18 @@ class BayesianKnowledgeTracing:
         self.params = BKTParams(p_learn=p_learn, p_guess=p_guess, p_slip=p_slip)
         self.p_learned = 0.0
 
+    @property
+    def p_learn(self) -> float:
+        return self.params.p_learn
+
+    @property
+    def p_guess(self) -> float:
+        return self.params.p_guess
+
+    @property
+    def p_slip(self) -> float:
+        return self.params.p_slip
+
     def update(self, is_correct: bool) -> None:
         self.p_learned = update_mastery(self.p_learned, is_correct, self.params)
 

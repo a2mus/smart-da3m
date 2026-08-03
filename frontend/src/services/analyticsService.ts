@@ -46,6 +46,27 @@ export interface ExportResponse {
   generated_at: string
 }
 
+export interface RemediationCardItem {
+  competency_id: string
+  competency_name?: string
+  mastery_level: string
+  error_classifications: string[]
+  recommended_atoms: string[]
+}
+
+export interface RemediationCardData {
+  student_id: string
+  student_name: string
+  grade_level: string
+  group_name?: string
+  items: RemediationCardItem[]
+}
+
+export interface RemediationCardsResponse {
+  cards: RemediationCardData[]
+  total_cards: number
+}
+
 export const analyticsService = {
   async getHeatmap(moduleId?: string): Promise<HeatmapResponse> {
     const params = moduleId ? { module_id: moduleId } : {}
@@ -75,6 +96,17 @@ export const analyticsService = {
       report_type: reportType,
       student_ids: studentIds,
     })
+    return response.data
+  },
+
+  async getRemediationCards(
+    studentId?: string,
+    groupId?: string
+  ): Promise<RemediationCardsResponse> {
+    const params: Record<string, string> = {}
+    if (studentId) params.student_id = studentId
+    if (groupId) params.group_id = groupId
+    const response = await http.get<RemediationCardsResponse>('/analytics/remediation-cards', { params })
     return response.data
   },
 }

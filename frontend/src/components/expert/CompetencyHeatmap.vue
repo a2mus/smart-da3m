@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAnalyticsStore } from '@/stores/analyticsStore'
 import type { HeatmapResponse, HeatmapCell } from '@/services/analyticsService'
+import RemediationCardPrintView from '@/components/expert/RemediationCardPrintView.vue'
 
 const { t } = useI18n()
 const analyticsStore = useAnalyticsStore()
@@ -90,6 +91,10 @@ const handleExportPdf = () => {
 const handleExportCsv = () => {
   analyticsStore.exportReport('csv', 'heatmap')
 }
+
+const handlePrintCards = () => {
+  analyticsStore.fetchRemediationCards()
+}
 </script>
 
 <template>
@@ -124,6 +129,15 @@ const handleExportCsv = () => {
         >
           <span class="i-lucide-file-spread-sheet w-3.5 h-3.5 text-tertiary" />
           {{ t('analytics.exportCsv', 'تصدير CSV') }}
+        </button>
+
+        <button
+          type="button"
+          class="px-3 py-1.5 text-xs font-semibold rounded-md transition-colors bg-primary-container text-on-primary-container border border-primary/20 hover:bg-primary-container/80 flex items-center gap-1.5"
+          @click="handlePrintCards"
+        >
+          <span class="i-lucide-printer w-3.5 h-3.5 text-primary" />
+          {{ t('analytics.printCards', 'طباعة بطاقات المعالجة') }}
         </button>
       </div>
 
@@ -297,6 +311,9 @@ const handleExportCsv = () => {
         <span class="text-ink-600">{{ t('mastery.not_started', 'غير مكتسب') }} / {{ t('mastery.attempted', 'في طور الإكتساب') }}</span>
       </div>
     </div>
+
+    <!-- Printable Remediation Cards View/Modal -->
+    <RemediationCardPrintView />
   </div>
 </template>
 
