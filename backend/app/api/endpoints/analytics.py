@@ -91,31 +91,11 @@ async def get_competency_heatmap(
     """
     org_id = _resolve_tenant_organization_id(current_user)
     service = AnalyticsService(db)
-    return await service.get_heatmap(organization_id=org_id, module_id=module_id)
-
-
-def _mastery_to_color(mastery: MasteryLevel) -> str:
-    """Convert mastery level to heatmap color."""
-    colors = {
-        MasteryLevel.NOT_STARTED: "#fee2e2",  # Red-100
-        MasteryLevel.ATTEMPTED: "#fef3c7",  # Amber-100
-        MasteryLevel.FAMILIAR: "#fef9c3",  # Yellow-100
-        MasteryLevel.PROFICIENT: "#d1fae5",  # Emerald-100
-        MasteryLevel.MASTERED: "#86efac",  # Green-300
-    }
-    return colors.get(mastery, "#f3f4f6")
-
-
-def _mastery_to_score(mastery: MasteryLevel) -> int:
-    """Convert mastery level to numerical score."""
-    scores = {
-        MasteryLevel.NOT_STARTED: 0,
-        MasteryLevel.ATTEMPTED: 25,
-        MasteryLevel.FAMILIAR: 50,
-        MasteryLevel.PROFICIENT: 75,
-        MasteryLevel.MASTERED: 100,
-    }
-    return scores.get(mastery, 0)
+    return await service.get_heatmap(
+        organization_id=org_id,
+        module_id=module_id,
+        filters=filters,
+    )
 
 
 @router.post("/auto-group", response_model=AutoGroupResponse)
@@ -146,103 +126,6 @@ async def auto_group_students(
         filters=filters,
         group_by=group_by,
     )
-
-
-async def _group_by_competency(
-    db: AsyncSession, filters: HeatmapFilters
-) -> List[Dict[str, Any]]:
-    """Group students by shared unmastered competencies."""
-    # Get students with NOT_STARTED or ATTEMPTED mastery
-    query = (
-        select(
-            CompetencyProfile.competency_id,
-            CompetencyProfile.mastery_level,
-            func.array_agg(CompetencyProfile.student_id).label("student_ids"),
-        )
-        .where(
-            CompetencyProfile.mastery_level.in_(
-                [MasteryLevel.NOT_STARTED, MasteryLevel.ATTEMPTED]
-            )
-        )
-        .group_by(CompetencyProfile.competency_id, CompetencyProfile.mastery_level)
-    )
-
-    if filters.competency_ids:
-        query = query.where(
-            CompetencyProfile.competency_id.in_(filters.competency_ids)
-        )
-
-    if filters.student_ids:
-        query = query.where(
-            CompetencyProfile.student_id.in_(filters.student_ids)
-        )
-
-    result = await db.execute(query)
-    rows = result.all()
-
-    groups = []
-    for row in rows:
-        student_count = len(row.student_ids) if row.student_ids else 0
-        if student_count > 1:  # Only groups with 2+ students
-            groups.append({
-                "group_id": f"competency_{row.competency_id}_{row.mastery_level.value}",
-                "name": f"{row.competency_id} - {row.mastery_level.value}",
-                "student_count": student_count,
-                "student_ids": [str(sid) for sid in row.student_ids],
-                "criteria": {
-                    "competency_id": row.competency_id,
-                    "mastery_level": row.mastery_level.value,
-                },
-                "recommended_action": f"Collective remediation for {row.competency_id}",
-            })
-
-    # Sort by student count descending
-    groups.sort(key=lambda x: x["student_count"], reverse=True)
-    return groups
-
-
-async def _group_by_error_type(
-    db: AsyncSession, filters: HeatmapFilters
-) -> List[Dict[str, Any]]:
-    """Group students by shared error types."""
-    # Get error patterns from diagnostic answers
-    query = (
-        select(
-            DiagnosticAnswer.error_classification,
-            func.array_agg(DiagnosticAnswer.session_id).label("session_ids"),
-        )
-        .where(DiagnosticAnswer.error_classification != ErrorClassification.NONE)
-        .group_by(DiagnosticAnswer.error_classification)
-    )
-
-    result = await db.execute(query)
-    rows = result.all()
-
-    groups = []
-    for row in rows:
-        session_ids = row.session_ids if row.session_ids else []
-
-        # Get unique students from sessions
-        student_query = select(DiagnosticSession.student_id).where(
-            DiagnosticSession.id.in_(session_ids)
-        )
-        student_result = await db.execute(student_query)
-        student_ids = list(set(student_result.scalars().all()))
-
-        if len(student_ids) > 1:
-            groups.append({
-                "group_id": f"error_{row.error_classification.value}",
-                "name": f"{row.error_classification.value} Errors",
-                "student_count": len(student_ids),
-                "student_ids": [str(sid) for sid in student_ids],
-                "criteria": {
-                    "error_type": row.error_classification.value,
-                },
-                "recommended_action": f"Focus on {row.error_classification.value.lower()} error prevention",
-            })
-
-    groups.sort(key=lambda x: x["student_count"], reverse=True)
-    return groups
 
 
 @router.get("/metrics", response_model=MetricResponse)

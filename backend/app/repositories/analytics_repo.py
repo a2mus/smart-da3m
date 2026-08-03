@@ -12,6 +12,7 @@ from app.models.diagnostic import CompetencyProfile, DiagnosticSession, MasteryL
 from app.models.organization import OrganizationMember
 from app.models.user import User, UserRole
 from app.repositories.base import BaseRepository
+from app.schemas.analytics import HeatmapFilters
 
 
 class AnalyticsRepo(BaseRepository[CompetencyProfile]):
@@ -21,11 +22,14 @@ class AnalyticsRepo(BaseRepository[CompetencyProfile]):
         super().__init__(CompetencyProfile, db)
 
     async def get_heatmap_data(
-        self, organization_id: Optional[UUID], module_id: Optional[UUID] = None
+        self,
+        organization_id: Optional[UUID],
+        module_id: Optional[UUID] = None,
+        filters: Optional[HeatmapFilters] = None,
     ) -> List[CompetencyProfile]:
         """
         Fetch competency profiles for students within an organization,
-        optionally filtered by module_id.
+        optionally filtered by module_id or HeatmapFilters.
         """
         query = select(CompetencyProfile)
         if organization_id is not None:
@@ -42,15 +46,24 @@ class AnalyticsRepo(BaseRepository[CompetencyProfile]):
             student_ids_subquery = student_ids_subquery.distinct()
             query = query.where(CompetencyProfile.student_id.in_(student_ids_subquery))
 
+        if filters:
+            if filters.student_ids:
+                query = query.where(CompetencyProfile.student_id.in_(filters.student_ids))
+            if filters.competency_ids:
+                query = query.where(CompetencyProfile.competency_id.in_(filters.competency_ids))
+
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
     async def get_students_for_heatmap(
-        self, organization_id: Optional[UUID], module_id: Optional[UUID] = None
+        self,
+        organization_id: Optional[UUID],
+        module_id: Optional[UUID] = None,
+        filters: Optional[HeatmapFilters] = None,
     ) -> List[User]:
         """
         Fetch student users within an organization,
-        optionally filtered by module_id.
+        optionally filtered by module_id or HeatmapFilters.
         """
         query = (
             select(User)
@@ -72,6 +85,9 @@ class AnalyticsRepo(BaseRepository[CompetencyProfile]):
                 )
             student_ids_subquery = student_ids_subquery.distinct()
             query = query.where(User.id.in_(student_ids_subquery))
+
+        if filters and filters.student_ids:
+            query = query.where(User.id.in_(filters.student_ids))
 
         result = await self.db.execute(query)
         return list(result.scalars().all())

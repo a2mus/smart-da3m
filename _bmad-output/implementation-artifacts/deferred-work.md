@@ -27,7 +27,8 @@ resolution: resolved by sweep bundle dw-analytics-tenant-fallback-unification
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md"), 2026-08-03
 location: backend/app/services/analytics_service.py
 reason: In backend/app/services/analytics_service.py, if p_learned is 0.0 for a non-NOT_STARTED profile, it falls through to mastery level dictionary defaults.
-status: open
+status: done 2026-08-03
+resolution: resolved by sweep bundle dw-analytics-endpoint-service-cleanup
 
 ### DW-5: Frontend CompetencyHeatmap.vue does not watch props.moduleId for prop changes post-mount
 
@@ -41,14 +42,16 @@ status: open
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md"), 2026-08-03
 location: backend/app/services/analytics_service.py
 reason: AnalyticsService formats student rows as s.email.split("@")[0], exposing email username as fallback display name.
-status: open
+status: done 2026-08-03
+resolution: resolved by sweep bundle dw-analytics-endpoint-service-cleanup
 
 ### DW-7: Unused POST /heatmap HeatmapFilters body parameter is ignored in favor of query module_id
 
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md"), 2026-08-03
 location: backend/app/api/endpoints/analytics.py
 reason: POST /heatmap accepts HeatmapFilters body but forwards only organization_id and module_id to AnalyticsService.get_heatmap.
-status: open
+status: done 2026-08-03
+resolution: resolved by sweep bundle dw-analytics-endpoint-service-cleanup
 
 ### DW-8: Frontend analyticsService.ts type definitions contain optional fields mismatching backend required schemas
 
@@ -62,14 +65,16 @@ status: open
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-1-real-competency-heatmap-data.md"), 2026-08-03
 location: backend/app/api/endpoints/analytics.py
 reason: backend/app/api/endpoints/analytics.py retains unused module-level helper functions alongside AnalyticsService static methods.
-status: open
+status: done 2026-08-03
+resolution: resolved by sweep bundle dw-analytics-endpoint-service-cleanup
 
 ### DW-10: Legacy inline helper functions _group_by_competency and _group_by_error_type remain unreferenced in backend/app/api/endpoints/analytics.py
 
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-9-2-auto-grouping-into-remediation-groups.md"), 2026-08-03
 location: backend/app/api/endpoints/analytics.py
 reason: POST /api/v1/analytics/auto-group delegates directly to AnalyticsService.auto_group_students, rendering inline grouping functions in analytics.py dead code.
-status: open
+status: done 2026-08-03
+resolution: resolved by sweep bundle dw-analytics-endpoint-service-cleanup
 
 ### DW-11: Analytics remediation-cards endpoint falls back to active tenant context or zero-UUID sentinel when current_user.organization_id is not set
 

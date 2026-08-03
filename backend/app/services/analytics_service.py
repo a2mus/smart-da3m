@@ -31,13 +31,16 @@ class AnalyticsService:
         self.engine = RemediationEngine()
 
     async def get_heatmap(
-        self, organization_id: Optional[UUID] = None, module_id: Optional[UUID] = None
+        self,
+        organization_id: Optional[UUID] = None,
+        module_id: Optional[UUID] = None,
+        filters: Optional[HeatmapFilters] = None,
     ) -> HeatmapResponse:
         """
-        Fetch and format heatmap data for an organization, optionally filtered by module.
+        Fetch and format heatmap data for an organization, optionally filtered by module or HeatmapFilters.
         """
-        profiles = await self.repo.get_heatmap_data(organization_id, module_id)
-        students = await self.repo.get_students_for_heatmap(organization_id, module_id)
+        profiles = await self.repo.get_heatmap_data(organization_id, module_id, filters=filters)
+        students = await self.repo.get_students_for_heatmap(organization_id, module_id, filters=filters)
 
         if not students and not profiles:
             return HeatmapResponse(
@@ -54,7 +57,7 @@ class AnalyticsService:
             student_rows.append(
                 StudentCompetencyRow(
                     id=s.id,
-                    name=s.email.split("@")[0] if s.email else f"Student {str(s.id)[:8]}",
+                    name=getattr(s, "full_name", None) or getattr(s, "name", None) or f"Student {str(s.id)[:8]}",
                     grade_level="Primary",
                 )
             )
@@ -144,7 +147,7 @@ class AnalyticsService:
             )
             students = await self.repo.get_students_for_heatmap(organization_id)
             student_map = {
-                s.id: s.email.split("@")[0] if s.email else f"Student {str(s.id)[:8]}"
+                s.id: getattr(s, "full_name", None) or getattr(s, "name", None) or f"Student {str(s.id)[:8]}"
                 for s in students
             }
 
@@ -245,8 +248,8 @@ class AnalyticsService:
         return colors.get(mastery, "#f3f4f6")
 
     @staticmethod
-    def _mastery_to_score(mastery: MasteryLevel, p_learned: float) -> int:
-        if p_learned > 0:
+    def _mastery_to_score(mastery: MasteryLevel, p_learned: Optional[float] = None) -> int:
+        if p_learned is not None:
             return int(round(p_learned * 100))
         scores = {
             MasteryLevel.NOT_STARTED: 0,
