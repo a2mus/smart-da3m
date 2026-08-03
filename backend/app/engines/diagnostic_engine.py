@@ -46,17 +46,18 @@ class ErrorClassification:
         if is_correct:
             return ErrorClassificationEnum.NONE
 
-        estimated_time = difficulty_level * 10000  # ~10s per difficulty level
-
-        # Very fast wrong answers suggest carelessness
-        if response_time_ms < estimated_time * 0.3:
+        # Very fast wrong answers suggest carelessness (< 4 seconds)
+        if response_time_ms < 4000:
             return ErrorClassificationEnum.INCIDENTAL
+
+        # Slow response time (> 20 seconds) suggests process/procedural difficulty
+        if response_time_ms > 20000:
+            return ErrorClassificationEnum.PROCESS
 
         # Wrong answers targeting specific misconceptions suggest resource gap
         if target_misconception_id:
             return ErrorClassificationEnum.RESOURCE
 
-        # Otherwise assume process error
         return ErrorClassificationEnum.PROCESS
 
 
@@ -77,7 +78,10 @@ class QuestionSelector:
         if not available:
             return None
 
-        target_difficulty = min(10, max(1, int(current_mastery * 10) + 1))
+        if current_mastery == 0.0:
+            target_difficulty = 5
+        else:
+            target_difficulty = min(10, max(1, int(current_mastery * 10) + 1))
 
         def score_question(q: Dict[str, Any]) -> float:
             score = 0.0

@@ -293,5 +293,45 @@ async def export_analytics(
         )
 
 
+@router.get("/remediation-cards", response_model=RemediationCardsResponse)
+async def get_remediation_cards(
+    student_id: Optional[UUID] = Query(None),
+    group_id: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_expert),
+) -> RemediationCardsResponse:
+    """
+    Get print-formatted remediation card data for a single student or a remediation group.
+    """
+    if not student_id and not group_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Either student_id or group_id must be provided",
+        )
+
+    from app.core.tenant import get_optional_active_organization_id
+    org_id = getattr(current_user, "organization_id", None) or get_optional_active_organization_id()
+    if not org_id:
+        org_id = UUID("00000000-0000-0000-0000-000000000000")
+
+    service = AnalyticsService(db)
+    try:
+        return await service.get_remediation_cards(
+            organization_id=org_id,
+            student_id=student_id,
+            group_id=group_id,
+        )
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(ve),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch remediation cards: {str(e)}",
+        )
+
+
 # Add missing import
 from datetime import datetime, timezone

@@ -129,77 +129,6 @@ class AnalyticsService:
             group_by=group_by,
         )
 
-    async def get_remediation_cards(
-        self,
-        organization_id: Optional[UUID] = None,
-        student_id: Optional[UUID] = None,
-        student_ids: Optional[List[UUID]] = None,
-    ) -> RemediationCardsResponse:
-        from datetime import datetime, timezone
-        from app.core.tenant import reset_active_organization_id, set_active_organization_id
-
-        token = set_active_organization_id(organization_id)
-        try:
-            profiles = await self.repo.get_remediation_cards_data(
-                organization_id=organization_id,
-                student_id=student_id,
-                student_ids=student_ids,
-            )
-            students = await self.repo.get_students_for_heatmap(organization_id)
-            student_map = {
-                s.id: getattr(s, "full_name", None) or getattr(s, "name", None) or f"Student {str(s.id)[:8]}"
-                for s in students
-            }
-
-            if student_id is not None and student_id not in student_map:
-                from fastapi import HTTPException
-                raise HTTPException(status_code=404, detail="Student not found in organization")
-
-            grouped: dict[UUID, List[CompetencyProfile]] = {}
-            for p in profiles:
-                grouped.setdefault(p.student_id, []).append(p)
-
-            cards: List[StudentRemediationCard] = []
-            now_iso = datetime.now(timezone.utc).isoformat()
-
-            for sid, p_list in grouped.items():
-                s_name = student_map.get(sid, f"Student {str(sid)[:8]}")
-                failed_competencies = sorted(list(set(p.competency_id for p in p_list)))
-                error_classifications = [
-                    "CONCEPTUAL" if p.mastery_level == MasteryLevel.NOT_STARTED else "PROCESS"
-                    for p in p_list
-                ]
-                unique_errors = sorted(list(set(error_classifications)))
-
-                atoms = [
-                    RemediationAtomItem(
-                        id=f"atom-{comp}",
-                        title=f"كبسولة معالجة للكفاءة: {comp}",
-                        description=f"وحدة معرفية داعمة لمعالجة التعثر في {comp}",
-                        content_type="MICRO_LESSON",
-                    )
-                    for comp in failed_competencies
-                ]
-
-                cards.append(
-                    StudentRemediationCard(
-                        student_id=sid,
-                        student_name=s_name,
-                        grade_level="Primary",
-                        failed_competencies=failed_competencies,
-                        error_classifications=unique_errors,
-                        recommended_atoms=atoms,
-                        generated_at=now_iso,
-                    )
-                )
-
-            return RemediationCardsResponse(
-                cards=cards,
-                total_cards=len(cards),
-            )
-        finally:
-            reset_active_organization_id(token)
-
     async def export_report(
         self,
         organization_id: Optional[UUID],
@@ -233,6 +162,136 @@ class AnalyticsService:
                 )
             else:
                 raise ValueError(f"Unsupported format: {export_format}")
+        finally:
+            reset_active_organization_id(token)
+
+    async def get_remediation_cards(
+        self,
+        organization_id: Optional[UUID] = None,
+        student_id: Optional[UUID] = None,
+        student_ids: Optional[List[UUID]] = None,
+        group_id: Optional[str] = None,
+    ) -> RemediationCardsResponse:
+        """
+        Build print-formatted remediation cards for a student, student list, or remediation group.
+        """
+        from datetime import datetime, timezone
+        from app.core.tenant import reset_active_organization_id, set_active_organization_id
+        from app.schemas.analytics import (
+            RemediationAtomItem,
+            RemediationCardData,
+            RemediationCardItem,
+            RemediationCardsResponse,
+        )
+
+        token = set_active_organization_id(organization_id)
+        try:
+            if group_id:
+                students = await self.repo.get_remediation_card_data(
+                    organization_id=organization_id or UUID("00000000-0000-0000-0000-000000000000"),
+                    student_id=student_id,
+                    group_id=group_id,
+                )
+                cards: List[RemediationCardData] = []
+                for s in students:
+                    profiles = await self.repo.get_auto_group_data(
+                        organization_id=organization_id,
+                        student_ids=[s.id],
+                    )
+                    items: List[RemediationCardItem] = []
+                    for p in profiles:
+                        items.append(
+                            RemediationCardItem(
+                                competency_id=p.competency_id,
+                                competency_name=f"Competency {p.competency_id}",
+                                mastery_level=p.mastery_level.value,
+                                error_classifications=["RESOURCE", "PROCESS"],
+                                recommended_atoms=[f"Atom-{p.competency_id}-01", f"Atom-{p.competency_id}-02"],
+                            )
+                        )
+                    cards.append(
+                        RemediationCardData(
+                            student_id=s.id,
+                            student_name=getattr(s, "full_name", None) or getattr(s, "name", None) or (s.email.split("@")[0] if getattr(s, "email", None) else f"Student {str(s.id)[:8]}"),
+                            grade_level="Primary",
+                            group_name=group_id,
+                            items=items,
+                        )
+                    )
+                return RemediationCardsResponse(
+                    cards=cards,
+                    total_cards=len(cards),
+                )
+
+            profiles = await self.repo.get_remediation_cards_data(
+                organization_id=organization_id,
+                student_id=student_id,
+                student_ids=student_ids,
+            )
+            students = await self.repo.get_students_for_heatmap(organization_id)
+            student_map = {
+                s.id: getattr(s, "full_name", None) or getattr(s, "name", None) or (s.email.split("@")[0] if getattr(s, "email", None) else f"Student {str(s.id)[:8]}")
+                for s in students
+            }
+
+            if student_id is not None and student_id not in student_map:
+                from fastapi import HTTPException
+                raise HTTPException(status_code=404, detail="Student not found in organization")
+
+            grouped: dict[UUID, List[CompetencyProfile]] = {}
+            for p in profiles:
+                grouped.setdefault(p.student_id, []).append(p)
+
+            cards: List[RemediationCardData] = []
+            now_iso = datetime.now(timezone.utc).isoformat()
+
+            for sid, p_list in grouped.items():
+                s_name = student_map.get(sid, f"Student {str(sid)[:8]}")
+                failed_competencies = sorted(list(set(p.competency_id for p in p_list)))
+                error_classifications = [
+                    "CONCEPTUAL" if p.mastery_level == MasteryLevel.NOT_STARTED else "PROCESS"
+                    for p in p_list
+                ]
+                unique_errors = sorted(list(set(error_classifications)))
+
+                atoms = [
+                    RemediationAtomItem(
+                        id=f"atom-{comp}",
+                        title=f"كبسولة معالجة للكفاءة: {comp}",
+                        description=f"وحدة معرفية داعمة لمعالجة التعثر في {comp}",
+                        content_type="MICRO_LESSON",
+                    )
+                    for comp in failed_competencies
+                ]
+
+                items = [
+                    RemediationCardItem(
+                        competency_id=p.competency_id,
+                        competency_name=f"Competency {p.competency_id}",
+                        mastery_level=p.mastery_level.value,
+                        error_classifications=["CONCEPTUAL" if p.mastery_level == MasteryLevel.NOT_STARTED else "PROCESS"],
+                        recommended_atoms=[f"Atom-{p.competency_id}-01"],
+                    )
+                    for p in p_list
+                ]
+
+                cards.append(
+                    RemediationCardData(
+                        student_id=sid,
+                        student_name=s_name,
+                        grade_level="Primary",
+                        failed_competencies=failed_competencies,
+                        error_classifications=unique_errors,
+                        recommended_atoms=atoms,
+                        items=items,
+                        generated_at=now_iso,
+                    )
+                )
+
+            return RemediationCardsResponse(
+                cards=cards,
+                total_cards=len(cards),
+            )
         finally:
             reset_active_organization_id(token)
 

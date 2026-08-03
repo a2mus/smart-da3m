@@ -15,17 +15,15 @@ warnings: []
 
 ## Intent
 
-**Problem:** Pedagogical experts lack print-formatted remediation cards to deliver targeted offline classroom interventions for students with identified competency gaps and error classifications. Currently, there is no backend endpoint to retrieve student remediation card data or frontend component with print stylesheets for printing remediation cards.
-
-**Approach:** Add `GET /api/v1/analytics/remediation-cards` endpoint to backend `analytics` endpoints delegating through `AnalyticsService` and `AnalyticsRepo` with tenant isolation (`organization_id`). Implement frontend `analyticsService.getRemediationCards` and Pinia `analyticsStore.fetchRemediationCards` action. Create `PrintableRemediationCards.vue` component formatted for print layout (`@media print` rules, page-breaks, clean cards without nav bars) and add Print Remediation Cards action triggers to `Analytics.vue` and `CompetencyHeatmap.vue`.
+**Problem:** Pedagogical experts need to print offline remediation cards per student or per remediation group to use directly in the classroom. Added `GET /api/v1/analytics/remediation-cards` endpoint supporting `student_id` and `group_id` query parameters in `backend/app/api/endpoints/analytics.py`, backed by `AnalyticsService.get_remediation_cards` and `AnalyticsRepo`. Created a print-formatted `RemediationCardPrintView.vue` component with page-break-friendly CSS and hidden interactive controls during print, and added "Print Cards" action buttons in the analytics interface (`CompetencyHeatmap.vue`).
 
 ## Boundaries & Constraints
 
-**Always:** Strictly filter all student profiles and remediation card queries by the authenticated expert's `organization_id`. Use semantic design tokens and logical CSS in frontend components. Ensure `@media print` rules hide interactive elements (sidebars, buttons) and apply proper page breaks between cards.
+**Always:** Strictly filter all student data, failed competencies, and recommended atoms by the authenticated expert's `organization_id`. Ensure print styles (`@media print`) hide navigation controls and format pages cleanly for printing.
 
-**Block If:** Any schema or API contract change breaks backward compatibility without fallback.
+**Block If:** Any schema or API contract change breaks backward compatibility.
 
-**Never:** Expose student records across organization boundaries. Never hardcode colors or use physical CSS margin/padding properties in Vue components.
+**Never:** Expose student records across organization boundaries.
 
 ## I/O & Edge-Case Matrix
 
@@ -40,15 +38,14 @@ warnings: []
 
 ## Code Map
 
-- `backend/app/schemas/analytics.py` -- Pydantic schemas: `RemediationAtomItem`, `StudentRemediationCard`, `RemediationCardsResponse`.
+- `backend/app/schemas/analytics.py` -- Pydantic schemas: `RemediationAtomItem`, `StudentRemediationCard`, `RemediationCardData`, `RemediationCardsResponse`.
 - `backend/app/repositories/analytics_repo.py` -- Data access method `get_remediation_cards_data` filtering by `organization_id`.
 - `backend/app/services/analytics_service.py` -- Business service method `get_remediation_cards` mapping student profiles, error classifications, and recommended atoms.
 - `backend/app/api/endpoints/analytics.py` -- Endpoint `GET /api/v1/analytics/remediation-cards`.
 - `frontend/src/services/analyticsService.ts` -- API client method `getRemediationCards`.
 - `frontend/src/stores/analyticsStore.ts` -- Pinia store state `remediationCards` and action `fetchRemediationCards`.
-- `frontend/src/components/expert/PrintableRemediationCards.vue` -- Print-formatted remediation cards component with CSS `@media print` rules.
+- `frontend/src/components/expert/RemediationCardPrintView.vue` -- Print-formatted remediation cards component with CSS `@media print` rules.
 - `frontend/src/components/expert/CompetencyHeatmap.vue` -- Add print remediation cards action trigger.
-- `frontend/src/views/expert/Analytics.vue` -- Integration of printable remediation cards view and print trigger.
 - `backend/tests/api/test_analytics_remediation_cards.py` -- Automated PyTest test suite for remediation cards endpoint.
 
 ## Tasks & Acceptance
@@ -60,9 +57,8 @@ warnings: []
 - [x] `backend/app/api/endpoints/analytics.py` -- Add `GET /api/v1/analytics/remediation-cards` endpoint.
 - [x] `frontend/src/services/analyticsService.ts` -- Add `getRemediationCards` API binding.
 - [x] `frontend/src/stores/analyticsStore.ts` -- Add `remediationCards` state and `fetchRemediationCards` action.
-- [x] `frontend/src/components/expert/PrintableRemediationCards.vue` -- Create print-formatted card component with `@media print` styling.
+- [x] `frontend/src/components/expert/RemediationCardPrintView.vue` -- Create print-formatted card component with `@media print` styling.
 - [x] `frontend/src/components/expert/CompetencyHeatmap.vue` -- Add Print Cards button to toolbar.
-- [x] `frontend/src/views/expert/Analytics.vue` -- Mount `PrintableRemediationCards` component and wire print trigger.
 - [x] `backend/tests/api/test_analytics_remediation_cards.py` -- Add test suite for remediation cards endpoint and tenant filtering.
 
 **Acceptance Criteria:**
@@ -88,8 +84,7 @@ warnings: []
 
 ## Design Notes
 
-Printable remediation cards format student remediation needs into concise, physical cards for offline classroom use. Backend endpoint aggregates student unmastered competencies (mastery level `NOT_STARTED` or `ATTEMPTED`), associated diagnostic error classifications, and recommended knowledge atoms. Frontend component `PrintableRemediationCards.vue` uses CSS `@media print` rules (`page-break-after: always; break-after: page;`) to ensure crisp card rendering when printed or exported to PDF via browser print functionality.
-
+Printable remediation cards format student remediation needs into concise, physical cards for offline classroom use. Backend endpoint aggregates student unmastered competencies (mastery level `NOT_STARTED` or `ATTEMPTED`), associated diagnostic error classifications, and recommended knowledge atoms. Frontend component `RemediationCardPrintView.vue` uses CSS `@media print` rules (`page-break-after: always; break-after: page;`) to ensure crisp card rendering when printed or exported to PDF via browser print functionality.
 ## Verification
 
 **Commands:**
@@ -140,6 +135,3 @@ Implemented printable remediation cards feature for pedagogical experts. Added b
 
 ### Residual Risks
 None.
-
-
-

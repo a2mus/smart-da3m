@@ -74,8 +74,6 @@ def update_mastery(
 
         if p_incorrect > 0:
             p_learned = (p_learned * p_incorrect_given_learned) / p_incorrect
-        # Apply transition probability p_learn
-        p_learned = p_learned + (1.0 - p_learned) * params.p_learn
 
     # Clamp to valid probability range
     return max(0.0, min(1.0, p_learned))

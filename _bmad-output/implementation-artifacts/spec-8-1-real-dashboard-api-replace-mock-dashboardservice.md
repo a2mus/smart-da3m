@@ -2,14 +2,9 @@
 title: 'Story 8.1: Real Dashboard API & Replace Mock dashboardService'
 type: 'feature'
 created: '2026-08-02'
-<<<<<<< HEAD
 status: 'done'
 baseline_revision: 'f14393a4ff615a30268b339f8faac6d1263a2d8f'
 final_revision: '89c45837e1126e29c78188b19213042561bb384b'
-=======
-status: 'in-review'
-baseline_revision: 'f14393a4ff615a30268b339f8faac6d1263a2d8f'
->>>>>>> e0c4b56b3e0a33347f1e751072f3a5b282f8bb0e
 review_loop_iteration: 0
 followup_review_recommended: false
 context: ['_bmad-output/implementation-artifacts/epic-8-context.md']
@@ -79,20 +74,12 @@ warnings: []
 ### 2026-08-02 — Review pass
 - intent_gap: 0
 - bad_spec: 0
-<<<<<<< HEAD
 - patch: 2: (high 0, medium 0, low 2)
 - defer: 0
 - reject: 0
 - addressed_findings:
   - `[low]` `[patch]` Restored corrupted emoji string `👨‍gsub👨‍👧` to `👨‍👩‍👧` in Empty State of `frontend/src/views/parent/Dashboard.vue`.
   - `[low]` `[patch]` Updated `SubjectRadarChart.vue` prop definition to handle optional `competency_id`/`competencyId` from `SubjectData`.
-=======
-- patch: 0
-- defer: 0
-- reject: 0
-- addressed_findings:
-  - none
->>>>>>> e0c4b56b3e0a33347f1e751072f3a5b282f8bb0e
 
 ## Design Notes
 
@@ -105,7 +92,6 @@ Frontend Pinia store: `useDashboardStore` defines actions `fetchOverview()`, `fe
 **Commands:**
 - `pytest backend/tests/api/test_dashboard.py` -- expected: All dashboard tests pass successfully.
 - `pnpm --prefix frontend test` -- expected: Frontend unit tests and build checks pass without errors.
-<<<<<<< HEAD
 
 ## Auto Run Result
 
@@ -143,6 +129,3 @@ Follow-up review recommended: false
 
 ### Residual Risks
 - None identified.
-
-=======
->>>>>>> e0c4b56b3e0a33347f1e751072f3a5b282f8bb0e

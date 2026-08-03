@@ -32,6 +32,12 @@ router = APIRouter()
     response_model=ParentDashboardResponse,
     summary="Get parent dashboard overview",
 )
+@router.get(
+    "/parent/overview",
+    response_model=ParentDashboardResponse,
+    summary="Get parent dashboard overview",
+    include_in_schema=False,
+)
 async def get_dashboard_overview(
     child_id: UUID | None = Query(None, description="Filter by specific child"),
     db: AsyncSession = Depends(get_db),

@@ -32,6 +32,8 @@ class DynamicDifficultyAdjuster:
                 new_difficulty += 2
             elif time_ratio < 0.7:
                 new_difficulty += 1
+            elif time_ratio > 1.5:
+                new_difficulty -= 1
         else:
             time_ratio = response_time_ms / estimated_time_ms if estimated_time_ms > 0 else 1.0
 
@@ -52,21 +54,21 @@ class StudentEngagementTracker:
     def is_frustrated(self, responses: List[Dict[str, Any]]) -> bool:
         """Detect if student shows frustration signs based on recent responses."""
         recent = responses[-5:] if len(responses) > 5 else responses
-        if len(recent) < 3:
+        if len(recent) < 2:
             return False
 
         times = [r.get("time_ms", 0) for r in recent]
         correct_count = sum(1 for r in recent if r.get("is_correct"))
 
         is_slowing = times[-1] > times[0] * 1.5 if times[0] > 0 else False
-        low_accuracy = correct_count < len(recent) * 0.5
+        has_errors = correct_count < len(recent)
 
-        return is_slowing and low_accuracy
+        return is_slowing and has_errors
 
     def is_bored(self, responses: List[Dict[str, Any]]) -> bool:
         """Detect if student shows boredom signs (too fast, high accuracy)."""
         recent = responses[-5:] if len(responses) > 5 else responses
-        if len(recent) < 3:
+        if len(recent) < 2:
             return False
 
         times = [r.get("time_ms", 0) for r in recent]

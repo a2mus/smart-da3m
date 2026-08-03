@@ -5,19 +5,19 @@ import {
   type HeatmapResponse,
   type StudentGroup,
   type MetricsResponse,
-  type StudentRemediationCard,
+  type RemediationCardData,
 } from '@/services/analyticsService'
 
 export const useAnalyticsStore = defineStore('analytics', () => {
   const heatmapData = ref<HeatmapResponse | null>(null)
   const studentGroups = ref<StudentGroup[]>([])
   const metrics = ref<MetricsResponse | null>(null)
-  const remediationCards = ref<StudentRemediationCard[]>([])
-  const showPrintCardsModal = ref<boolean>(false)
+  const remediationCards = ref<RemediationCardData[]>([])
   const loading = ref<boolean>(false)
   const exporting = ref<boolean>(false)
   const error = ref<string | null>(null)
   const showAutoGroupsOverlay = ref<boolean>(false)
+  const showPrintCardsModal = ref<boolean>(false)
   const autoGroupBy = ref<string>('competency')
 
   async function fetchHeatmap(moduleId?: string) {
@@ -60,25 +60,6 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
   }
 
-  async function fetchRemediationCards(studentId?: string) {
-    loading.value = true
-    error.value = null
-    try {
-      const res = await analyticsService.getRemediationCards(studentId)
-      remediationCards.value = res.cards || []
-    } catch (err: unknown) {
-      console.error('analyticsStore fetchRemediationCards error:', err)
-      error.value = err instanceof Error ? err.message : 'Failed to fetch remediation cards'
-    } finally {
-      loading.value = false
-    }
-  }
-
-  function triggerPrintCards(studentId?: string) {
-    showPrintCardsModal.value = true
-    fetchRemediationCards(studentId)
-  }
-
   async function exportReport(format: 'pdf' | 'csv' = 'csv', reportType: string = 'heatmap') {
     exporting.value = true
     loading.value = true
@@ -103,16 +84,38 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
   }
 
+  async function fetchRemediationCards(studentId?: string, groupId?: string) {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await analyticsService.getRemediationCards(studentId, groupId)
+      remediationCards.value = res.cards || []
+      showPrintCardsModal.value = true
+      return res
+    } catch (err: unknown) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch remediation cards'
+      console.error('analyticsStore fetchRemediationCards error:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  function triggerPrintCards(studentId?: string, groupId?: string) {
+    showPrintCardsModal.value = true
+    fetchRemediationCards(studentId, groupId)
+  }
+
   return {
     heatmapData,
     studentGroups,
     metrics,
     remediationCards,
-    showPrintCardsModal,
     loading,
     exporting,
     error,
     showAutoGroupsOverlay,
+    showPrintCardsModal,
     autoGroupBy,
     fetchHeatmap,
     fetchStudentGroups,

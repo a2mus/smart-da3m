@@ -140,3 +140,27 @@ class AnalyticsRepo(BaseRepository[CompetencyProfile]):
 
         result = await self.db.execute(query)
         return list(result.scalars().all())
+
+    async def get_remediation_card_data(
+        self,
+        organization_id: UUID,
+        student_id: Optional[UUID] = None,
+        group_id: Optional[str] = None,
+    ) -> List[User]:
+        """
+        Fetch students and their unmastered competencies for remediation cards.
+        """
+        query = (
+            select(User)
+            .join(OrganizationMember, OrganizationMember.user_id == User.id)
+            .where(
+                OrganizationMember.organization_id == organization_id,
+                OrganizationMember.role == UserRole.STUDENT,
+            )
+        )
+
+        if student_id is not None:
+            query = query.where(User.id == student_id)
+
+        result = await self.db.execute(query)
+        return list(result.scalars().all())

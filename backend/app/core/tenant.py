@@ -64,10 +64,19 @@ def setup_tenant_query_filter() -> None:
             execute_state.is_select
             and not execute_state.execution_options.get("skip_tenant_filter", False)
         ):
+            org_id = get_optional_active_organization_id()
+            if not org_id:
+                has_tenant_model = any(
+                    hasattr(mapper.class_, "organization_id")
+                    for mapper in execute_state.all_mappers
+                )
+                if has_tenant_model:
+                    raise RuntimeError("No active organization context set")
+                return
+
             for mapper in execute_state.all_mappers:
                 cls = mapper.class_
                 if hasattr(cls, "organization_id"):
-                    org_id = get_active_organization_id()
                     if hasattr(cls, "is_shared"):
                         filter_cond = or_(
                             cls.organization_id == org_id, cls.is_shared == True

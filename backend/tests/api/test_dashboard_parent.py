@@ -23,8 +23,9 @@ from app.models.user import User, UserRole
 @pytest.fixture
 async def parent_user(db: AsyncSession) -> User:
     """Create a parent user for testing."""
+    import uuid
     user = User(
-        email="parent@test.com",
+        email=f"parent_{uuid.uuid4().hex[:8]}@test.com",
         hashed_password="hashed_password",
         role=UserRole.PARENT,
     )
@@ -52,8 +53,10 @@ async def student_user(db: AsyncSession, parent_user: User) -> User:
 @pytest.fixture
 async def auth_headers_parent(parent_user: User) -> dict:
     """Generate auth headers for the parent user."""
+    from app.core.security import create_access_token
+    token = create_access_token(subject=str(parent_user.id), additional_claims={"role": UserRole.PARENT.value})
     return {
-        "Authorization": f"Bearer test-token-{parent_user.id}",
+        "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }
 
@@ -64,7 +67,9 @@ async def diagnostic_data(
 ) -> tuple:
     """Create diagnostic data for the student."""
     # Create a module
+    import uuid
     module = Module(
+        organization_id=uuid.uuid4(),
         subject="Mathematics",
         grade_level="السنة 4",
         domain="Numbers & Operations",
@@ -75,6 +80,7 @@ async def diagnostic_data(
 
     # Create diagnostic session
     session = DiagnosticSession(
+        organization_id=module.organization_id,
         student_id=student_user.id,
         module_id=module.id,
         status="COMPLETED",
@@ -86,6 +92,7 @@ async def diagnostic_data(
 
     # Create competency profile
     profile = CompetencyProfile(
+        organization_id=uuid.uuid4(),
         student_id=student_user.id,
         competency_id="MATH-4-NUM-01",
         mastery_level=MasteryLevel.FAMILIAR,
@@ -168,8 +175,10 @@ class TestParentDashboardOverview:
             ("FREN-4-LANG-01", MasteryLevel.FAMILIAR),
         ]
 
+        import uuid
         for competency_id, mastery in subjects:
             profile = CompetencyProfile(
+                organization_id=uuid.uuid4(),
                 student_id=student_user.id,
                 competency_id=competency_id,
                 mastery_level=mastery,
@@ -273,8 +282,10 @@ class TestParentDashboardOverview:
         db.add(student)
         await db.commit()
 
+        from app.core.security import create_access_token
+        token = create_access_token(subject=str(student.id), additional_claims={"role": UserRole.STUDENT.value})
         headers = {
-            "Authorization": f"Bearer test-token-{student.id}",
+            "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
         }
 
@@ -308,7 +319,9 @@ class TestParentDashboardChildSelection:
             db.add(child)
 
             # Add diagnostic data for each
+            import uuid
             module = Module(
+                organization_id=uuid.uuid4(),
                 subject=f"Subject {i}",
                 grade_level="السنة 4",
                 domain="Test",
@@ -318,6 +331,7 @@ class TestParentDashboardChildSelection:
             await db.flush()
 
             profile = CompetencyProfile(
+                organization_id=uuid.uuid4(),
                 student_id=child.id,
                 competency_id=f"TEST-{i}",
                 mastery_level=MasteryLevel.FAMILIAR,

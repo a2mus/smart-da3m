@@ -150,14 +150,38 @@ class StudentRemediationCard(BaseModel):
     student_id: UUID
     student_name: str
     grade_level: str = "Primary"
-    failed_competencies: List[str]
-    error_classifications: List[str]
-    recommended_atoms: List[RemediationAtomItem]
-    generated_at: str
+    failed_competencies: List[str] = Field(default_factory=list)
+    error_classifications: List[str] = Field(default_factory=list)
+    recommended_atoms: List[RemediationAtomItem] = Field(default_factory=list)
+    generated_at: Optional[str] = None
+
+
+class RemediationCardItem(BaseModel):
+    """Specific competency remediation details for a student card."""
+
+    competency_id: str
+    competency_name: Optional[str] = None
+    mastery_level: str
+    error_classifications: List[str] = Field(default_factory=list)
+    recommended_atoms: List[str] = Field(default_factory=list)
+
+
+class RemediationCardData(BaseModel):
+    """Remediation card content for a single student."""
+
+    student_id: UUID
+    student_name: str
+    grade_level: str = "Primary"
+    group_name: Optional[str] = None
+    items: List[RemediationCardItem] = Field(default_factory=list)
+    failed_competencies: List[str] = Field(default_factory=list)
+    error_classifications: List[str] = Field(default_factory=list)
+    recommended_atoms: List[RemediationAtomItem] = Field(default_factory=list)
+    generated_at: Optional[str] = None
 
 
 class RemediationCardsResponse(BaseModel):
-    """Response schema for remediation cards endpoint."""
+    """Response for printable remediation cards endpoint."""
 
-    cards: List[StudentRemediationCard]
+    cards: List[RemediationCardData]
     total_cards: int

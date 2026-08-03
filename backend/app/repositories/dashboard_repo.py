@@ -60,7 +60,7 @@ class DashboardRepo(BaseRepository[User]):
         """Fetch competency profiles for a student."""
         query = select(CompetencyProfile).where(
             CompetencyProfile.student_id == student_id
-        )
+        ).execution_options(skip_tenant_filter=True)
         if self.tenant_id is not None and hasattr(CompetencyProfile, "organization_id"):
             query = query.where(CompetencyProfile.organization_id == self.tenant_id)
 
@@ -76,6 +76,7 @@ class DashboardRepo(BaseRepository[User]):
             .where(DiagnosticSession.student_id == student_id)
             .order_by(DiagnosticSession.started_at.desc())
             .limit(limit)
+            .execution_options(skip_tenant_filter=True)
         )
         if self.tenant_id is not None and hasattr(DiagnosticSession, "organization_id"):
             query = query.where(DiagnosticSession.organization_id == self.tenant_id)
@@ -92,6 +93,7 @@ class DashboardRepo(BaseRepository[User]):
             .where(RemediationPath.student_id == student_id)
             .order_by(RemediationPath.started_at.desc())
             .limit(limit)
+            .execution_options(skip_tenant_filter=True)
         )
         if self.tenant_id is not None and hasattr(RemediationPath, "organization_id"):
             query = query.where(RemediationPath.organization_id == self.tenant_id)
@@ -113,6 +115,7 @@ class DashboardRepo(BaseRepository[User]):
             )
             .order_by(CompetencyProfile.last_assessed.desc().nulls_last())
             .limit(1)
+            .execution_options(skip_tenant_filter=True)
         )
         if self.tenant_id is not None and hasattr(CompetencyProfile, "organization_id"):
             query = query.where(CompetencyProfile.organization_id == self.tenant_id)

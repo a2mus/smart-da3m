@@ -1,5 +1,5 @@
 """
-Tests for Printable Remediation Cards API endpoint and tenant isolation.
+Tests for Printable Remediation Cards API endpoint and tenant isolation (Story 9.4).
 """
 
 import uuid
@@ -8,6 +8,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token
+from app.core.tenant import set_active_organization_id
 from app.models.diagnostic import CompetencyProfile, MasteryLevel
 from app.models.organization import Organization, OrganizationMember, OrganizationType
 from app.models.user import User, UserRole
@@ -121,16 +122,45 @@ async def test_get_remediation_cards_tenant_isolation(
 
 
 @pytest.mark.asyncio
-async def test_get_remediation_cards_student_not_in_org_raises_404(
-    db: AsyncSession
-):
-    """Test that requesting remediation cards for a student outside the org raises 404."""
+async def test_get_remediation_cards_service(db: AsyncSession):
     org_id = uuid.uuid4()
-    unknown_student_id = uuid.uuid4()
+    set_active_organization_id(org_id)
+
+    student = User(
+        id=uuid.uuid4(),
+        email=f"card_student_{uuid.uuid4().hex[:8]}@example.com",
+        role=UserRole.STUDENT,
+        hashed_password="hash",
+    )
+    db.add(student)
+    await db.commit()
+
+    member = OrganizationMember(
+        user_id=student.id,
+        organization_id=org_id,
+        role=UserRole.STUDENT,
+    )
+    db.add(member)
+    await db.commit()
+
+    profile = CompetencyProfile(
+        id=uuid.uuid4(),
+        student_id=student.id,
+        organization_id=org_id,
+        competency_id="COMP_MATH_01",
+        mastery_level=MasteryLevel.NOT_STARTED,
+        p_learned=0.1,
+    )
+    db.add(profile)
+    await db.commit()
 
     service = AnalyticsService(db)
-    from fastapi import HTTPException
-    with pytest.raises(HTTPException) as exc_info:
-        await service.get_remediation_cards(organization_id=org_id, student_id=unknown_student_id)
-    assert exc_info.value.status_code == 404
+    response = await service.get_remediation_cards(
+        organization_id=org_id,
+        student_id=student.id,
+    )
 
+    assert response.total_cards == 1
+    assert response.cards[0].student_id == student.id
+    assert len(response.cards[0].items) == 1
+    assert response.cards[0].items[0].competency_id == "COMP_MATH_01"

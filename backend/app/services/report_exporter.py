@@ -59,7 +59,6 @@ class ReportExporter:
             )
         else:
             query = query.where(User.role == UserRole.STUDENT)
-
         if student_ids:
             query = query.where(User.id.in_(student_ids))
 
@@ -129,17 +128,22 @@ class ReportExporter:
                 )
                 res = await self.db.execute(student_query)
                 student_ids = list(res.scalars().all())
-            if not student_ids:
-                with open(filepath, "w", newline="", encoding="utf-8") as f:
-                    writer = csv.writer(f)
-                    writer.writerow([
-                        "student_id",
-                        "competency_id",
-                        "mastery_level",
-                        "gap_level",
-                        "recommended_action",
-                    ])
-                return
+            else:
+                student_query = select(User.id).where(User.role == UserRole.STUDENT)
+                res = await self.db.execute(student_query)
+                student_ids = list(res.scalars().all())
+
+        if not student_ids:
+            with open(filepath, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow([
+                    "student_id",
+                    "competency_id",
+                    "mastery_level",
+                    "gap_level",
+                    "recommended_action",
+                ])
+            return
 
         query = select(CompetencyProfile).where(
             CompetencyProfile.student_id.in_(student_ids),
@@ -193,7 +197,6 @@ class ReportExporter:
             )
         else:
             query = query.where(User.role == UserRole.STUDENT)
-
         if student_ids:
             query = query.where(User.id.in_(student_ids))
 
@@ -219,7 +222,9 @@ class ReportExporter:
                     CompetencyProfile.student_id.in_(student_ids_list)
                 )
                 if organization_id:
-                    profile_query = profile_query.where(CompetencyProfile.organization_id == organization_id)
+                    profile_query = profile_query.where(
+                        CompetencyProfile.organization_id == organization_id
+                    )
                 result = await self.db.execute(profile_query)
                 profiles = list(result.scalars().all())
             else:
@@ -325,7 +330,6 @@ class ReportExporter:
             )
         else:
             query = query.where(User.role == UserRole.STUDENT)
-
         if student_ids:
             query = query.where(User.id.in_(student_ids))
 
@@ -411,6 +415,10 @@ class ReportExporter:
                     OrganizationMember.organization_id == organization_id,
                     OrganizationMember.role == UserRole.STUDENT,
                 )
+                res = await self.db.execute(student_query)
+                student_ids = list(res.scalars().all())
+            else:
+                student_query = select(User.id).where(User.role == UserRole.STUDENT)
                 res = await self.db.execute(student_query)
                 student_ids = list(res.scalars().all())
 

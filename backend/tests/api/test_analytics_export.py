@@ -47,6 +47,14 @@ async def test_report_exporter_csv_heatmap(db: AsyncSession):
         mastery_level=MasteryLevel.PROFICIENT,
         p_learned=0.85,
     )
+    profile = CompetencyProfile(
+        id=uuid.uuid4(),
+        student_id=student.id,
+        organization_id=org_id,
+        competency_id="COMP_MATH_01",
+        mastery_level=MasteryLevel.NOT_STARTED,
+        p_learned=0.1,
+    )
     db.add(profile)
     await db.commit()
 
@@ -63,15 +71,55 @@ async def test_report_exporter_csv_heatmap(db: AsyncSession):
 
 @pytest.mark.asyncio
 async def test_report_exporter_pdf_heatmap(db: AsyncSession):
-    exporter = ReportExporter(db)
     org_id = uuid.uuid4()
     set_active_organization_id(org_id)
+
+    student = User(
+        id=uuid.uuid4(),
+        email=f"export_pdf_{uuid.uuid4().hex[:8]}@test.com",
+        hashed_password="hash",
+        role=UserRole.STUDENT,
+    )
+    db.add(student)
+    await db.commit()
+
+    mem = OrganizationMember(
+        user_id=student.id,
+        organization_id=org_id,
+        role=UserRole.STUDENT,
+    )
+    db.add(mem)
+    await db.commit()
+
+    cp = CompetencyProfile(
+        id=uuid.uuid4(),
+        student_id=student.id,
+        organization_id=org_id,
+        competency_id="EXP-COMP-1",
+        mastery_level=MasteryLevel.FAMILIAR,
+        p_learned=0.6,
+    )
+    db.add(cp)
+    await db.commit()
+
+    exporter = ReportExporter(db)
     filepath = await exporter.export_pdf(
         report_type="heatmap",
         organization_id=org_id,
     )
     assert os.path.exists(filepath)
     assert filepath.endswith(".pdf") or filepath.endswith(".txt")
+    file_path = await exporter.export_csv(
+        report_type="heatmap",
+        organization_id=org_id,
+    )
+
+    assert os.path.exists(file_path)
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    assert "student_id,competency_id,mastery_level,p_learned,last_assessed" in content
+    assert "EXP-COMP-1" in content
 
 
 @pytest.mark.asyncio
@@ -134,6 +182,7 @@ async def test_analytics_service_export_tenant_isolation(db: AsyncSession):
 
 
 @pytest.mark.asyncio
+@pytest.mark.asyncio
 async def test_export_analytics_post_endpoint(async_client: AsyncClient, db: AsyncSession):
     org = Organization(name="Export Test Org", type=OrganizationType.SCHOOL)
     db.add(org)
@@ -170,6 +219,7 @@ async def test_export_analytics_post_endpoint(async_client: AsyncClient, db: Asy
     data = response.json()
     assert data["success"] is True
     assert data["format"] == "csv"
+    assert data["report_type"] == "heatmap"
     assert "file_path" in data
 
 

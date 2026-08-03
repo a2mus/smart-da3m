@@ -29,7 +29,7 @@ if not logger.handlers:
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(logging.Formatter("%(message)s"))
     logger.addHandler(handler)
-    logger.propagate = False
+logger.propagate = True
 
 
 class JSONLogFormatter(logging.Formatter):

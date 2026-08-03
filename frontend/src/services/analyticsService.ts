@@ -1,41 +1,32 @@
-import { http } from '@/services/api'
+import { http } from './api'
 
-export interface HeatmapCell {
+export interface MasteryCell {
   student_id: string
-  student_name?: string
+  student_name: string
   competency_id: string
   mastery_level: string
   p_learned: number
-  color?: string
-  score: number
 }
 
 export interface HeatmapResponse {
-  students: { id: string; name: string; grade_level: string }[]
+  students: { id: string; name: string }[]
   competencies: string[]
-  cells: HeatmapCell[]
-  total_students?: number
-  total_competencies?: number
+  grid: Record<string, Record<string, MasteryCell>>
 }
 
 export interface StudentGroup {
-  group_id?: string
-  name?: string
-  group_name?: string
-  student_count: number
-  student_ids?: string[]
-  students?: string[]
-  competency?: string
-  error_type?: string
-  recommended_action: string
-  criteria?: Record<string, unknown>
+  id: string
+  name: string
+  description?: string
+  student_ids: string[]
+  student_count?: number
+  common_failed_competencies?: string[]
 }
 
 export interface MetricsResponse {
-  gap_reduction_rate: number
-  mastery_speed_days: number
-  retention_rate: number
-  resilience_score: number
+  total_students: number
+  overall_mastery_rate: number
+  at_risk_students_count: number
 }
 
 export interface ExportResponse {
@@ -53,18 +44,28 @@ export interface RemediationAtomItem {
   content_type?: string
 }
 
-export interface StudentRemediationCard {
+export interface RemediationCardItem {
+  competency_id: string
+  competency_name?: string
+  mastery_level: string
+  error_classifications: string[]
+  recommended_atoms: string[]
+}
+
+export interface RemediationCardData {
   student_id: string
   student_name: string
   grade_level: string
-  failed_competencies: string[]
-  error_classifications: string[]
-  recommended_atoms: RemediationAtomItem[]
-  generated_at: string
+  group_name?: string
+  items?: RemediationCardItem[]
+  failed_competencies?: string[]
+  error_classifications?: string[]
+  recommended_atoms?: RemediationAtomItem[]
+  generated_at?: string
 }
 
 export interface RemediationCardsResponse {
-  cards: StudentRemediationCard[]
+  cards: RemediationCardData[]
   total_cards: number
 }
 
@@ -100,8 +101,13 @@ export const analyticsService = {
     return response.data
   },
 
-  async getRemediationCards(studentId?: string): Promise<RemediationCardsResponse> {
-    const params = studentId ? { student_id: studentId } : {}
+  async getRemediationCards(
+    studentId?: string,
+    groupId?: string
+  ): Promise<RemediationCardsResponse> {
+    const params: Record<string, string> = {}
+    if (studentId) params.student_id = studentId
+    if (groupId) params.group_id = groupId
     const response = await http.get<RemediationCardsResponse>('/analytics/remediation-cards', { params })
     return response.data
   },

@@ -91,7 +91,3 @@ Report export functionality delegates through `AnalyticsService.export_report`, 
 ## Auto Run Result
 
 Status: done
-
-_Appended by the bmad-loop orchestrator (missing-marker repair, #224): the session finalized this spec's frontmatter without its `## Auto Run Result` marker, so the orchestrator synthesized the result from the frontmatter and appended this section._
-
-Synthesized by the bmad-loop orchestrator from frontmatter status `done` for story `9-3-report-export-pdf-csv-wire-orphaned-exporter` (session finalized the spec without appending its marker).
