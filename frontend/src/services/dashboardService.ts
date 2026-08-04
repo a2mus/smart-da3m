@@ -95,9 +95,12 @@ export const dashboardService = {
    * Fetch list of all children for the authenticated parent.
    */
   async getChildrenList(): Promise<ChildSummary[]> {
-    const response = await api.get<ChildSummary[]>('/dashboard/children')
+    const response = await api.get<any>('/dashboard/children')
+    const rawList: any[] = Array.isArray(response.data)
+      ? response.data
+      : (response.data?.items || response.data?.children || [])
     // Normalize properties for backward compatibility across both camelCase and snake_case callers
-    return response.data.map((item) => ({
+    return rawList.map((item) => ({
       ...item,
       child_id: item.childId || item.child_id || '',
       childId: item.childId || item.child_id || '',

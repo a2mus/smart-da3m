@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import i18n from '@/i18n'
 import type { OrganizationClaim, UserRole } from '@/types/auth'
 import { authApi } from '@/services/api'
 
@@ -169,14 +169,16 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Update language preference
       if (user.value?.language) {
-        const { locale } = useI18n()
-        locale.value = user.value.language.toLowerCase()
-        localStorage.setItem('language', user.value.language.toLowerCase())
+        const lang = user.value.language.toLowerCase()
+        if (i18n.global.locale) {
+          ;(i18n.global.locale as any).value = lang
+        }
+        localStorage.setItem('language', lang)
 
         // Update document direction
         const dir = user.value.language === 'AR' ? 'rtl' : 'ltr'
         document.documentElement.setAttribute('dir', dir)
-        document.documentElement.setAttribute('lang', user.value.language.toLowerCase())
+        document.documentElement.setAttribute('lang', lang)
       }
     } catch {
       user.value = null

@@ -315,7 +315,7 @@ So that **I can use the platform without a school and create child accounts**.
 **And** an `Organization` (type=HOUSEHOLD) is auto-created with name `"{Parent Name}'s Household"`
 **And** an `OrganizationMember` row links the parent to this org with role=PARENT
 **And** the parent can create child accounts within this household org
-**And** the parent is redirected to `/parent` (not `/parent/dashboard`) with the household org as active context (`Register.vue` Line 53 uses `router.push('/parent')`)
+**And** the parent is redirected to the parent dashboard with the household org as active context
 
 ---
 
@@ -352,26 +352,6 @@ So that **expert-only endpoints actually work for experts**.
 **And** an expert token calling an analytics endpoint returns 200, not 403
 **And** a student token calling an analytics endpoint returns 403
 **And** all role-checking functions across the codebase are audited for the same enum case bug
-**And** the `auth.ts` store replaces `useI18n()` (which requires Vue setup context) with `i18n.global.t` for any locale-dependent string access outside components
-
----
-
-### Story 1.9: Parent PIN Management Modal
-
-As a **parent**,
-I want **to view and reset my child's 4-digit PIN from my dashboard**,
-So that **I can help my child log in if they forget their PIN**.
-
-**Acceptance Criteria:**
-
-**Given** the parent is on their dashboard
-**When** they tap "Manage Children & PINs" in the header/child selector
-**Then** a modal shows each child's name and current PIN (masked, with reveal toggle)
-**And** the parent can generate a new random PIN per child
-**And** the new PIN is persisted via `POST /api/v1/auth/children/{id}/pin`
-**And** the modal uses i18n keys for all labels
-**And** only the parent who "owns" the child can view/reset the PIN (enforced by RBAC + `parent_id` check)
-**And** the PIN reveal uses a temporary display (auto-hides after 5 seconds)
 
 ---
 
@@ -437,7 +417,6 @@ So that **questions target my real knowledge boundary, not a hardcoded 0.5**.
 **And** the next-question selector uses the real mastery estimate, not 0.5
 **And** error classification uses the engine's `ErrorClassifier`, not inline logic
 **And** the `DiagnosticEngine.sessions` in-memory dict is removed entirely — the session is read from DB each call
-**And** the student dashboard (`student/Dashboard.vue`) checks for an active diagnostic session (`status=IN_PROGRESS`) on mount and renders a prominent, dismissible "Resume Diagnostic (Question N/M)" banner that navigates back to `DiagnosticRunner.vue`
 
 ---
 
@@ -785,7 +764,6 @@ So that **I can build the content structure for diagnostics and remediation**.
 **And** an expert can edit and publish modules
 **And** a student/parent calling content-mutation endpoints gets 403
 **And** the `ModuleEditor.vue` view is fully functional (not a stub), using the real `contentStore`
-**And** the question builder in `ModuleEditor.vue` includes a side-by-side collapsible "Live Preview" toggle showing real-time student-facing rendering for all item types
 **And** the dead route `/expert/modules/:id/questions` is fixed or removed
 
 ---
@@ -914,8 +892,6 @@ So that **I see actual progress, not placeholder mock data**.
 **And** `dashboardService.ts` calls the real API (no more `Promise.resolve(mockChildren)`)
 **And** the parent sees only their own children's data (enforced by tenant + parent_id)
 **And** `src/stores/dashboardStore.ts` manages the dashboard state reactively
-**And** `dashboardService.ts` normalizes API responses defensively: `(response.data.items || response.data).map(...)`
-**And** when no diagnostic data exists for any child, the dashboard renders an onboarding checklist (Step 1: PIN, Step 2: Diagnostic, Step 3: View insights) instead of blank charts
 
 ---
 
@@ -1095,21 +1071,142 @@ So that **RTL layout is correct and maintainable**.
 
 ---
 
-### Story 10.3: Global Language Toggle in App Header
+## Epic 11: UX Gap Remediation & Production Bug Fixes
 
-As a **user on any page**,
-I want **a permanent Arabic ↔ Français toggle in the app header**,
-So that **I can switch language from any screen without navigating to a settings page**.
+**Goal:** Address all UX friction points, persona gaps, and production bugs identified during the 2026-08-03 UX/UI evaluation (`docs/ux_ui_analysis_and_gaps.md`). Elevate the user experience from MVP to a friction-free learning environment.
+
+**FRs covered:** FR-1, FR-9, FR-20, FR-21, FR-22, FR-28
+**Wave:** 3 (Quality Remediation & UX Polish)
+**Depends on:** Epics 1, 2, 6, 8, 10
+
+### Story 11.1: Fix Register.vue Route Redirection Bug
+
+As a **new parent registering on the platform**,
+I want **the registration flow to redirect me to the valid `/parent` route**,
+So that **I land directly on my parent dashboard without encountering a 404 page**.
 
 **Acceptance Criteria:**
 
-**Given** the user is on any authenticated page
-**When** they view the app header (`AppHeader.vue`)
-**Then** a toggle switch labeled `العربية ↔ Français` is visible
-**And** tapping it switches locale, `dir` attribute, and all UI text instantly (per FR-28)
-**And** the toggle is visible on all screen sizes (including mobile)
-**And** the selected language persists in `localStorage`
-**And** the toggle uses logical CSS (no physical direction utilities)
+**Given** a parent completes registration via `Register.vue`
+**When** the submission succeeds
+**Then** the router redirects to `/parent` (not `/parent/dashboard`)
+**And** `Register.vue` Line 53 uses `router.push('/parent')`
+**And** the registration flow test passes with no broken redirects
+
+---
+
+### Story 11.2: Fix auth.ts useI18n Scope Exception
+
+As a **developer**,
+I want **locale string access in Pinia stores to use safe singleton accessors**,
+So that **auth initialization never throws runtime exceptions outside Vue setup context**.
+
+**Acceptance Criteria:**
+
+**Given** the `auth.ts` Pinia store is initialized outside a Vue component setup context
+**When** locale strings or translations are accessed
+**Then** the store uses `i18n.global.t` (not `useI18n()`)
+**And** store methods complete without throwing composition API scope errors
+
+---
+
+### Story 11.3: Defensive API Payload Normalization in dashboardService
+
+As a **frontend developer**,
+I want **`getChildrenList()` to defensively normalize list payloads**,
+So that **both envelope (`{items: [...]}`) and raw array (`[...]`) API responses parse cleanly**.
+
+**Acceptance Criteria:**
+
+**Given** `dashboardService.ts` calls `getChildrenList()`
+**When** the API returns either `{items: [...]}` or `[...]`
+**Then** the service normalizes the response via `(response.data.items || response.data).map(...)`
+**And** child list rendering works reliably across all environment configurations
+
+---
+
+### Story 11.4: Global Language Toggle in App Header
+
+As a **user on any page**,
+I want **a permanent Arabic ↔ Français toggle in the top app header**,
+So that **I can switch language and layout direction instantly from anywhere in the app**.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated or unauthenticated user on any screen
+**When** they view `AppHeader.vue`
+**Then** a permanent toggle switch `العربية ↔ Français` is visible in the top header
+**And** clicking it toggles locale between `ar` and `fr`
+**And** the `dir` attribute flips between `rtl` and `ltr` instantly without page reload
+**And** language selection is persisted in `localStorage`
+**And** the component uses logical CSS properties (`ps-*`, `pe-*`, `start-*`, `end-*`)
+
+---
+
+### Story 11.5: Diagnostic Resume Banner on Student Dashboard
+
+As a **student returning after an interrupted diagnostic session**,
+I want **a prominent prompt on my dashboard to resume my test**,
+So that **I don't lose test progress or feel anxiety about starting over**.
+
+**Acceptance Criteria:**
+
+**Given** a student has a diagnostic session in `IN_PROGRESS` state
+**When** they land on `student/Dashboard.vue`
+**Then** a prominent banner reads: "Resume Diagnostic (Question N/M)"
+**And** tapping the banner returns directly to `DiagnosticRunner.vue` at the current question
+**And** the banner is dismissible if the student explicitly chooses to abandon
+
+---
+
+### Story 11.6: Parent PIN Management Modal
+
+As a **parent**,
+I want **to view and reset my child's 4-digit PIN code from my dashboard**,
+So that **I can help my child log in quickly if they forget their PIN**.
+
+**Acceptance Criteria:**
+
+**Given** a parent logged into the parent dashboard
+**When** they click "Manage Children & PINs" in the child selector tab
+**Then** a modal opens displaying linked children and their 4-digit PINs
+**And** the PIN is masked by default with a "Reveal" toggle (auto-hides after 5 seconds)
+**And** the parent can generate or reset a child's PIN code
+**And** the updated PIN is saved via `POST /api/v1/auth/children/{id}/pin`
+
+---
+
+### Story 11.7: First-Time Parent Onboarding & Empty State Checklist
+
+As a **new parent whose child has not yet taken a diagnostic**,
+I want **clear step-by-step guidance on my dashboard**,
+So that **I know exactly how to get started with my child**.
+
+**Acceptance Criteria:**
+
+**Given** a parent views a child's profile with zero diagnostic history
+**When** the dashboard renders
+**Then** an onboarding checklist displays instead of blank charts:
+  - Step 1: "Give your child PIN [1234]"
+  - Step 2: "Have them take the 10-min Diagnostic"
+  - Step 3: "View insights & daily recommendations here"
+**And** the checklist automatically replaces with real charts once the first session completes
+
+---
+
+### Story 11.8: Live Preview Toggle in Expert Question Builder
+
+As a **pedagogical expert authoring questions**,
+I want **a side-by-side live preview in the question editor**,
+So that **I can see how questions render for students in real-time without modal navigation**.
+
+**Acceptance Criteria:**
+
+**Given** an expert editing questions in `ModuleEditor.vue`
+**When** they toggle "Live Preview"
+**Then** a side-by-side preview panel renders the student-facing view of the current item
+**And** updates in real-time as question text, distractors, or image URLs change
+**And** supports previewing `multiple_choice`, `image_choice`, and `numeric` item types
 
 ---
 
@@ -1117,11 +1214,11 @@ So that **I can switch language from any screen without navigating to a settings
 
 | Metric | Count |
 |--------|-------|
-| **Total Epics** | 10 |
-| **Wave 1 (Structural)** | 2 epics, 13 stories |
+| **Total Epics** | 11 |
+| **Wave 1 (Structural)** | 2 epics, 12 stories |
 | **Wave 2 (Core Loop)** | 3 epics, 14 stories |
-| **Wave 3 (Feature Completion)** | 5 epics, 14 stories |
-| **Total Stories** | 41 |
+| **Wave 3 (Feature Completion & Polish)** | 6 epics, 21 stories |
+| **Total Stories** | 47 |
 | **FRs Covered** | 30/30 (100%) |
 | **ADs Addressed** | 7/7 (100%) |
 | **OQs Resolved** | OQ-4 (Story 4.3), OQ-10 (Story 3.5, confirmed absent) |

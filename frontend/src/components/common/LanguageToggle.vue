@@ -2,26 +2,29 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const { locale, t } = useI18n()
+const { locale } = useI18n()
 
 const isArabic = computed(() => locale.value === 'ar')
 
 const toggleLanguage = () => {
   const newLang = isArabic.value ? 'fr' : 'ar'
   locale.value = newLang
-  // Direction and localStorage are handled by the watcher in main.ts
 }
 </script>
 
 <template>
   <button
-    class="flex items-center gap-2 px-4 py-2 rounded-soft bg-warm-100 hover:bg-warm-200 transition-colors touch-target"
-    :aria-label="isArabic ? 'Switch to French' : 'Passer en arabe'"
+    type="button"
+    class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest border border-outline-variant text-on-surface text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+    :aria-label="isArabic ? 'Passer en français' : 'التغيير إلى العربية'"
     @click="toggleLanguage"
   >
-    <span class="text-lg">{{ isArabic ? '🇫🇷' : '🇸🇦' }}</span>
-    <span class="font-medium text-warm-700">
-      {{ isArabic ? t('language.french') : t('language.arabic') }}
+    <span class="text-base me-0.5">🌐</span>
+    <span class="font-bold text-xs tracking-wide">
+      {{ isArabic ? 'Français' : 'العربية' }}
+    </span>
+    <span class="text-[10px] text-on-surface-variant opacity-75 ms-0.5">
+      ({{ isArabic ? 'LTR' : 'RTL' }})
     </span>
   </button>
 </template>

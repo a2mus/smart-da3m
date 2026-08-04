@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import AppHeader from '@/components/common/AppHeader.vue'
 
 const { locale } = useI18n()
 
@@ -9,18 +10,21 @@ const isRTL = computed(() => locale.value === 'ar')
 
 <template>
   <div 
-    class="min-h-screen bg-surface transition-colors duration-normal ease-out-quart"
+    class="min-h-screen bg-surface transition-colors duration-normal ease-out-quart flex flex-col"
     :class="{ 'font-arabic': isRTL, 'font-sans': !isRTL }"
     :dir="isRTL ? 'rtl' : 'ltr'"
   >
-    <router-view v-slot="{ Component }">
-      <transition 
-        name="fade" 
-        mode="out-in"
-      >
-        <component :is="Component" />
-      </transition>
-    </router-view>
+    <AppHeader />
+    <main class="flex-1">
+      <router-view v-slot="{ Component }">
+        <transition 
+          name="fade" 
+          mode="out-in"
+        >
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </main>
   </div>
 </template>
 

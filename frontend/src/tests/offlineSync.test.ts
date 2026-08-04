@@ -18,6 +18,11 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string, defaultVal: string) => defaultVal || key,
   }),
+  createI18n: () => ({
+    global: {
+      locale: { value: 'ar' },
+    },
+  }),
 }))
 
 describe('Story 5.3 Offline & Question Pre-Fetch Unit Tests', () => {

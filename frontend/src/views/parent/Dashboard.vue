@@ -58,7 +58,6 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen bg-ink-50">
-    <AppHeader />
     <!-- Mobile-First Header -->
     <div class="bg-surface shadow-sm sticky top-0 z-10">
       <div class="max-w-lg mx-auto px-4 py-4">

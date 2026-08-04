@@ -10,7 +10,7 @@ import NetworkStatusIndicator from '@/components/NetworkStatusIndicator.vue'
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { isOnline, isSyncing, queueAnswer } = useOfflineSync()
+const { queueAnswer } = useOfflineSync()
 
 const moduleId = computed(() => route.params.moduleId as string)
 const sessionId = ref<string>('')

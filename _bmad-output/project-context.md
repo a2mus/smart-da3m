@@ -100,6 +100,11 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 ### Critical Don't-Miss Rules
 
+- **LLM / AI Gateway Configuration (Antigravity Proxy & LiteLLM)**: The local machine runs an OpenAI-compatible **Antigravity Proxy** at `http://127.0.0.1:8045/v1` with API key `sk-b0d11f45e2484569a9eb9d56d3d8816f`. Backend `backend/.env` maps LiteLLM settings to this proxy:
+  - `LLM_BASE_URL=http://127.0.0.1:8045/v1`
+  - `LLM_API_KEY=sk-b0d11f45e2484569a9eb9d56d3d8816f`
+  - `LLM_MODEL=openai/gemini-3.6-flash-high` (Default model for remediation proposals & general LLM tasks)
+  - *Model prefixing:* Always prefix custom proxy model names with `openai/` (e.g. `openai/gemini-3.6-flash-high`, `openai/claude-sonnet-4-6`, `openai/gemini-3-pro-image`) so LiteLLM formats requests as OpenAI-compatible REST payloads to `LLM_BASE_URL`.
 - **RTL / logical CSS (HARD RULE)**: NEVER use physical/directional utilities — `pl-*`/`pr-*`/`ml-*`/`mr-*`/`left-*`/`right-*`/`text-left`/`text-right`/`float-left`/`float-right`/`border-l`/`border-r`/`rounded-l`/`rounded-r`/`bg-white`. Use **logical** equivalents: `ps-*`/`pe-*`/`ms-*`/`me-*`/`start-*`/`end-*`/`text-start`/`text-end`. ESLint will fail the build.
 - **Bilingual-first**: Arabic (RTL) is the default/primary locale (`lang=ar`, `dir=rtl`); French (LTR) secondary. All UI text via vue-i18n — no hardcoded strings.
 - **Wire format**: snake_case between client and server; camelCase inside TS. The Axios service layer is the translation boundary.

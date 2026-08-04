@@ -13,28 +13,27 @@ tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
 
 development_status:
-  epic-1: in-progress
+  epic-1: done
   1-1-axios-snake-camel-transform-frontend-http-boundary: done
   1-2-organization-organizationmember-models-migrations: done
   1-3-add-organization-id-fk-to-all-tenant-scoped-models: done
   1-4-tenant-middleware-automatic-query-filtering: done
   1-5-jwt-organization-claims-auth-flow-update: done
-  1-6-self-registration-flow-for-independent-parents: ready-for-dev
+  1-6-self-registration-flow-for-independent-parents: done
   1-7-frontend-org-switcher-component: done
-  1-8-fix-rbac-enum-case-mismatch-analytics-auth: ready-for-dev
-  1-9-parent-pin-management-modal: backlog
+  1-8-fix-rbac-enum-case-mismatch-analytics-auth: done
   epic-1-retrospective: optional
 
-  epic-2: in-progress
+  epic-2: done
   2-1-create-backend-engines-layer-extract-stateless-domain-logic: done
   2-2-create-backend-repositories-layer-centralize-db-access: done
-  2-3-wire-diagnostic-endpoint-to-engine-kill-hardcoded-mastery: ready-for-dev
+  2-3-wire-diagnostic-endpoint-to-engine-kill-hardcoded-mastery: done
   2-4-structured-json-logging-middleware: done
   epic-2-retrospective: optional
 
   epic-3: in-progress
   3-1-remediation-state-machine-add-missing-states-transition-guard: done
-  3-2-celery-tasks-infrastructure-litellm-integration: ready-for-dev
+  3-2-celery-tasks-infrastructure-litellm-integration: review
   3-3-expert-validation-queue-workflow: done
   3-4-student-remediation-execution-atom-delivery-progress-tracking: done
   3-5-spaced-re-surfacing-of-failed-items-fr-16: done
@@ -57,7 +56,7 @@ development_status:
   epic-5-retrospective: optional
 
   epic-6: in-progress
-  6-1-expert-module-crud-via-repository-layer: ready-for-dev
+  6-1-expert-module-crud-via-repository-layer: done
   6-2-question-bank-knowledge-atom-management: done
   6-3-bulk-import-with-per-row-validation: done
   6-4-ai-assisted-content-drafting-fr-8a: backlog
@@ -68,8 +67,8 @@ development_status:
   7-2-image-choice-item-type-fr-8c: done
   epic-7-retrospective: optional
 
-  epic-8: in-progress
-  8-1-real-dashboard-api-replace-mock-dashboardservice: ready-for-dev
+  epic-8: done
+  8-1-real-dashboard-api-replace-mock-dashboardservice: done
   8-2-subject-strength-radar-chart-with-vue-chartjs: done
   8-3-smart-insight-messages-zero-raw-scores: done
   8-4-daily-reinforcement-recommendation: done
@@ -82,8 +81,18 @@ development_status:
   9-4-printable-remediation-cards: done
   epic-9-retrospective: optional
 
-  epic-10: in-progress
+  epic-10: done
   10-1-extract-all-hardcoded-strings-into-i18n-keys: done
   10-2-rtl-ltr-compliance-verification-lint-enforcement: done
-  10-3-global-language-toggle-in-app-header: backlog
   epic-10-retrospective: optional
+
+  epic-11: in-progress
+  11-1-fix-register-vue-redirect-route: review
+  11-2-fix-auth-ts-usei18n-scope-exception: review
+  11-3-normalize-dashboard-service-getchildrenlist-payload: review
+  11-4-global-language-toggle-in-app-header: review
+  11-5-diagnostic-resume-banner-on-student-dashboard: ready-for-dev
+  11-6-parent-pin-management-modal: ready-for-dev
+  11-7-empty-state-onboarding-checklist-for-new-parents: ready-for-dev
+  11-8-module-editor-side-by-side-live-preview-toggle: ready-for-dev
+  epic-11-retrospective: optional

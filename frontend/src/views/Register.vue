@@ -50,7 +50,7 @@ async function handleRegister() {
       name.value.trim() || undefined
     )
     if (loggedIn) {
-      router.push('/parent/dashboard')
+      router.push('/parent')
     } else {
       error.value = authStore.error || 'فشلت عملية التسجيل. يرجى المحاولة مرة أخرى.'
     }

@@ -33,9 +33,9 @@ class Settings(BaseSettings):
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/2"
 
     # LiteLLM Integration Settings
-    LLM_BASE_URL: str | None = None
-    LLM_API_KEY: str | None = None
-    LLM_MODEL: str = "gpt-4o-mini"
+    LLM_BASE_URL: str | None = "http://127.0.0.1:8045/v1"
+    LLM_API_KEY: str | None = "sk-b0d11f45e2484569a9eb9d56d3d8816f"
+    LLM_MODEL: str = "openai/gemini-3.6-flash-high"
 
     # Pedagogical Alert Threshold Settings (OQ-4)
     ALERT_WARNING_FAILURE_THRESHOLD: int = 2

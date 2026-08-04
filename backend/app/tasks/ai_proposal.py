@@ -30,7 +30,9 @@ def _call_litellm_augmentation(
         return atoms
 
     try:
-        model = settings.LLM_MODEL or "gpt-4o-mini"
+        model = settings.LLM_MODEL or "openai/gemini-3.6-flash-high"
+        if settings.LLM_BASE_URL and not model.startswith("openai/"):
+            model = f"openai/{model}"
         prompt_content = (
             f"Given competency '{competency_id}' and gap profile '{gap_profile or {}}', "
             f"provide pedagogical annotations for these selected knowledge atoms: {atoms}"
