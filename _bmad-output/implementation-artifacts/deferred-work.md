@@ -104,33 +104,54 @@ reason: Backend MetricResponse schema returns `mastery_speed` while frontend Met
 status: done 2026-08-03
 resolution: resolved by sweep bundle dw-dw-metrics-response-field-alignment
 
-- source_spec: `_bmad-output/implementation-artifacts/spec-dw-metrics-response-field-alignment.md`
-  summary: Analytics endpoint get_platform_metrics empty profiles path returns mastery_speed_days as null while populated profiles path returns float.
-  evidence: backend/app/api/endpoints/analytics.py lines 155-163 omits mastery_speed_days in empty-profile MetricResponse initialization.
+### DW-14: Analytics endpoint get_platform_metrics empty profiles path returns mastery_speed_days as null while populated profiles path returns float.
 
-- source_spec: `_bmad-output/implementation-artifacts/spec-dw-metrics-response-field-alignment.md`
-  summary: Frontend MetricsResponse interface retains legacy fields overall_mastery_rate and at_risk_students_count not returned by backend MetricResponse schema.
-  evidence: frontend/src/services/analyticsService.ts retains overall_mastery_rate and at_risk_students_count optional properties whereas backend/app/schemas/analytics.py MetricResponse does not define them.
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-dw-metrics-response-field-alignment.md"), 2026-08-04
+location: backend/app/api/endpoints/analytics.py
+reason: Analytics endpoint get_platform_metrics empty profiles path returns mastery_speed_days as null while populated profiles path returns float. Evidence: backend/app/api/endpoints/analytics.py lines 155-163 omits mastery_speed_days in empty-profile MetricResponse initialization.
+status: open
 
-- source_spec: `_bmad-output/implementation-artifacts/spec-dw-metrics-response-field-alignment.md`
-  summary: Lack of HTTP integration test for mastery_speed_days response field on GET /analytics/metrics endpoint.
-  evidence: test_metric_response_schema_fields in backend/tests/api/test_rbac_analytics.py validates schema unit model dump but does not test HTTP response payload.
+### DW-15: Frontend MetricsResponse interface retains legacy fields overall_mastery_rate and at_risk_students_count not returned by backend MetricResponse schema.
 
-- source_spec: `_bmad-output/implementation-artifacts/spec-dw-analytics-metrics-cleanup.md`
-  summary: Frontend MetricsResponse total_assessments field required contract lacks runtime fallback guard if backend payload omits field.
-  evidence: frontend/src/services/analyticsService.ts line 34 defines total_assessments as required number without runtime fallback sanitizer.
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-dw-metrics-response-field-alignment.md"), 2026-08-04
+location: frontend/src/services/analyticsService.ts
+reason: Frontend MetricsResponse interface retains legacy fields overall_mastery_rate and at_risk_students_count not returned by backend MetricResponse schema. Evidence: frontend/src/services/analyticsService.ts retains overall_mastery_rate and at_risk_students_count optional properties whereas backend/app/schemas/analytics.py MetricResponse does not define them.
+status: open
 
-- source_spec: `_bmad-output/implementation-artifacts/spec-11-5-diagnostic-resume-banner-on-student-dashboard.md`
-  summary: DiagnosticRepository.get_active_student_session uses .first() on IN_PROGRESS sessions without enforcing database single-active-session unique constraints.
-  evidence: backend/app/repositories/diagnostic_repo.py get_active_student_session queries select(DiagnosticSession) where status is IN_PROGRESS and takes .first(), which relies on application logic rather than database constraints to prevent multiple concurrent active sessions.
+### DW-16: Lack of HTTP integration test for mastery_speed_days response field on GET /analytics/metrics endpoint.
 
-- source_spec: `_bmad-output/implementation-artifacts/spec-11-5-diagnostic-resume-banner-on-student-dashboard.md`
-  summary: Backend POST /diagnostic/session/{session_id}/abandon endpoint returns inline dict response instead of structured Pydantic schema model.
-  evidence: backend/app/api/endpoints/diagnostic.py abandon_session returns {"status": "success", "message": "Session abandoned"} instead of a Pydantic response schema model.
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-dw-metrics-response-field-alignment.md"), 2026-08-04
+location: backend/tests/api/test_rbac_analytics.py
+reason: Lack of HTTP integration test for mastery_speed_days response field on GET /analytics/metrics endpoint. Evidence: test_metric_response_schema_fields in backend/tests/api/test_rbac_analytics.py validates schema unit model dump but does not test HTTP response payload.
+status: open
 
-- source_spec: `_bmad-output/implementation-artifacts/spec-1-9-parent-pin-management-modal.md`
-  summary: Missing rate limiting decorator on POST /api/v1/auth/children/{id}/pin endpoint.
-  evidence: Endpoint POST /api/v1/auth/children/{id}/pin in backend/app/api/endpoints/auth.py lacks brute-force rate-limiting protection.
+### DW-17: Frontend MetricsResponse total_assessments field required contract lacks runtime fallback guard if backend payload omits field.
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-dw-analytics-metrics-cleanup.md"), 2026-08-04
+location: frontend/src/services/analyticsService.ts
+reason: Frontend MetricsResponse total_assessments field required contract lacks runtime fallback guard if backend payload omits field. Evidence: frontend/src/services/analyticsService.ts line 34 defines total_assessments as required number without runtime fallback sanitizer.
+status: open
+
+### DW-18: DiagnosticRepository.get_active_student_session uses .first() on IN_PROGRESS sessions without enforcing database single-active-session unique constraints.
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-11-5-diagnostic-resume-banner-on-student-dashboard.md"), 2026-08-04
+location: backend/app/repositories/diagnostic_repo.py
+reason: DiagnosticRepository.get_active_student_session uses .first() on IN_PROGRESS sessions without enforcing database single-active-session unique constraints. Evidence: backend/app/repositories/diagnostic_repo.py get_active_student_session queries select(DiagnosticSession) where status is IN_PROGRESS and takes .first(), which relies on application logic rather than database constraints to prevent multiple concurrent active sessions.
+status: open
+
+### DW-19: Backend POST /diagnostic/session/{session_id}/abandon endpoint returns inline dict response instead of structured Pydantic schema model.
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-11-5-diagnostic-resume-banner-on-student-dashboard.md"), 2026-08-04
+location: backend/app/api/endpoints/diagnostic.py
+reason: Backend POST /diagnostic/session/{session_id}/abandon endpoint returns inline dict response instead of structured Pydantic schema model. Evidence: backend/app/api/endpoints/diagnostic.py abandon_session returns {"status": "success", "message": "Session abandoned"} instead of a Pydantic response schema model.
+status: open
+
+### DW-20: Missing rate limiting decorator on POST /api/v1/auth/children/{id}/pin endpoint.
+
+origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-1-9-parent-pin-management-modal.md"), 2026-08-04
+location: backend/app/api/endpoints/auth.py
+reason: Missing rate limiting decorator on POST /api/v1/auth/children/{id}/pin endpoint. Evidence: Endpoint POST /api/v1/auth/children/{id}/pin in backend/app/api/endpoints/auth.py lacks brute-force rate-limiting protection.
+status: open
 
 
 
