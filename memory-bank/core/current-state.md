@@ -1,12 +1,18 @@
 # Current State
 
 **Phase:** MVP Implementation & Integration Complete ✅  
-**Last updated:** 2026-08-03  
+**Last updated:** 2026-08-04  
 **Next Focus:** MVP Validation & Pilot Testing
 
 ## Active Tasks
 
 ### Recently Completed ✅
+- [x] Updated `_bmad-output/implementation-artifacts/sprint-status.yaml` marking Epic 11 (8/8 stories) as `done` (2026-08-04)
+- [x] Unblocked and completed `bmad-loop` sweep (`20260804-102845-ff44`): implemented PIN rate limiting in `auth.py`, passing 6 unit tests in `test_parent_pin.py` (2026-08-04)
+- [x] Fixed design lint errors (`text-white` -> `text-on-primary`) in `PinManagementModal.vue` and `Dashboard.vue` to resolve `bmad-loop` pre-commit escalation (2026-08-04)
+- [x] Implemented and verified Add Child feature in Parent Dashboard and PinManagementModal.vue with session PIN persistence (2026-08-04)
+- [x] Fixed Landing Page overlapping header bug, Register.vue French translation gaps, and Login.vue / RolePicker.vue dual-language headers (2026-08-04)
+- [x] Diagnosed `bmad-loop` stuck run, updated OpenCode subagent model mappings to `antigravity-manager/gemini-3.6-flash-high`, and resumed execution (2026-08-04)
 - [x] Resolved git merge conflicts between local `master` and `origin/master`, verified test suite, committed merge, and pushed to `origin/master` (2026-08-03)
 - [x] Fixed Python 3.12+ / `passlib` compatibility issue by replacing `passlib` context hashing with direct `bcrypt` password and PIN hashing/verification (2026-06-13)
 - [x] Initialized all remaining database tables (modules, questions, knowledge atoms, etc.) by configuring Alembic `env.py` to auto-detect all models, generating `6721010c96a7_create_remaining_tables.py`, dropping conflicting text check constraints, and applying `alembic upgrade head` (2026-06-13)

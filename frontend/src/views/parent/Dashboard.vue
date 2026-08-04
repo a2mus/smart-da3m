@@ -62,6 +62,12 @@ const formatRelativeTime = (timestamp: string) => {
   return date.toLocaleDateString(locale.value === 'fr' ? 'fr-FR' : 'ar-DZ')
 }
 
+const activeChildPin = computed(() => {
+  const activeId = selectedChildId.value || (children.value[0] ? ((children.value[0] as any).childId || (children.value[0] as any).child_id || (children.value[0] as any).id) : '')
+  if (!activeId) return '1234'
+  return sessionStorage.getItem(`child_pin_${activeId}`) || '1234'
+})
+
 onMounted(() => {
   dashboardStore.fetchChildren()
 })
@@ -99,29 +105,29 @@ onMounted(() => {
         </button>
       </div>
 
-      <div class="max-w-lg mx-auto px-4 pb-4">
+      <div
+        v-if="children.length > 1"
+        class="max-w-lg mx-auto px-4 pb-4"
+      >
         <!-- Child Selector -->
-        <div
-          v-if="children.length > 1"
-          class="mt-3 flex gap-2 overflow-x-auto pb-2"
-        >
+        <div class="mt-3 flex gap-2 overflow-x-auto pb-2">
           <button
             v-for="child in children"
-            :key="child.childId || child.child_id"
+            :key="(child as any).childId || (child as any).child_id || (child as any).id"
             :class="[
               'flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-colors',
-              selectedChildId === (child.childId || child.child_id)
+              selectedChildId === ((child as any).childId || (child as any).child_id || (child as any).id)
                 ? 'bg-teal-500 text-on-primary'
                 : 'bg-ink-100 text-ink-700 hover:bg-ink-200'
             ]"
-            @click="selectChild(child.childId || child.child_id || '')"
+            @click="selectChild((child as any).childId || (child as any).child_id || (child as any).id || '')"
           >
             <span class="w-8 h-8 bg-surface/20 rounded-full flex items-center justify-center text-sm">
               {{ child.name.charAt(0) }}
             </span>
             <span class="text-sm font-medium">{{ child.name }}</span>
             <span
-              v-if="child.needsAttention || child.needs_attention"
+              v-if="(child as any).needsAttention || (child as any).needs_attention"
               class="w-2 h-2 bg-rose-500 rounded-full"
             />
           </button>
@@ -153,14 +159,24 @@ onMounted(() => {
       <!-- Empty State -->
       <div
         v-else-if="!childData"
-        class="text-center py-12 text-ink-600"
+        class="text-center py-12 text-ink-600 bg-surface rounded-2xl p-6 shadow-soft"
       >
         <div class="text-6xl mb-4">
-          👨‍gsub👨‍👧
+          👨‍👧‍👦
         </div>
-        <p class="text-lg">
+        <p class="text-lg font-semibold text-ink-800 mb-2">
           {{ t('parent.noChildren') }}
         </p>
+        <p class="text-sm text-ink-500 mb-6">
+          {{ t('parent.addChildTitle') }}
+        </p>
+        <button
+          type="button"
+          class="px-5 py-2.5 text-sm font-semibold rounded-xl bg-teal-600 text-on-primary hover:bg-teal-700 transition-colors shadow-soft"
+          @click="isPinModalOpen = true"
+        >
+          + {{ t('parent.addChild') }}
+        </button>
       </div>
 
       <!-- Dashboard Content -->
@@ -172,7 +188,7 @@ onMounted(() => {
         <ParentOnboardingChecklist
           v-if="!hasDiagnosticHistory"
           :child-name="childData.name"
-          :child-pin="childData.pinCode || childData.pin_code || selectedChildSummary?.pinCode || selectedChildSummary?.pin_code || '1234'"
+          :child-pin="activeChildPin"
         />
 
         <template v-else>

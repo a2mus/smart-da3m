@@ -69,6 +69,23 @@ const handleLogout = async () => {
             {{ t('auth.logout', 'تسجيل الخروج') }}
           </button>
         </div>
+        <div
+          v-else
+          class="flex items-center gap-2 ms-2 ps-2 border-s border-outline-variant"
+        >
+          <router-link
+            to="/register"
+            class="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-primary text-on-primary hover:bg-primary-container transition-colors"
+          >
+            {{ t('auth.registerNow', 'سجل الآن') }}
+          </router-link>
+          <router-link
+            to="/login"
+            class="px-3.5 py-1.5 text-xs font-bold rounded-xl border border-primary text-primary hover:bg-primary/5 transition-colors"
+          >
+            {{ t('auth.login', 'تسجيل الدخول') }}
+          </router-link>
+        </div>
       </div>
     </div>
   </header>

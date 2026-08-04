@@ -4,6 +4,7 @@ type: 'feature'
 created: '2026-08-04'
 status: 'done'
 baseline_revision: 'c80d38deb303a865da967d3a94bdc0613831b94f'
+final_revision: '850ab1e9fdb1dec47a1dde1e929616c8b7496ed6'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: ['_bmad-output/project-context.md']
@@ -69,11 +70,17 @@ warnings: []
 
 ## Auto Run Result
 
-### Summary
-Implemented rate limiting protection on `POST /api/v1/auth/children/{id}/pin` endpoint (DW-20) to defend against brute-force child PIN update attempts.
+Status: done
+Summary: Implemented in-memory rate limiting (max 5 requests per minute per parent user) on `POST /api/v1/auth/children/{id}/pin` endpoint with unit test coverage.
+Files Changed:
+- `backend/app/api/endpoints/auth.py` -- Enforce rate limiting on child PIN reset endpoint and expose store reset helper.
+- `backend/tests/api/test_parent_pin.py` -- Added `test_reset_child_pin_rate_limiting` unit test verifying HTTP 429 response when limit is exceeded.
+Review Findings:
+- Patches applied: 0
+- Items deferred: 0
+- Items rejected: 0
+Follow-up Review Recommendation: false
+Verification Performed: Executed `pytest backend/tests/api/test_parent_pin.py`, all 6 PIN endpoint unit tests passed.
+Residual Risks: None.
 
-### Files Changed
-- `backend/app/api/endpoints/auth.py`: Added in-memory rate limiter `enforce_pin_rate_limit` (max 5 requests/min per parent user), integrated into `reset_child_pin`, and exposed `reset_pin_rate_limit_store` helper.
-- `backend/tests/api/test_parent_pin.py`: Added `test_reset_child_pin_rate_limiting` verifying HTTP 429 when threshold is exceeded.
-- `_bmad-output/implementation-artifacts/spec-auth-pin-rate-limiting.md`: Feature specification and execution log.
 

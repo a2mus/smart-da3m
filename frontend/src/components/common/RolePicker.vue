@@ -1,32 +1,35 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { UserRole } from '@/types/auth'
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   select: [role: UserRole]
 }>()
 
-const roles: { role: UserRole; labelAr: string; labelFr: string; descAr: string; icon: string; gradient: string }[] = [
+const roles: { role: UserRole; titleKey: string; subKey: string; descKey: string; icon: string; gradient: string }[] = [
   {
     role: 'PARENT',
-    labelAr: 'ولي أمر',
-    labelFr: 'Parent',
-    descAr: 'تابع تقدم أطفالك، الإشعارات، والتوصيات الذكية',
+    titleKey: 'roles.parent',
+    subKey: 'roles.parentSub',
+    descKey: 'roles.parentDesc',
     icon: 'family_restroom',
     gradient: 'from-[#8c4e35] to-amber-800',
   },
   {
     role: 'EXPERT',
-    labelAr: 'خبير بيداغوجي',
-    labelFr: 'Expert Pédagogique',
-    descAr: 'أدر المحتوى التعليمي، حلل النتائج، وأدر المجموعات',
+    titleKey: 'roles.expert',
+    subKey: 'roles.expertSub',
+    descKey: 'roles.expertDesc',
     icon: 'psychology',
     gradient: 'from-[#2e5a3b] to-emerald-800',
   },
   {
     role: 'STUDENT',
-    labelAr: 'تلميذ',
-    labelFr: 'Élève',
-    descAr: 'استعرض رحلة التعلم، التشخيصات، ومسارات التقوية',
+    titleKey: 'roles.student',
+    subKey: 'roles.studentSub',
+    descKey: 'roles.studentDesc',
     icon: 'school',
     gradient: 'from-[#00535b] to-teal-700',
   },
@@ -35,12 +38,9 @@ const roles: { role: UserRole; labelAr: string; labelFr: string; descAr: string;
 
 <template>
   <div class="w-full">
-    <h2 class="text-2xl font-bold text-on-surface text-center mb-2">
-      اختر دورك
+    <h2 class="text-2xl font-bold text-on-surface text-center mb-6">
+      {{ t('roles.selectRole', 'اختر دورك') }}
     </h2>
-    <p class="text-on-surface-variant text-center mb-8">
-      Sélectionnez votre rôle
-    </p>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <button
         v-for="r in roles"
@@ -61,13 +61,13 @@ const roles: { role: UserRole; labelAr: string; labelFr: string; descAr: string;
           </span>
         </div>
         <h3 class="text-lg font-bold text-on-surface mb-1">
-          {{ r.labelAr }}
+          {{ t(r.titleKey) }}
         </h3>
         <p class="text-xs text-on-surface-variant/70 font-medium mb-2">
-          {{ r.labelFr }}
+          {{ t(r.subKey) }}
         </p>
         <p class="text-xs text-on-surface-variant leading-relaxed">
-          {{ r.descAr }}
+          {{ t(r.descKey) }}
         </p>
       </button>
     </div>

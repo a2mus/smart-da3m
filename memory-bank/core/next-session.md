@@ -1,14 +1,20 @@
 # Next Session Handover
 
-**Written by:** Antigravity AI on 2026-08-03  
-**Status:** Git Merge Resolved & Pushed to Remote ✅
+**Written by:** Antigravity AI on 2026-08-04  
+**Status:** Epic 11 Complete (8/8 Stories `done`) & `bmad-loop` Clean ✅  
 
 ## Start Here
-1. Review `master` branch — remote `origin/master` and local `master` are fully merged and synced.
-2. All 13 unit & integration tests (`test_analytics_export.py`, `test_analytics_remediation_cards.py`, `test_dashboard_service.py`) pass cleanly.
+1. `sprint-status.yaml` updated: Epic 11 marked as `done` (all 8 stories verified and completed).
+2. `bmad-loop` UI now shows Epic 11 at 8/8 with green checkmarks.
 3. Current focus: **MVP Validation & Pilot Testing**.
 
-## Completed This Session — Git Conflict Resolution & Push
+## Completed This Session — Add Child & UI Enhancements
+- **Add Child Feature**: Added child creation form directly inside `PinManagementModal.vue` and a primary `+ Ajouter un enfant` action button to `Dashboard.vue` empty state.
+- **Session PIN Persistence**: Bound newly created or reset PINs into `sessionStorage` so parents can view their child's PIN in the onboarding checklist during setup.
+- **Consolidated Landing Page Header**: Removed duplicate fixed header in `LandingPage.vue` and integrated unauthenticated navigation buttons ("S'inscrire", "Connexion") into `AppHeader.vue`.
+- **Full Registration Form Localization**: Removed hardcoded `dir="rtl"` in `Register.vue` and translated all labels, placeholders, and error messages via `vue-i18n`.
+- **Single-Language Role Picker**: Refactored `RolePicker.vue` to dynamically translate titles and role descriptions into the active locale without dual-language hardcoding.
+- **Browser Verification**: Tested in browser using `browser_subagent` and verified clean Arabic/French language switching and layout directionality.
 - **Merge Conflicts Resolved**: Reconciled all conflict markers across Python backend (`analytics_service.py`, `report_exporter.py`, `analytics.py`, `analytics_repo.py`), frontend TypeScript (`analyticsService.ts`, `analyticsStore.ts`, `CompetencyHeatmap.vue`), translation locales (`fr.json`, `ar.json`), test suites, and BMad spec artifacts.
 - **Verification**: Verified zero conflict markers (`<<<<<<<`) remain across codebase and ran full pytest test suite (13 passing tests).
 - **Git Commit & Push**: Staged all resolved files, committed merge, and pushed to `origin/master`.

@@ -3,6 +3,11 @@
 ## Milestones Completed
 
 | Date | Milestone | Notes |
+| 2026-08-04 | Epic 11 Complete (8/8) | Updated sprint-status.yaml marking all Epic 11 stories as done |
+| 2026-08-04 | `bmad-loop` Sweep Finished | Unblocked and completed sweep run `20260804-102845-ff44` with auth rate limiting & 6 passing tests |
+| 2026-08-04 | Design System Lint Remediation | Fixed restricted text-white classes in PinManagementModal.vue and Dashboard.vue to unblock bmad-loop git pre-commit |
+| 2026-08-04 | Add Child Feature Implemented | Integrated child account creation modal & dashboard empty state with session PIN binding |
+| 2026-08-04 | UI & i18n Bug Fixes Verified | Consolidated LandingPage header, full Register.vue i18n, and clean RolePicker.vue single-language cards |
 | 2026-08-03 | Git Merge & Remote Sync Complete | Resolved conflicts across backend, frontend & tests, verified 13 unit tests, committed & pushed to origin/master |
 | 2026-04-07 | Product brainstorming completed | speckit-brainstorm workflow — all 6 rounds validated |
 | 2026-04-07 | Product specification generated | `.specify/memory/product-spec.md` — 415 lines, comprehensive |

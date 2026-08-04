@@ -157,7 +157,8 @@ resolution: resolved by sweep bundle dw-diagnostic-session-hardening
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-1-9-parent-pin-management-modal.md"), 2026-08-04
 location: backend/app/api/endpoints/auth.py
 reason: Missing rate limiting decorator on POST /api/v1/auth/children/{id}/pin endpoint. Evidence: Endpoint POST /api/v1/auth/children/{id}/pin in backend/app/api/endpoints/auth.py lacks brute-force rate-limiting protection.
-status: open
+status: done 2026-08-04
+resolution: resolved by sweep bundle dw-auth-pin-rate-limiting
 
 
 

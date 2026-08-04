@@ -19,7 +19,8 @@ from app.core.config import settings
 from app.core.logging_middleware import LoggingMiddleware
 from app.core.tenant import setup_tenant_query_filter
 from app.core.tenant_middleware import TenantMiddleware
-from app.db.session import engine
+from app.db.session import Base, engine
+import app.models  # Ensure all model definitions are registered with Base.metadata
 
 # Initialize tenant query filter event listener
 setup_tenant_query_filter()
@@ -28,8 +29,9 @@ setup_tenant_query_filter()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager for startup/shutdown events."""
-    # Startup
-    # TODO: Add connection pool validation, cache warm-up
+    # Startup: Auto-create database tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     yield
     # Shutdown
     await engine.dispose()

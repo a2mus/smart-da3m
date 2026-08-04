@@ -1,55 +1,11 @@
 <script setup lang="ts">
 import HeroSection from '@/components/common/HeroSection.vue'
 import FeatureGrid from '@/components/common/FeatureGrid.vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-
-const goToRegister = () => {
-  router.push('/register')
-}
-
-const goToLogin = () => {
-  router.push('/login')
-}
 </script>
 
 <template>
-  <div
-    class="text-on-surface"
-    dir="rtl"
-  >
-    <!-- TopAppBar -->
-    <header class="fixed top-0 w-full z-50 bg-[#faf9f6]/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-sm shadow-teal-900/5">
-      <nav class="flex flex-row-reverse justify-between items-center px-8 py-4 max-w-7xl mx-auto font-['Plus_Jakarta_Sans','Tajawal'] text-end">
-        <div
-          class="flex items-center gap-2 cursor-pointer"
-          @click="router.push('/')"
-        >
-          <span
-            class="material-symbols-outlined text-[#00535b] dark:text-teal-400 text-3xl"
-            data-icon="menu_book"
-          >menu_book</span>
-          <span class="text-2xl font-bold text-[#00535b] dark:text-teal-500">إحسان</span>
-        </div>
-        <div class="hidden md:flex flex-row-reverse gap-3 items-center">
-          <button 
-            class="bg-primary text-on-primary px-6 py-2.5 rounded-xl font-bold scale-95 active:opacity-80 transition-transform hover:bg-primary-container"
-            @click="goToRegister"
-          >
-            سجل الآن
-          </button>
-          <button 
-            class="border-2 border-primary text-primary px-6 py-2.5 rounded-xl font-bold scale-95 active:opacity-80 transition-transform hover:bg-primary/5"
-            @click="goToLogin"
-          >
-            تسجيل الدخول
-          </button>
-        </div>
-      </nav>
-    </header>
-
-    <main class="pt-24 overflow-hidden">
+  <div class="text-on-surface">
+    <main class="py-6 overflow-hidden">
       <!-- Hero Section -->
       <HeroSection />
 

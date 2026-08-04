@@ -86,11 +86,11 @@ development_status:
   10-2-rtl-ltr-compliance-verification-lint-enforcement: done
   epic-10-retrospective: optional
 
-  epic-11: in-progress
-  11-1-fix-register-vue-redirect-route: review
-  11-2-fix-auth-ts-usei18n-scope-exception: review
-  11-3-normalize-dashboard-service-getchildrenlist-payload: review
-  11-4-global-language-toggle-in-app-header: review
+  epic-11: done
+  11-1-fix-register-vue-redirect-route: done
+  11-2-fix-auth-ts-usei18n-scope-exception: done
+  11-3-normalize-dashboard-service-getchildrenlist-payload: done
+  11-4-global-language-toggle-in-app-header: done
   11-5-diagnostic-resume-banner-on-student-dashboard: done
   11-6-parent-pin-management-modal: done
   11-7-empty-state-onboarding-checklist-for-new-parents: done

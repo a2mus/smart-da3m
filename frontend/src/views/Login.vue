@@ -74,10 +74,7 @@ async function handlePinLogin() {
 </script>
 
 <template>
-  <div
-    dir="rtl"
-    class="min-h-screen flex items-center justify-center bg-[#faf9f6] dark:bg-slate-950 px-4 py-12"
-  >
+  <div class="min-h-screen flex items-center justify-center bg-[#faf9f6] dark:bg-slate-950 px-4 py-12">
     <div class="w-full max-w-lg">
       <!-- Header -->
       <div class="text-center mb-10">

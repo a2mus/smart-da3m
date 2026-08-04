@@ -164,6 +164,60 @@
           </div>
         </div>
 
+        <!-- Add Child Form / Button -->
+        <div class="mt-4 p-4 rounded-xl bg-surface-container-low border border-teal-200">
+          <div
+            v-if="!isAddingChild"
+            class="flex items-center justify-between"
+          >
+            <span class="text-sm font-semibold text-on-surface">{{ t('parent.addChildTitle') }}</span>
+            <button
+              type="button"
+              class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-600 text-on-primary hover:bg-teal-700 transition-colors flex items-center gap-1"
+              @click="isAddingChild = true"
+            >
+              <span>+</span>
+              <span>{{ t('parent.addChild') }}</span>
+            </button>
+          </div>
+
+          <form
+            v-else
+            class="space-y-3"
+            @submit.prevent="submitAddChild"
+          >
+            <h4 class="text-sm font-semibold text-on-surface">
+              {{ t('parent.addChildTitle') }}
+            </h4>
+            <div class="flex items-center gap-2">
+              <input
+                v-model="addChildPin"
+                type="password"
+                inputmode="numeric"
+                pattern="[0-9]{4,6}"
+                maxlength="6"
+                required
+                :placeholder="t('parent.addChildPinPlaceholder')"
+                class="flex-1 px-3 py-1.5 text-xs rounded-lg border border-outline bg-surface-bright text-on-surface focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+              <button
+                type="submit"
+                :disabled="isSubmitting"
+                class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-600 text-on-primary hover:bg-teal-700 disabled:opacity-50 transition-colors"
+              >
+                {{ t('parent.addChild') }}
+              </button>
+              <button
+                type="button"
+                class="px-2 py-1.5 text-xs text-on-surface-variant hover:bg-surface-container rounded-lg"
+                @click="isAddingChild = false"
+              >
+                &times;
+              </button>
+            </div>
+          </form>
+        </div>
+
         <!-- Footer -->
         <div class="mt-6 pt-4 border-t border-outline-variant flex justify-end">
           <button
@@ -183,6 +237,8 @@
 import { ref, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { dashboardService, type ChildSummary, type ChildDashboardData } from '@/services/dashboardService'
+import { authApi } from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
 defineProps<{
   isOpen: boolean
@@ -195,6 +251,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const authStore = useAuthStore()
 
 const revealedPins = ref<Record<string, string>>({})
 const revealTimers = ref<Record<string, number>>({})
@@ -203,6 +260,43 @@ const newPinInput = ref('')
 const isSubmitting = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
+const isAddingChild = ref(false)
+const addChildPin = ref('')
+
+async function submitAddChild() {
+  if (!addChildPin.value || !/^\d{4,6}$/.test(addChildPin.value)) {
+    errorMessage.value = t('auth.pinCodeLabel')
+    return
+  }
+
+  const parentId = authStore.user?.id
+  if (!parentId) {
+    errorMessage.value = 'Session invalide'
+    return
+  }
+
+  isSubmitting.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    const response = await authApi.registerStudent(parentId, addChildPin.value)
+    const newChildId = response.data?.id
+    if (newChildId) {
+      sessionStorage.setItem(`child_pin_${newChildId}`, addChildPin.value)
+      revealedPins.value[newChildId] = addChildPin.value
+    }
+    successMessage.value = t('parent.childAddedSuccess')
+    addChildPin.value = ''
+    isAddingChild.value = false
+    emit('updated')
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail
+    errorMessage.value = Array.isArray(detail) ? detail[0]?.msg : (detail || 'Failed to add child')
+  } finally {
+    isSubmitting.value = false
+  }
+}
 
 function getChildId(child: ChildSummary | ChildDashboardData): string {
   const id = (child as any).childId || (child as any).child_id || (child as any).id || ''
@@ -222,10 +316,9 @@ function toggleReveal(childId: string) {
   if (isRevealed(childId)) {
     hidePin(childId)
   } else {
-    // If not recently updated in session, pin remains masked / unretrievable
-    if (!revealedPins.value[childId]) {
-      revealedPins.value[childId] = '••••'
-    }
+    const storedPin = sessionStorage.getItem(`child_pin_${childId}`) || (childId ? '••••' : '1234')
+    revealedPins.value[childId] = storedPin
+
     if (revealTimers.value[childId]) {
       clearTimeout(revealTimers.value[childId])
     }
@@ -268,6 +361,7 @@ async function submitPinReset(childId: string) {
 
   try {
     await dashboardService.updateChildPin(childId, newPinInput.value)
+    sessionStorage.setItem(`child_pin_${childId}`, newPinInput.value)
     revealedPins.value[childId] = newPinInput.value
     if (revealTimers.value[childId]) clearTimeout(revealTimers.value[childId])
     revealTimers.value[childId] = window.setTimeout(() => {

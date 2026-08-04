@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 
+const { t, locale } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 
@@ -10,10 +12,15 @@ const selectedRole = ref<'PARENT' | 'EXPERT' | null>(null)
 const name = ref('')
 const email = ref('')
 const password = ref('')
-const language = ref<'AR' | 'FR'>('AR')
+const language = ref<'AR' | 'FR'>(locale.value.toUpperCase() === 'FR' ? 'FR' : 'AR')
 const error = ref<string | null>(null)
 const success = ref(false)
 const isLoading = ref(false)
+
+function setLanguage(lang: 'AR' | 'FR') {
+  language.value = lang
+  locale.value = lang.toLowerCase()
+}
 
 function selectRole(role: 'PARENT' | 'EXPERT') {
   selectedRole.value = role
@@ -31,12 +38,12 @@ async function handleRegister() {
   if (selectedRole.value !== 'PARENT') return
 
   if (!email.value || !password.value) {
-    error.value = 'يرجى إدخال البريد الإلكتروني وكلمة المرور'
+    error.value = t('auth.emailAndPasswordRequired', 'يرجى إدخال البريد الإلكتروني وكلمة المرور')
     return
   }
 
   if (password.value.length < 8) {
-    error.value = 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل'
+    error.value = t('auth.passwordMinLength', 'يجب أن تتكون كلمة المرور من 8 أحرف على الأقل')
     return
   }
 
@@ -52,10 +59,10 @@ async function handleRegister() {
     if (loggedIn) {
       router.push('/parent')
     } else {
-      error.value = authStore.error || 'فشلت عملية التسجيل. يرجى المحاولة مرة أخرى.'
+      error.value = authStore.error || t('auth.registrationFailed', 'فشلت عملية التسجيل. يرجى المحاولة مرة أخرى.')
     }
   } catch (err: any) {
-    error.value = err.response?.data?.detail || 'فشلت عملية التسجيل. يرجى المحاولة مرة أخرى.'
+    error.value = err.response?.data?.detail || t('auth.registrationFailed', 'فشلت عملية التسجيل. يرجى المحاولة مرة أخرى.')
   } finally {
     isLoading.value = false
   }
@@ -63,10 +70,7 @@ async function handleRegister() {
 </script>
 
 <template>
-  <div
-    dir="rtl"
-    class="min-h-screen flex items-center justify-center bg-[#faf9f6] dark:bg-slate-950 px-4 py-12"
-  >
+  <div class="min-h-screen flex items-center justify-center bg-[#faf9f6] dark:bg-slate-950 px-4 py-12">
     <div class="w-full max-w-lg">
       <!-- Header -->
       <div class="text-center mb-10">
@@ -81,14 +85,14 @@ async function handleRegister() {
             menu_book
           </span>
           <h1 class="text-3xl font-black text-[#00535b] dark:text-teal-500">
-            إحسان
+            {{ t('app.name') }}
           </h1>
         </div>
         <h2 class="text-2xl font-bold text-on-surface">
-          {{ selectedRole ? 'إنشاء حساب جديد' : 'انضم إلينا' }}
+          {{ selectedRole ? t('auth.registerTitle') : t('auth.joinUs') }}
         </h2>
         <p class="text-on-surface-variant mt-1">
-          {{ selectedRole ? '' : 'اختر نوع الحساب للمتابعة' }}
+          {{ selectedRole ? '' : t('auth.selectAccountType') }}
         </p>
       </div>
 
@@ -98,42 +102,46 @@ async function handleRegister() {
         class="bg-surface-container rounded-[2rem] p-8 shadow-lg space-y-4"
       >
         <button
-          class="w-full text-end p-6 bg-surface-container-lowest hover:bg-primary/5 border-2 border-outline-variant hover:border-primary rounded-2xl transition-all flex flex-row-reverse justify-between items-center group"
+          class="w-full text-start p-6 bg-surface-container-lowest hover:bg-primary/5 border-2 border-outline-variant hover:border-primary rounded-2xl transition-all flex items-center justify-between group"
           @click="selectRole('PARENT')"
         >
-          <span class="material-symbols-outlined text-4xl text-primary group-hover:scale-110 transition-transform">family_restroom</span>
-          <div class="flex-1 me-4">
-            <h4 class="text-xl font-bold text-on-surface">
-              تسجيل كولي أمر
-            </h4>
-            <p class="text-sm text-on-surface-variant">
-              لمتابعة مستوى طفلك وتلقي تقارير ذكية
-            </p>
+          <div class="flex items-center gap-4">
+            <span class="material-symbols-outlined text-4xl text-primary group-hover:scale-110 transition-transform">family_restroom</span>
+            <div>
+              <h4 class="text-xl font-bold text-on-surface">
+                {{ t('auth.registerParent') }}
+              </h4>
+              <p class="text-sm text-on-surface-variant">
+                {{ t('auth.registerParentDesc') }}
+              </p>
+            </div>
           </div>
         </button>
 
         <button
-          class="w-full text-end p-6 bg-surface-container-lowest hover:bg-primary/5 border-2 border-outline-variant hover:border-primary rounded-2xl transition-all flex flex-row-reverse justify-between items-center group"
+          class="w-full text-start p-6 bg-surface-container-lowest hover:bg-primary/5 border-2 border-outline-variant hover:border-primary rounded-2xl transition-all flex items-center justify-between group"
           @click="selectRole('EXPERT')"
         >
-          <span class="material-symbols-outlined text-4xl text-primary group-hover:scale-110 transition-transform">school</span>
-          <div class="flex-1 me-4">
-            <h4 class="text-xl font-bold text-on-surface">
-              تسجيل كخبير بيداغوجي
-            </h4>
-            <p class="text-sm text-on-surface-variant">
-              للمساهمة في المناهج وتحليل البيانات
-            </p>
+          <div class="flex items-center gap-4">
+            <span class="material-symbols-outlined text-4xl text-primary group-hover:scale-110 transition-transform">school</span>
+            <div>
+              <h4 class="text-xl font-bold text-on-surface">
+                {{ t('auth.registerExpert') }}
+              </h4>
+              <p class="text-sm text-on-surface-variant">
+                {{ t('auth.registerExpertDesc') }}
+              </p>
+            </div>
           </div>
         </button>
 
         <p class="text-center text-sm text-on-surface-variant mt-6">
-          لديك حساب بالفعل؟
+          {{ t('auth.alreadyHaveAccount') }}
           <router-link
             to="/login"
             class="text-primary font-bold hover:underline"
           >
-            تسجيل الدخول
+            {{ t('auth.login') }}
           </router-link>
         </p>
       </div>
@@ -149,7 +157,7 @@ async function handleRegister() {
           @click="backToRoles"
         >
           <span class="material-symbols-outlined text-lg">arrow_back</span>
-          <span class="text-sm">تغيير الاختيار</span>
+          <span class="text-sm">{{ t('auth.changeSelection') }}</span>
         </button>
 
         <!-- Success view -->
@@ -162,10 +170,10 @@ async function handleRegister() {
           </div>
           <div>
             <h3 class="text-2xl font-bold text-on-surface mb-2">
-              تم إنشاء الحساب بنجاح!
+              {{ t('auth.accountCreatedSuccess') }}
             </h3>
             <p class="text-on-surface-variant">
-              مرحباً بك في منصة إحسان. يمكنك الآن تسجيل الدخول للبدء في تخصيص مسار طفلك.
+              {{ t('auth.accountCreatedMsg') }}
             </p>
           </div>
           <router-link
@@ -173,7 +181,7 @@ async function handleRegister() {
             class="block w-full bg-primary text-on-primary py-3.5 rounded-xl font-bold text-lg text-center
                    hover:bg-primary/90 active:scale-[0.98] transition-all"
           >
-            تسجيل الدخول الآن
+            {{ t('auth.loginNow') }}
           </router-link>
         </div>
 
@@ -187,11 +195,10 @@ async function handleRegister() {
           </div>
           <div>
             <h3 class="text-2xl font-bold text-on-surface mb-2">
-              حساب الخبراء محمي
+              {{ t('auth.expertAccountProtected') }}
             </h3>
             <p class="text-on-surface-variant leading-relaxed">
-              يتم إنشاء حسابات الخبراء البيداغوجيين من قِبل إدارة المنصة للحفاظ على جودة المحتوى التعليمي.
-              إذا تم تسجيلك مسبقاً، يرجى التوجه لصفحة تسجيل الدخول.
+              {{ t('auth.expertAccountMsg') }}
             </p>
           </div>
           <router-link
@@ -199,7 +206,7 @@ async function handleRegister() {
             class="block w-full bg-primary text-on-primary py-3.5 rounded-xl font-bold text-lg text-center
                    hover:bg-primary/90 active:scale-[0.98] transition-all"
           >
-            الانتقال لتسجيل الدخول
+            {{ t('auth.goToLogin') }}
           </router-link>
         </div>
 
@@ -210,11 +217,11 @@ async function handleRegister() {
           @submit.prevent="handleRegister"
         >
           <h3 class="text-xl font-bold text-on-surface mb-6 text-center">
-            حساب ولي أمر جديد
+            {{ t('auth.newParentAccount') }}
           </h3>
 
           <div>
-            <label class="block text-sm font-medium text-on-surface-variant mb-1">الاسم الكامل (اختياري)</label>
+            <label class="block text-sm font-medium text-on-surface-variant mb-1">{{ t('auth.fullNameOptional') }}</label>
             <input
               v-model="name"
               type="text"
@@ -222,12 +229,12 @@ async function handleRegister() {
                      text-on-surface placeholder:text-on-surface-variant/40
                      focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all
                      font-['Inter','Tajawal'] text-start"
-              placeholder="مثال: أحمد محمد"
+              :placeholder="t('auth.fullNamePlaceholder')"
             >
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-on-surface-variant mb-1">البريد الإلكتروني</label>
+            <label class="block text-sm font-medium text-on-surface-variant mb-1">{{ t('auth.email') }}</label>
             <input
               v-model="email"
               type="email"
@@ -242,7 +249,7 @@ async function handleRegister() {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-on-surface-variant mb-1">كلمة المرور (8 أحرف كحد أدنى)</label>
+            <label class="block text-sm font-medium text-on-surface-variant mb-1">{{ t('auth.password') }}</label>
             <input
               v-model="password"
               type="password"
@@ -257,7 +264,7 @@ async function handleRegister() {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-on-surface-variant mb-2">لغة الواجهة المفضلة</label>
+            <label class="block text-sm font-medium text-on-surface-variant mb-2">{{ t('auth.preferredLanguage') }}</label>
             <div class="grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -267,7 +274,7 @@ async function handleRegister() {
                     ? 'border-primary bg-primary/5 text-primary'
                     : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-highest'
                 ]"
-                @click="language = 'AR'"
+                @click="setLanguage('AR')"
               >
                 العربية (RTL)
               </button>
@@ -279,7 +286,7 @@ async function handleRegister() {
                     ? 'border-primary bg-primary/5 text-primary'
                     : 'border-outline-variant text-on-surface-variant hover:bg-surface-container-highest'
                 ]"
-                @click="language = 'FR'"
+                @click="setLanguage('FR')"
               >
                 Français (LTR)
               </button>
@@ -306,9 +313,9 @@ async function handleRegister() {
               class="inline-flex items-center gap-2"
             >
               <span class="animate-spin material-symbols-outlined text-lg">progress_activity</span>
-              جاري إنشاء الحساب...
+              {{ t('auth.creatingAccount') }}
             </span>
-            <span v-else>إنشاء الحساب</span>
+            <span v-else>{{ t('auth.createAccount') }}</span>
           </button>
         </form>
       </div>
