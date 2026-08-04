@@ -19,6 +19,7 @@ from app.models.user import User
 from app.repositories.content_repo import ContentRepository
 from app.repositories.diagnostic_repo import DiagnosticRepository
 from app.schemas.diagnostic import (
+    AbandonDiagnosticSessionResponse,
     ActiveDiagnosticSessionResponse,
     AnswerSubmitRequest,
     AnswerSubmitResponse,
@@ -451,6 +452,7 @@ async def get_active_session(
 
 @router.post(
     "/session/{session_id}/abandon",
+    response_model=AbandonDiagnosticSessionResponse,
     status_code=status.HTTP_200_OK,
     summary="Abandon diagnostic session",
 )
@@ -458,7 +460,7 @@ async def abandon_session(
     session_id: UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_student),
-):
+) -> AbandonDiagnosticSessionResponse:
     """Explicitly abandon an in-progress diagnostic session."""
     diag_repo = DiagnosticRepository(db)
     session = await diag_repo.get_session(session_id)
@@ -475,4 +477,4 @@ async def abandon_session(
         )
 
     await diag_repo.update_session_status(session_id, DiagnosticSessionStatus.ABANDONED)
-    return {"status": "success", "message": "Session abandoned"}
+    return AbandonDiagnosticSessionResponse(status="success", message="Session abandoned")

@@ -141,14 +141,16 @@ resolution: resolved by sweep bundle dw-analytics-metrics-alignment
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-11-5-diagnostic-resume-banner-on-student-dashboard.md"), 2026-08-04
 location: backend/app/repositories/diagnostic_repo.py
 reason: DiagnosticRepository.get_active_student_session uses .first() on IN_PROGRESS sessions without enforcing database single-active-session unique constraints. Evidence: backend/app/repositories/diagnostic_repo.py get_active_student_session queries select(DiagnosticSession) where status is IN_PROGRESS and takes .first(), which relies on application logic rather than database constraints to prevent multiple concurrent active sessions.
-status: open
+status: done 2026-08-04
+resolution: resolved by sweep bundle dw-diagnostic-session-hardening
 
 ### DW-19: Backend POST /diagnostic/session/{session_id}/abandon endpoint returns inline dict response instead of structured Pydantic schema model.
 
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-11-5-diagnostic-resume-banner-on-student-dashboard.md"), 2026-08-04
 location: backend/app/api/endpoints/diagnostic.py
 reason: Backend POST /diagnostic/session/{session_id}/abandon endpoint returns inline dict response instead of structured Pydantic schema model. Evidence: backend/app/api/endpoints/diagnostic.py abandon_session returns {"status": "success", "message": "Session abandoned"} instead of a Pydantic response schema model.
-status: open
+status: done 2026-08-04
+resolution: resolved by sweep bundle dw-diagnostic-session-hardening
 
 ### DW-20: Missing rate limiting decorator on POST /api/v1/auth/children/{id}/pin endpoint.
 
