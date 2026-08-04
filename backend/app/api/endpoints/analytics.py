@@ -155,6 +155,7 @@ async def get_platform_metrics(
         return MetricResponse(
             gap_reduction_rate=0.0,
             mastery_speed=0.0,
+            mastery_speed_days=0.0,
             retention_rate=0.0,
             effort_vs_results=0.0,
             resilience_score=0.0,

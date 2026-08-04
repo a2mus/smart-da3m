@@ -25,8 +25,6 @@ export interface StudentGroup {
 
 export interface MetricsResponse {
   total_students: number
-  overall_mastery_rate?: number
-  at_risk_students_count?: number
   gap_reduction_rate?: number
   mastery_speed?: number
   mastery_speed_days?: number
@@ -92,7 +90,10 @@ export const analyticsService = {
 
   async getMetrics(): Promise<MetricsResponse> {
     const response = await http.get<MetricsResponse>('/analytics/metrics')
-    return response.data
+    return {
+      ...response.data,
+      total_assessments: response.data?.total_assessments ?? 0,
+    }
   },
 
   async exportReport(

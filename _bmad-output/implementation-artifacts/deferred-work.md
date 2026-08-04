@@ -109,28 +109,32 @@ resolution: resolved by sweep bundle dw-dw-metrics-response-field-alignment
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-dw-metrics-response-field-alignment.md"), 2026-08-04
 location: backend/app/api/endpoints/analytics.py
 reason: Analytics endpoint get_platform_metrics empty profiles path returns mastery_speed_days as null while populated profiles path returns float. Evidence: backend/app/api/endpoints/analytics.py lines 155-163 omits mastery_speed_days in empty-profile MetricResponse initialization.
-status: open
+status: done 2026-08-04
+resolution: resolved by sweep bundle dw-analytics-metrics-alignment
 
 ### DW-15: Frontend MetricsResponse interface retains legacy fields overall_mastery_rate and at_risk_students_count not returned by backend MetricResponse schema.
 
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-dw-metrics-response-field-alignment.md"), 2026-08-04
 location: frontend/src/services/analyticsService.ts
 reason: Frontend MetricsResponse interface retains legacy fields overall_mastery_rate and at_risk_students_count not returned by backend MetricResponse schema. Evidence: frontend/src/services/analyticsService.ts retains overall_mastery_rate and at_risk_students_count optional properties whereas backend/app/schemas/analytics.py MetricResponse does not define them.
-status: open
+status: done 2026-08-04
+resolution: resolved by sweep bundle dw-analytics-metrics-alignment
 
 ### DW-16: Lack of HTTP integration test for mastery_speed_days response field on GET /analytics/metrics endpoint.
 
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-dw-metrics-response-field-alignment.md"), 2026-08-04
 location: backend/tests/api/test_rbac_analytics.py
 reason: Lack of HTTP integration test for mastery_speed_days response field on GET /analytics/metrics endpoint. Evidence: test_metric_response_schema_fields in backend/tests/api/test_rbac_analytics.py validates schema unit model dump but does not test HTTP response payload.
-status: open
+status: done 2026-08-04
+resolution: resolved by sweep bundle dw-analytics-metrics-alignment
 
 ### DW-17: Frontend MetricsResponse total_assessments field required contract lacks runtime fallback guard if backend payload omits field.
 
 origin: migrated from legacy ledger ("_bmad-output/implementation-artifacts/spec-dw-analytics-metrics-cleanup.md"), 2026-08-04
 location: frontend/src/services/analyticsService.ts
 reason: Frontend MetricsResponse total_assessments field required contract lacks runtime fallback guard if backend payload omits field. Evidence: frontend/src/services/analyticsService.ts line 34 defines total_assessments as required number without runtime fallback sanitizer.
-status: open
+status: done 2026-08-04
+resolution: resolved by sweep bundle dw-analytics-metrics-alignment
 
 ### DW-18: DiagnosticRepository.get_active_student_session uses .first() on IN_PROGRESS sessions without enforcing database single-active-session unique constraints.
 
