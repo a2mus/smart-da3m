@@ -2,9 +2,14 @@
 title: 'Diagnostic Session Hardening'
 type: 'bugfix'
 created: '2026-08-04'
+<<<<<<< HEAD
 status: 'done'
 baseline_revision: '38fcb4f2d277515cb818f31a51720b00f4cc3d1a'
 final_revision: '88adb85b83c5cc45aedcc75477b68b360c4cca67'
+=======
+status: 'in-review'
+baseline_revision: '38fcb4f2d277515cb818f31a51720b00f4cc3d1a'
+>>>>>>> 88adb85b83c5cc45aedcc75477b68b360c4cca67
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
