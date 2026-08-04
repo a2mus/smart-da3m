@@ -181,7 +181,12 @@
     "subject": "المادة",
     "gradeLevel": "المستوى الدراسي",
     "domain": "المجال",
-    "competency": "الكفاءة"
+    "competency": "الكفاءة",
+    "livePreview": "معاينة مباشرة",
+    "hidePreview": "إخفاء المعاينة",
+    "showPreview": "عرض المعاينة المباشرة",
+    "studentPreview": "معاينة واجهة التلميذ",
+    "studentPreviewTitle": "المعاينة المباشرة للتلميذ"
   },
   "analytics": {
     "heatmap": "خريطة الكفاءات",

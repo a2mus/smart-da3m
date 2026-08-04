@@ -181,7 +181,12 @@
     "subject": "Matière",
     "gradeLevel": "Niveau scolaire",
     "domain": "Domaine",
-    "competency": "Compétence"
+    "competency": "Compétence",
+    "livePreview": "Aperçu en direct",
+    "hidePreview": "Masquer l'aperçu",
+    "showPreview": "Afficher l'aperçu en direct",
+    "studentPreview": "Aperçu vue élève",
+    "studentPreviewTitle": "Aperçu en direct de l'élève"
   },
   "analytics": {
     "heatmap": "Carte de compétences",

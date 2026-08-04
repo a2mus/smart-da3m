@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import DiagnosticQuestion, { type QuestionData } from '@/components/student/DiagnosticQuestion.vue'
 
 const { t } = useI18n()
 
@@ -54,6 +55,16 @@ const form = reactive<QuestionForm>({
 })
 
 const optionsList = computed(() => form.content.options ?? [])
+
+const previewQuestionData = computed<QuestionData>(() => ({
+  id: props.question?.id ?? 'preview-1',
+  text: form.content.text.trim() ? form.content.text : t('expert.questionPlaceholder', 'السؤال المعاين...'),
+  difficulty_level: form.difficulty_level,
+  options: optionsList.value,
+  type: (form.content.type === 'image_choice' || form.content.type === 'numeric')
+    ? form.content.type
+    : 'multiple_choice',
+}))
 
 const errors = reactive<Partial<Record<string, string>>>({})
 
@@ -120,281 +131,261 @@ const togglePreview = () => {
 <template>
   <div
     data-testid="question-editor"
-    class="bg-warm-50 rounded-2xl p-6 shadow-soft"
+    class="bg-surface-bright rounded-2xl p-6 shadow-soft border border-outline-variant transition-all duration-300"
   >
     <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold text-primary-700">
+      <h2 class="text-2xl font-bold text-primary text-start">
         {{ isEditMode ? t('expert.editQuestion') : t('expert.createQuestion') }}
       </h2>
-      <span
-        v-if="moduleName"
-        class="text-sm text-warm-600 bg-warm-100 px-3 py-1 rounded-full"
-      >
-        {{ moduleName }}
-      </span>
-    </div>
-
-    <form
-      class="space-y-5"
-      @submit.prevent="handleSubmit"
-    >
-      <!-- Question Text -->
-      <div>
-        <label class="block text-sm font-medium text-warm-700 mb-1">
-          {{ t('expert.questionText') }}
-        </label>
-        <textarea
-          v-model="form.content.text"
-          data-testid="question-text-input"
-          rows="3"
-          class="w-full px-4 py-3 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-surface-bright resize-none"
-          :class="{ 'border-red-400': errors.content }"
-          :placeholder="t('expert.questionPlaceholder')"
-        />
-        <p
-          v-if="errors.content"
-          class="text-red-500 text-sm mt-1"
+      <div class="flex items-center gap-3">
+        <span
+          v-if="moduleName"
+          class="text-sm text-on-surface-variant bg-surface-container px-3 py-1 rounded-full font-medium"
         >
-          {{ errors.content }}
-        </p>
-      </div>
-
-      <!-- Question Type -->
-      <div>
-        <label class="block text-sm font-medium text-warm-700 mb-1">
-          {{ t('expert.questionType') }}
-        </label>
-        <select
-          v-model="form.content.type"
-          data-testid="question-type-select"
-          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all bg-surface-bright"
-        >
-          <option value="multiple_choice">
-            {{ t('expert.multipleChoice') }}
-          </option>
-          <option value="image_choice">
-            Image Choice
-          </option>
-          <option value="numeric">
-            Numeric
-          </option>
-          <option value="text">
-            {{ t('expert.textAnswer') }}
-          </option>
-          <option value="interactive">
-            {{ t('expert.interactive') }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Multiple Choice / Image Choice Options -->
-      <div v-if="form.content.type === 'multiple_choice' || form.content.type === 'image_choice'">
-        <label class="block text-sm font-medium text-warm-700 mb-2">
-          {{ form.content.type === 'image_choice' ? 'Image URLs for Options' : t('expert.answerOptions') }}
-        </label>
-        <div class="space-y-2">
-          <div
-            v-for="(option, index) in optionsList"
-            :key="index"
-            class="flex gap-2"
-          >
-            <input
-              v-model="form.content.options![index]"
-              type="text"
-              data-testid="option-input"
-              class="flex-1 px-4 py-2 rounded-xl border-2 border-warm-200 focus:border-primary-400 outline-none transition-all"
-              :placeholder="form.content.type === 'image_choice' ? 'https://example.com/image.png' : t('expert.optionPlaceholder', { number: index + 1 })"
-            >
-            <input
-              v-model="form.content.correct_answer"
-              type="radio"
-              :value="option"
-              class="w-5 h-5 mt-2.5 accent-primary-500"
-              :title="t('expert.markCorrect')"
-            >
-            <button
-              v-if="optionsList.length > 2"
-              type="button"
-              class="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-              @click="removeOption(index)"
-            >
-              ×
-            </button>
-          </div>
-        </div>
+          {{ moduleName }}
+        </span>
         <button
           type="button"
-          data-testid="add-option-button"
-          class="mt-2 text-primary-600 hover:text-primary-700 text-sm font-medium"
-          @click="addOption"
+          data-testid="preview-toggle"
+          class="px-4 py-2 text-sm font-semibold rounded-xl transition-all flex items-center gap-2"
+          :class="showPreview ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high'"
+          @click="togglePreview"
         >
-          + {{ t('expert.addOption') }}
+          <span>{{ showPreview ? t('expert.hidePreview', 'إخفاء المعاينة') : t('expert.livePreview', 'معاينة مباشرة') }}</span>
         </button>
-        <p
-          v-if="errors.options"
-          class="text-red-500 text-sm mt-1"
-        >
-          {{ errors.options }}
-        </p>
-        <p
-          v-if="errors.correct_answer"
-          class="text-red-500 text-sm mt-1"
-        >
-          {{ errors.correct_answer }}
-        </p>
       </div>
+    </div>
 
-      <!-- Numeric Correct Answer -->
-      <div v-else-if="form.content.type === 'numeric'">
-        <label class="block text-sm font-medium text-warm-700 mb-1">
-          Correct Numeric Answer
-        </label>
-        <input
-          v-model="form.content.correct_answer"
-          type="number"
-          step="any"
-          data-testid="numeric-answer-input"
-          class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 outline-none transition-all bg-surface-bright"
-          placeholder="42"
-        >
-        <p
-          v-if="errors.correct_answer"
-          class="text-red-500 text-sm mt-1"
-        >
-          {{ errors.correct_answer }}
-        </p>
-      </div>
-
-      <!-- Metadata -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div :class="['grid gap-6', showPreview ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1']">
+      <!-- Form Column -->
+      <form
+        class="space-y-5"
+        @submit.prevent="handleSubmit"
+      >
+        <!-- Question Text -->
         <div>
-          <label class="block text-sm font-medium text-warm-700 mb-1">
-            {{ t('expert.difficulty') }}
+          <label class="block text-sm font-medium text-on-surface mb-1 text-start">
+            {{ t('expert.questionText') }}
+          </label>
+          <textarea
+            v-model="form.content.text"
+            data-testid="question-text-input"
+            rows="3"
+            class="w-full px-4 py-3 rounded-xl border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all bg-surface-container-low text-on-surface resize-none"
+            :class="{ 'border-error': errors.content }"
+            :placeholder="t('expert.questionPlaceholder')"
+          />
+          <p
+            v-if="errors.content"
+            class="text-error text-sm mt-1 text-start"
+          >
+            {{ errors.content }}
+          </p>
+        </div>
+
+        <!-- Question Type -->
+        <div>
+          <label class="block text-sm font-medium text-on-surface mb-1 text-start">
+            {{ t('expert.questionType') }}
           </label>
           <select
-            v-model="form.difficulty_level"
-            data-testid="difficulty-select"
-            class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 outline-none transition-all bg-surface-bright"
+            v-model="form.content.type"
+            data-testid="question-type-select"
+            class="w-full px-4 py-2.5 rounded-xl border border-outline-variant focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all bg-surface-container-low text-on-surface"
           >
-            <option
-              v-for="n in 10"
-              :key="n"
-              :value="n"
-            >
-              {{ n }}
+            <option value="multiple_choice">
+              {{ t('expert.multipleChoice') }}
+            </option>
+            <option value="image_choice">
+              Image Choice
+            </option>
+            <option value="numeric">
+              Numeric
+            </option>
+            <option value="text">
+              {{ t('expert.textAnswer') }}
+            </option>
+            <option value="interactive">
+              {{ t('expert.interactive') }}
             </option>
           </select>
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-warm-700 mb-1">
-            {{ t('expert.misconception') }}
+        <!-- Multiple Choice / Image Choice Options -->
+        <div v-if="form.content.type === 'multiple_choice' || form.content.type === 'image_choice'">
+          <label class="block text-sm font-medium text-on-surface mb-2 text-start">
+            {{ form.content.type === 'image_choice' ? 'Image URLs for Options' : t('expert.answerOptions') }}
           </label>
-          <input
-            v-model="form.target_misconception_id"
-            type="text"
-            data-testid="misconception-input"
-            class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 outline-none transition-all font-mono text-sm"
-            placeholder="MATH-FRAC-ADD-01"
+          <div class="space-y-2">
+            <div
+              v-for="(option, index) in optionsList"
+              :key="index"
+              class="flex gap-2"
+            >
+              <input
+                v-model="form.content.options![index]"
+                type="text"
+                data-testid="option-input"
+                class="flex-1 px-4 py-2 rounded-xl border border-outline-variant focus:border-primary outline-none transition-all bg-surface-container-low text-on-surface"
+                :placeholder="form.content.type === 'image_choice' ? 'https://example.com/image.png' : t('expert.optionPlaceholder', { number: index + 1 })"
+              >
+              <input
+                v-model="form.content.correct_answer"
+                type="radio"
+                :value="option"
+                class="w-5 h-5 mt-2.5 accent-primary"
+                :title="t('expert.markCorrect')"
+              >
+              <button
+                v-if="optionsList.length > 2"
+                type="button"
+                class="px-3 py-2 text-error hover:bg-error-container/20 rounded-lg transition-colors"
+                @click="removeOption(index)"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            data-testid="add-option-button"
+            class="mt-2 text-primary hover:text-primary/80 text-sm font-medium"
+            @click="addOption"
           >
+            + {{ t('expert.addOption') }}
+          </button>
+          <p
+            v-if="errors.options"
+            class="text-error text-sm mt-1 text-start"
+          >
+            {{ errors.options }}
+          </p>
+          <p
+            v-if="errors.correct_answer"
+            class="text-error text-sm mt-1 text-start"
+          >
+            {{ errors.correct_answer }}
+          </p>
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-warm-700 mb-1">
-            {{ t('expert.timeEstimate') }}
+        <!-- Numeric Correct Answer -->
+        <div v-else-if="form.content.type === 'numeric'">
+          <label class="block text-sm font-medium text-on-surface mb-1 text-start">
+            Correct Numeric Answer
           </label>
           <input
-            v-model.number="form.estimated_time_sec"
+            v-model="form.content.correct_answer"
             type="number"
-            data-testid="time-input"
-            min="5"
-            step="5"
-            class="w-full px-4 py-2.5 rounded-xl border-2 border-warm-200 focus:border-primary-400 outline-none transition-all"
+            step="any"
+            data-testid="numeric-answer-input"
+            class="w-full px-4 py-2.5 rounded-xl border border-outline-variant focus:border-primary outline-none transition-all bg-surface-container-low text-on-surface"
+            placeholder="42"
           >
+          <p
+            v-if="errors.correct_answer"
+            class="text-error text-sm mt-1 text-start"
+          >
+            {{ errors.correct_answer }}
+          </p>
         </div>
-      </div>
 
-      <!-- Preview Toggle -->
-      <div class="flex items-center gap-2">
-        <button
-          type="button"
-          data-testid="preview-toggle"
-          class="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1"
-          @click="togglePreview"
-        >
-          <span>{{ showPreview ? t('expert.hidePreview') : t('expert.showPreview') }}</span>
-        </button>
-      </div>
+        <!-- Metadata -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-on-surface mb-1 text-start">
+              {{ t('expert.difficulty') }}
+            </label>
+            <select
+              v-model="form.difficulty_level"
+              data-testid="difficulty-select"
+              class="w-full px-4 py-2.5 rounded-xl border border-outline-variant focus:border-primary outline-none transition-all bg-surface-container-low text-on-surface"
+            >
+              <option
+                v-for="n in 10"
+                :key="n"
+                :value="n"
+              >
+                {{ n }}
+              </option>
+            </select>
+          </div>
 
-      <!-- Preview Section -->
+          <div>
+            <label class="block text-sm font-medium text-on-surface mb-1 text-start">
+              {{ t('expert.misconception') }}
+            </label>
+            <input
+              v-model="form.target_misconception_id"
+              type="text"
+              data-testid="misconception-input"
+              class="w-full px-4 py-2.5 rounded-xl border border-outline-variant focus:border-primary outline-none transition-all font-mono text-sm bg-surface-container-low text-on-surface"
+              placeholder="MATH-FRAC-ADD-01"
+            >
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-on-surface mb-1 text-start">
+              {{ t('expert.timeEstimate') }}
+            </label>
+            <input
+              v-model.number="form.estimated_time_sec"
+              type="number"
+              data-testid="time-input"
+              min="5"
+              step="5"
+              class="w-full px-4 py-2.5 rounded-xl border border-outline-variant focus:border-primary outline-none transition-all bg-surface-container-low text-on-surface"
+            >
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3 pt-4">
+          <button
+            type="submit"
+            data-testid="save-button"
+            :disabled="isSaving"
+            class="flex-1 px-6 py-3 bg-primary hover:bg-primary/90 disabled:bg-surface-container-highest text-on-primary font-semibold rounded-xl transition-colors shadow-soft flex justify-center items-center gap-2"
+          >
+            <span
+              v-if="isSaving"
+              class="animate-spin"
+            >⟳</span>
+            {{ isSaving ? t('expert.saving') : t('expert.save') }}
+          </button>
+          <button
+            type="button"
+            class="px-6 py-3 bg-surface-container hover:bg-surface-container-high text-on-surface font-semibold rounded-xl transition-colors"
+            @click="handleCancel"
+          >
+            {{ t('expert.cancel') }}
+          </button>
+        </div>
+      </form>
+
+      <!-- Side-by-Side Live Preview Column -->
       <div
         v-if="showPreview"
         data-testid="question-preview"
-        class="student-preview bg-surface-bright rounded-xl p-6 border-2 border-primary-100"
+        class="student-preview bg-surface-container-low rounded-2xl p-6 border-2 border-primary/20 sticky top-6 self-start shadow-soft"
       >
-        <h3 class="text-lg font-semibold text-warm-800 mb-4">
-          {{ t('expert.studentPreview') }}
-        </h3>
-        <p class="text-warm-700 mb-4">
-          {{ form.content.text }}
-        </p>
-
-        <div
-          v-if="form.content.type === 'multiple_choice'"
-          class="space-y-2"
-        >
-          <div
-            v-for="(option, index) in optionsList"
-            :key="index"
-            class="p-3 rounded-lg border-2 border-warm-200 hover:border-primary-300 cursor-pointer transition-colors"
-          >
-            {{ option || t('expert.emptyOption') }}
-          </div>
+        <div class="flex items-center justify-between mb-4 border-b border-outline-variant/60 pb-3">
+          <h3 class="text-lg font-bold text-primary flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+            {{ t('expert.studentPreviewTitle', 'المعاينة المباشرة للتلميذ') }}
+          </h3>
+          <span class="text-xs text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full font-mono font-semibold">
+            {{ form.content.type }}
+          </span>
         </div>
 
-        <div
-          v-else-if="form.content.type === 'image_choice'"
-          class="grid grid-cols-2 gap-4"
-        >
-          <div
-            v-for="(option, index) in optionsList"
-            :key="index"
-            class="p-3 rounded-lg border-2 border-outline-variant hover:border-primary flex flex-col items-center justify-center bg-surface-bright"
-          >
-            <img
-              v-if="option"
-              :src="option"
-              :alt="`Option ${index + 1}`"
-              class="max-h-24 object-contain rounded-md mb-2"
-              @error="($event.target as HTMLImageElement).src = '/placeholder-image.png'"
-            >
-            <span class="text-xs text-on-surface-variant">{{ option || t('expert.emptyOption') }}</span>
-          </div>
+        <div class="py-2">
+          <DiagnosticQuestion
+            :question="previewQuestionData"
+            :question-number="1"
+            :total-questions="1"
+          />
         </div>
       </div>
-
-      <!-- Actions -->
-      <div class="flex gap-3 pt-4">
-        <button
-          type="submit"
-          data-testid="save-button"
-          :disabled="isSaving"
-          class="flex-1 px-6 py-3 bg-primary-500 hover:bg-primary-600 disabled:bg-warm-300 text-on-primary font-semibold rounded-xl transition-colors shadow-soft flex justify-center items-center gap-2"
-        >
-          <span
-            v-if="isSaving"
-            class="animate-spin"
-          >⟳</span>
-          {{ isSaving ? t('expert.saving') : t('expert.save') }}
-        </button>
-        <button
-          type="button"
-          class="px-6 py-3 bg-warm-200 hover:bg-warm-300 text-warm-700 font-semibold rounded-xl transition-colors"
-          @click="handleCancel"
-        >
-          {{ t('expert.cancel') }}
-        </button>
-      </div>
-    </form>
+    </div>
   </div>
 </template>
