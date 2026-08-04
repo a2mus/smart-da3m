@@ -57,6 +57,13 @@ class ActiveDiagnosticSessionResponse(BaseModel):
     started_at: datetime
 
 
+class AbandonDiagnosticSessionResponse(BaseModel):
+    """Schema for abandon diagnostic session response."""
+
+    status: str = Field(default="success", description="Status of the abandon operation")
+    message: str = Field(default="Session abandoned", description="Detail message")
+
+
 # ==================== Answer Submission Schemas ====================
 
 class AnswerSubmitRequest(BaseModel):

@@ -60,7 +60,10 @@ class DiagnosticRepository(BaseRepository[DiagnosticSession]):
                 DiagnosticSession.student_id == student_id,
                 DiagnosticSession.status == DiagnosticSessionStatus.IN_PROGRESS,
             )
-            .order_by(DiagnosticSession.started_at.desc())
+            .order_by(
+                DiagnosticSession.started_at.desc(),
+                DiagnosticSession.id.desc(),
+            )
         )
         return result.scalars().first()
 

@@ -244,3 +244,84 @@ async def test_diagnostic_answer_idempotency_duplicate_submission(async_client: 
         assert data["error_classification"] == "NONE"
         diag_repo_inst.update_or_create_competency_profile.assert_not_called()
         diag_repo_inst.record_answer.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_abandon_diagnostic_session_endpoint(async_client: AsyncClient, db, mock_student):
+    """Test abandon diagnostic session endpoint returns structured Pydantic schema model."""
+    session_id = uuid4()
+
+    mock_session = MagicMock()
+    mock_session.id = session_id
+    mock_session.student_id = mock_student.id
+    mock_session.status = DiagnosticSessionStatus.IN_PROGRESS
+
+    with patch("app.api.endpoints.diagnostic.DiagnosticRepository") as MockDiagRepo, \
+         patch("app.api.endpoints.diagnostic.get_current_student", return_value=mock_student):
+
+        diag_repo_inst = MockDiagRepo.return_value
+        diag_repo_inst.get_session = AsyncMock(return_value=mock_session)
+        diag_repo_inst.update_session_status = AsyncMock()
+
+        response = await async_client.post(
+            f"/api/v1/diagnostic/session/{session_id}/abandon",
+            headers={"Authorization": f"Bearer test-token-{mock_student.id}"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["status"] == "success"
+        assert data["message"] == "Session abandoned"
+        diag_repo_inst.update_session_status.assert_called_once_with(
+            session_id, DiagnosticSessionStatus.ABANDONED
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_active_student_session_ordering_tie_breaker(db):
+    """Test get_active_student_session orders deterministically by started_at desc and id desc."""
+    from app.repositories.diagnostic_repo import DiagnosticRepository
+    from app.core.tenant import reset_active_organization_id, set_active_organization_id
+    from datetime import datetime, timezone
+    from app.models.diagnostic import DiagnosticSession
+
+    student_id = uuid4()
+    org_id = uuid4()
+    module_id = uuid4()
+    fixed_now = datetime.now(timezone.utc)
+
+    id1 = uuid4()
+    id2 = uuid4()
+    if id1 < id2:
+        id_lower, id_higher = id1, id2
+    else:
+        id_lower, id_higher = id2, id1
+
+    session_lower_id = DiagnosticSession(
+        id=id_lower,
+        student_id=student_id,
+        organization_id=org_id,
+        module_id=module_id,
+        status=DiagnosticSessionStatus.IN_PROGRESS,
+        started_at=fixed_now,
+    )
+    session_higher_id = DiagnosticSession(
+        id=id_higher,
+        student_id=student_id,
+        organization_id=org_id,
+        module_id=module_id,
+        status=DiagnosticSessionStatus.IN_PROGRESS,
+        started_at=fixed_now,
+    )
+
+    token = set_active_organization_id(org_id)
+    try:
+        db.add_all([session_lower_id, session_higher_id])
+        await db.commit()
+
+        repo = DiagnosticRepository(db)
+        active_session = await repo.get_active_student_session(student_id)
+        assert active_session is not None
+        assert active_session.id == id_higher
+    finally:
+        reset_active_organization_id(token)
