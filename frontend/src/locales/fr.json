@@ -115,7 +115,17 @@
     "newPinPlaceholder": "Nouveau code PIN (4 chiffres)",
     "savePin": "Enregistrer",
     "pinUpdatedSuccess": "Code PIN mis à jour avec succès",
-    "close": "Fermer"
+    "close": "Fermer",
+    "onboarding": {
+      "title": "Bienvenue ! Lancez le parcours de votre enfant",
+      "subtitle": "Voici les étapes simples pour aider votre enfant à démarrer",
+      "step1Title": "Étape 1 : Donnez à votre enfant son code PIN",
+      "step1Desc": "Code PIN de connexion de votre enfant :",
+      "step2Title": "Étape 2 : Passer le test diagnostique (10 min)",
+      "step2Desc": "Faites passer à votre enfant le test initial pour identifier ses besoins",
+      "step3Title": "Étape 3 : Consulter les recommandations et analyses ici",
+      "step3Desc": "Les aperçus pédagogiques et recommandations s'afficheront automatiquement dès la fin du test"
+    }
   },
   "mastery": {
     "not_started": "Non commencé",

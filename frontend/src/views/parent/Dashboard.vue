@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import SubjectRadarChart from '@/components/parent/SubjectRadarChart.vue'
 import InsightCard from '@/components/parent/InsightCard.vue'
 import PinManagementModal from '@/components/parent/PinManagementModal.vue'
+import ParentOnboardingChecklist from '@/components/parent/ParentOnboardingChecklist.vue'
 import { useDashboardStore } from '@/stores/dashboardStore'
 
 const { locale, t } = useI18n()
@@ -12,9 +13,18 @@ const dashboardStore = useDashboardStore()
 const isPinModalOpen = ref(false)
 const children = computed(() => dashboardStore.children)
 const selectedChildId = computed(() => dashboardStore.selectedChildId)
+const selectedChildSummary = computed(() => dashboardStore.selectedChildSummary)
 const childData = computed(() => dashboardStore.currentChildData)
 const loading = computed(() => dashboardStore.loading)
 const error = computed(() => dashboardStore.error)
+
+const hasDiagnosticHistory = computed(() => {
+  if (!childData.value) return false
+  const hasSubjects = Boolean(childData.value.subjects && childData.value.subjects.length > 0)
+  const hasActivities = Boolean((childData.value.recentActivities || childData.value.recent_activities || []).length > 0)
+  const hasProgress = Boolean((childData.value.overallProgress ?? childData.value.overall_progress ?? 0) > 0)
+  return hasSubjects || hasActivities || hasProgress
+})
 
 const selectChild = (childId: string) => {
   dashboardStore.selectChild(childId)
@@ -158,158 +168,167 @@ onMounted(() => {
         v-else
         class="space-y-6"
       >
-        <!-- Welcome & Summary -->
-        <div class="bg-surface rounded-2xl p-5 shadow-soft">
-          <h2 class="text-lg font-bold text-ink-800 mb-2">
-            {{ t('parent.hello', { name: childData.name }) }}
-          </h2>
-          <p class="text-ink-600 text-sm leading-relaxed">
-            {{ childData.summary }}
-          </p>
+        <!-- Onboarding Checklist for Zero Diagnostic History -->
+        <ParentOnboardingChecklist
+          v-if="!hasDiagnosticHistory"
+          :child-name="childData.name"
+          :child-pin="childData.pinCode || childData.pin_code || selectedChildSummary?.pinCode || selectedChildSummary?.pin_code || '1234'"
+        />
 
-          <!-- Qualitative Primary Status -->
-          <div class="mt-4 flex items-center gap-3">
-            <div class="flex-1">
-              <div class="flex justify-between text-sm mb-1">
-                <span class="text-ink-600">{{ t('parent.overallProgress') }}</span>
-                <span class="font-semibold text-teal-600">
-                  {{ t(`mastery.${(childData.subjects && childData.subjects.length ? childData.subjects[0].mastery_level || childData.subjects[0].masteryLevel || 'FAMILIAR' : 'FAMILIAR').toLowerCase()}`) }}
-                </span>
-              </div>
-              <div class="h-2 bg-ink-200 rounded-full overflow-hidden">
-                <div
-                  class="h-full bg-teal-500 rounded-full transition-all duration-500"
-                  :style="{ width: `${childData.overallProgress ?? childData.overall_progress ?? 50}%` }"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+        <template v-else>
+          <!-- Welcome & Summary -->
+          <div class="bg-surface rounded-2xl p-5 shadow-soft">
+            <h2 class="text-lg font-bold text-ink-800 mb-2">
+              {{ t('parent.hello', { name: childData.name }) }}
+            </h2>
+            <p class="text-ink-600 text-sm leading-relaxed">
+              {{ childData.summary }}
+            </p>
 
-        <!-- Smart Insights Section (Zero Raw Scores - Primary Indicators) -->
-        <div
-          v-if="childData.insights && childData.insights.length > 0"
-          class="bg-surface rounded-2xl p-5 shadow-soft"
-        >
-          <h3 class="text-lg font-bold text-ink-800 mb-4 flex items-center gap-2">
-            <span class="material-symbols-outlined text-teal-600">psychology</span>
-            {{ t('parent.smartInsights', 'Smart Insights') }}
-          </h3>
-          <div class="space-y-3">
-            <InsightCard
-              v-for="insight in childData.insights"
-              :key="insight.id"
-              :title="insight.competencyName || insight.competency_name || t('parent.generalInsight', 'Pedagogical Insight')"
-              :description="insight.text"
-              :priority="insight.type === 'GAP' ? 'high' : insight.type === 'STRENGTH' ? 'low' : 'medium'"
-            />
-          </div>
-        </div>
-
-        <!-- Radar Chart -->
-        <div class="bg-surface rounded-2xl p-5 shadow-soft">
-          <h3 class="text-lg font-bold text-ink-800 mb-4">
-            {{ t('parent.subjectBalance') }}
-          </h3>
-          <SubjectRadarChart
-            :subjects="childData.subjects"
-            class="w-full"
-          />
-        </div>
-
-        <!-- Subject Breakdown -->
-        <div class="bg-surface rounded-2xl p-5 shadow-soft">
-          <h3 class="text-lg font-bold text-ink-800 mb-4">
-            {{ t('parent.subjects') }}
-          </h3>
-          <div class="space-y-3">
-            <div
-              v-for="subject in childData.subjects"
-              :key="subject.competencyId || subject.competency_id"
-              class="flex items-center gap-3 p-3 bg-ink-50 rounded-xl"
-            >
-              <div
-                :class="['w-3 h-3 rounded-full', getMasteryColor(subject.masteryLevel || subject.mastery_level)]"
-              />
+            <!-- Qualitative Primary Status -->
+            <div class="mt-4 flex items-center gap-3">
               <div class="flex-1">
-                <div class="flex justify-between items-center">
-                  <span class="font-medium text-ink-800">{{ subject.name }}</span>
-                  <span class="text-xs px-2 py-1 rounded-md font-semibold text-ink-700 bg-surface-container-high">
-                    {{ t(`mastery.${(subject.masteryLevel || subject.mastery_level || 'FAMILIAR').toLowerCase()}`) }}
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="text-ink-600">{{ t('parent.overallProgress') }}</span>
+                  <span class="font-semibold text-teal-600">
+                    {{ t(`mastery.${(childData.subjects && childData.subjects.length ? childData.subjects[0].mastery_level || childData.subjects[0].masteryLevel || 'FAMILIAR' : 'FAMILIAR').toLowerCase()}`) }}
                   </span>
+                </div>
+                <div class="h-2 bg-ink-200 rounded-full overflow-hidden">
+                  <div
+                    class="h-full bg-teal-500 rounded-full transition-all duration-500"
+                    :style="{ width: `${childData.overallProgress ?? childData.overall_progress ?? 50}%` }"
+                  />
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Daily Reinforcement Recommendation (Off-Platform Activity) -->
-        <div
-          v-if="(childData.daily_recommendation || childData.dailyRecommendation)?.title"
-          class="bg-surface rounded-2xl p-5 shadow-soft border-2 border-teal-500/20"
-        >
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg font-bold text-teal-800">
-              التوصية اليومية (نشاط منزلي)
+          <!-- Smart Insights Section (Zero Raw Scores - Primary Indicators) -->
+          <div
+            v-if="childData.insights && childData.insights.length > 0"
+            class="bg-surface rounded-2xl p-5 shadow-soft"
+          >
+            <h3 class="text-lg font-bold text-ink-800 mb-4 flex items-center gap-2">
+              <span class="material-symbols-outlined text-teal-600">psychology</span>
+              {{ t('parent.smartInsights', 'Smart Insights') }}
             </h3>
-            <span class="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full">
-              نشاط بدون شاشة
-            </span>
+            <div class="space-y-3">
+              <InsightCard
+                v-for="insight in childData.insights"
+                :key="insight.id"
+                :title="insight.competencyName || insight.competency_name || t('parent.generalInsight', 'Pedagogical Insight')"
+                :description="insight.text"
+                :priority="insight.type === 'GAP' ? 'high' : insight.type === 'STRENGTH' ? 'low' : 'medium'"
+              />
+            </div>
           </div>
-          <InsightCard
-            :title="(childData.daily_recommendation || childData.dailyRecommendation)!.title"
-            :description="(childData.daily_recommendation || childData.dailyRecommendation)!.description"
-            :duration="(childData.daily_recommendation || childData.dailyRecommendation)!.duration"
-            :priority="(childData.daily_recommendation || childData.dailyRecommendation)!.priority"
-          />
-        </div>
 
-        <!-- Recommendations -->
-        <div
-          v-if="childData.recommendations && childData.recommendations.length > 0"
-          class="bg-surface rounded-2xl p-5 shadow-soft"
-        >
-          <h3 class="text-lg font-bold text-ink-800 mb-4">
-            {{ t('parent.recommendations') }}
-          </h3>
-          <div class="space-y-3">
-            <InsightCard
-              v-for="(rec, index) in childData.recommendations"
-              :key="index"
-              :title="rec.title"
-              :description="rec.description"
-              :duration="rec.duration"
-              :priority="rec.priority"
+          <!-- Radar Chart -->
+          <div class="bg-surface rounded-2xl p-5 shadow-soft">
+            <h3 class="text-lg font-bold text-ink-800 mb-4">
+              {{ t('parent.subjectBalance') }}
+            </h3>
+            <SubjectRadarChart
+              :subjects="childData.subjects"
+              class="w-full"
             />
           </div>
-        </div>
 
-        <!-- Recent Activities -->
-        <div
-          v-if="(childData.recentActivities || childData.recent_activities || []).length > 0"
-          class="bg-surface rounded-2xl p-5 shadow-soft"
-        >
-          <h3 class="text-lg font-bold text-ink-800 mb-4">
-            {{ t('parent.recentActivities') }}
-          </h3>
-          <div class="grid grid-cols-2 gap-3">
-            <div
-              v-for="activity in (childData.recentActivities || childData.recent_activities || []).slice(0, 4)"
-              :key="activity.timestamp"
-              class="p-3 bg-ink-50 rounded-xl"
-            >
-              <div class="text-2xl mb-1">
-                {{ getActivityIcon(activity.type) }}
-              </div>
-              <div class="text-sm font-medium text-ink-800 line-clamp-2">
-                {{ activity.title }}
-              </div>
-              <div class="text-xs text-ink-500 mt-1">
-                {{ formatRelativeTime(activity.timestamp) }}
+          <!-- Subject Breakdown -->
+          <div class="bg-surface rounded-2xl p-5 shadow-soft">
+            <h3 class="text-lg font-bold text-ink-800 mb-4">
+              {{ t('parent.subjects') }}
+            </h3>
+            <div class="space-y-3">
+              <div
+                v-for="subject in childData.subjects"
+                :key="subject.competencyId || subject.competency_id"
+                class="flex items-center gap-3 p-3 bg-ink-50 rounded-xl"
+              >
+                <div
+                  :class="['w-3 h-3 rounded-full', getMasteryColor(subject.masteryLevel || subject.mastery_level)]"
+                />
+                <div class="flex-1">
+                  <div class="flex justify-between items-center">
+                    <span class="font-medium text-ink-800">{{ subject.name }}</span>
+                    <span class="text-xs px-2 py-1 rounded-md font-semibold text-ink-700 bg-surface-container-high">
+                      {{ t(`mastery.${(subject.masteryLevel || subject.mastery_level || 'FAMILIAR').toLowerCase()}`) }}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+
+          <!-- Daily Reinforcement Recommendation (Off-Platform Activity) -->
+          <div
+            v-if="(childData.daily_recommendation || childData.dailyRecommendation)?.title"
+            class="bg-surface rounded-2xl p-5 shadow-soft border-2 border-teal-500/20"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-bold text-teal-800">
+                التوصية اليومية (نشاط منزلي)
+              </h3>
+              <span class="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full">
+                نشاط بدون شاشة
+              </span>
+            </div>
+            <InsightCard
+              :title="(childData.daily_recommendation || childData.dailyRecommendation)!.title"
+              :description="(childData.daily_recommendation || childData.dailyRecommendation)!.description"
+              :duration="(childData.daily_recommendation || childData.dailyRecommendation)!.duration"
+              :priority="(childData.daily_recommendation || childData.dailyRecommendation)!.priority"
+            />
+          </div>
+
+          <!-- Recommendations -->
+          <div
+            v-if="childData.recommendations && childData.recommendations.length > 0"
+            class="bg-surface rounded-2xl p-5 shadow-soft"
+          >
+            <h3 class="text-lg font-bold text-ink-800 mb-4">
+              {{ t('parent.recommendations') }}
+            </h3>
+            <div class="space-y-3">
+              <InsightCard
+                v-for="(rec, index) in childData.recommendations"
+                :key="index"
+                :title="rec.title"
+                :description="rec.description"
+                :duration="rec.duration"
+                :priority="rec.priority"
+              />
+            </div>
+          </div>
+
+          <!-- Recent Activities -->
+          <div
+            v-if="(childData.recentActivities || childData.recent_activities || []).length > 0"
+            class="bg-surface rounded-2xl p-5 shadow-soft"
+          >
+            <h3 class="text-lg font-bold text-ink-800 mb-4">
+              {{ t('parent.recentActivities') }}
+            </h3>
+            <div class="grid grid-cols-2 gap-3">
+              <div
+                v-for="activity in (childData.recentActivities || childData.recent_activities || []).slice(0, 4)"
+                :key="activity.timestamp"
+                class="p-3 bg-ink-50 rounded-xl"
+              >
+                <div class="text-2xl mb-1">
+                  {{ getActivityIcon(activity.type) }}
+                </div>
+                <div class="text-sm font-medium text-ink-800 line-clamp-2">
+                  {{ activity.title }}
+                </div>
+                <div class="text-xs text-ink-500 mt-1">
+                  {{ formatRelativeTime(activity.timestamp) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
 
