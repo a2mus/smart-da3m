@@ -105,7 +105,17 @@
     "dailyTip": "Conseil du jour",
     "weeklyReport": "Rapport hebdomadaire",
     "smartInsights": "Analyses & Aperçus Pédagogiques",
-    "generalInsight": "Aperçu pédagogique"
+    "generalInsight": "Aperçu pédagogique",
+    "manageChildrenPins": "Gérer les enfants & PINs",
+    "pinModalTitle": "Gestion des PINs des enfants",
+    "pinModalSub": "Afficher et réinitialiser le code PIN à 4 chiffres de chaque enfant",
+    "revealPin": "Révéler",
+    "hidePin": "Masquer",
+    "resetPin": "Changer le PIN",
+    "newPinPlaceholder": "Nouveau code PIN (4 chiffres)",
+    "savePin": "Enregistrer",
+    "pinUpdatedSuccess": "Code PIN mis à jour avec succès",
+    "close": "Fermer"
   },
   "mastery": {
     "not_started": "Non commencé",

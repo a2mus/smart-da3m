@@ -128,6 +128,11 @@ resolution: resolved by sweep bundle dw-dw-metrics-response-field-alignment
   summary: Backend POST /diagnostic/session/{session_id}/abandon endpoint returns inline dict response instead of structured Pydantic schema model.
   evidence: backend/app/api/endpoints/diagnostic.py abandon_session returns {"status": "success", "message": "Session abandoned"} instead of a Pydantic response schema model.
 
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-9-parent-pin-management-modal.md`
+  summary: Missing rate limiting decorator on POST /api/v1/auth/children/{id}/pin endpoint.
+  evidence: Endpoint POST /api/v1/auth/children/{id}/pin in backend/app/api/endpoints/auth.py lacks brute-force rate-limiting protection.
+
+
 
 
 

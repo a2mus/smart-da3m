@@ -134,4 +134,10 @@ export const dashboardService = {
       })),
     }
   },
+
+  async updateChildPin(childId: string, pinCode: string): Promise<ChildSummary> {
+    if (!childId) throw new Error('Missing child identifier')
+    const response = await api.post(`/auth/children/${encodeURIComponent(childId)}/pin`, { pin_code: pinCode })
+    return response.data
+  },
 }

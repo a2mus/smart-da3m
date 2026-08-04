@@ -108,3 +108,17 @@ class StudentCreate(BaseModel):
         if not v.isdigit():
             raise ValueError("PIN code must contain only digits")
         return v
+
+
+class ChildPinResetRequest(BaseModel):
+    """Child PIN reset request by parent."""
+
+    pin_code: str = Field(..., min_length=4, max_length=6)
+
+    @field_validator("pin_code")
+    @classmethod
+    def validate_pin_is_numeric(cls, v: str) -> str:
+        if not v.isascii() or not v.isdigit():
+            raise ValueError("PIN code must contain only ASCII digits")
+        return v
+

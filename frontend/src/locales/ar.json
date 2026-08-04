@@ -105,7 +105,17 @@
     "dailyTip": "نصيحة يومية",
     "weeklyReport": "التقرير الأسبوعي",
     "smartInsights": "رؤى بيداغوجية ذكية",
-    "generalInsight": "ملاحظة تربوية"
+    "generalInsight": "ملاحظة تربوية",
+    "manageChildrenPins": "إدارة الأبناء والرمز السري",
+    "pinModalTitle": "إدارة الرمز السري للأبناء",
+    "pinModalSub": "عرض وإعادة تعيين الرمز السري الخاص بكل طفل",
+    "revealPin": "إظهار",
+    "hidePin": "إخفاء",
+    "resetPin": "تعديل الرمز السري",
+    "newPinPlaceholder": "أدخل رمزا جديدا (4 أرقام)",
+    "savePin": "حفظ الرمز السري",
+    "pinUpdatedSuccess": "تم تحديث الرمز السري بنجاح",
+    "close": "إغلاق"
   },
   "mastery": {
     "not_started": "لم يبدأ بعد",

@@ -23,6 +23,7 @@ from app.db.session import get_db
 from app.models.organization import Organization, OrganizationMember, OrganizationType
 from app.models.user import Language, User, UserRole
 from app.schemas.user import (
+    ChildPinResetRequest,
     LoginRequest,
     ParentRegisterRequest,
     RefreshRequest,
@@ -423,3 +424,43 @@ async def get_current_user_info(
 ) -> User:
     """Get current authenticated user information."""
     return current_user
+
+
+@router.post("/children/{id}/pin", response_model=UserResponse)
+async def reset_child_pin(
+    id: UUID,
+    request: ChildPinResetRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Reset or update a child's PIN code.
+
+    Only the child's parent can perform this action.
+    """
+    if current_user.role != UserRole.PARENT:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only parents can reset a child's PIN",
+        )
+
+    result = await db.execute(
+        select(User).where(
+            User.id == id,
+            User.role == UserRole.STUDENT,
+            User.parent_id == current_user.id,
+        )
+    )
+    child = result.scalar_one_or_none()
+
+    if not child:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Child not found",
+        )
+
+    child.pin_code_hash = get_pin_hash(request.pin_code)
+    await db.commit()
+    await db.refresh(child)
+
+    return child
+

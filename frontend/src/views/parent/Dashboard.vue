@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import AppHeader from '@/components/common/AppHeader.vue'
 import SubjectRadarChart from '@/components/parent/SubjectRadarChart.vue'
 import InsightCard from '@/components/parent/InsightCard.vue'
+import PinManagementModal from '@/components/parent/PinManagementModal.vue'
 import { useDashboardStore } from '@/stores/dashboardStore'
 
 const { locale, t } = useI18n()
 const dashboardStore = useDashboardStore()
 
+const isPinModalOpen = ref(false)
 const children = computed(() => dashboardStore.children)
 const selectedChildId = computed(() => dashboardStore.selectedChildId)
 const childData = computed(() => dashboardStore.currentChildData)
@@ -60,11 +61,35 @@ onMounted(() => {
   <div class="min-h-screen bg-ink-50">
     <!-- Mobile-First Header -->
     <div class="bg-surface shadow-sm sticky top-0 z-10">
-      <div class="max-w-lg mx-auto px-4 py-4">
+      <div class="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
         <h1 class="text-xl font-bold text-teal-700">
           {{ t('parent.dashboard') }}
         </h1>
 
+        <!-- PIN Management Trigger Button -->
+        <button
+          type="button"
+          class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-outline-variant bg-surface-bright text-on-surface hover:bg-surface-container transition-colors flex items-center gap-1.5"
+          @click="isPinModalOpen = true"
+        >
+          <svg
+            class="w-4 h-4 text-primary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
+          </svg>
+          <span>{{ t('parent.manageChildrenPins') }}</span>
+        </button>
+      </div>
+
+      <div class="max-w-lg mx-auto px-4 pb-4">
         <!-- Child Selector -->
         <div
           v-if="children.length > 1"
@@ -287,5 +312,13 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- PIN Management Modal -->
+    <PinManagementModal
+      :is-open="isPinModalOpen"
+      :children-list="children"
+      @close="isPinModalOpen = false"
+      @updated="dashboardStore.fetchChildren()"
+    />
   </div>
 </template>
