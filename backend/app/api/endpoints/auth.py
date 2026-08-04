@@ -418,6 +418,34 @@ async def register_student(
     return new_student
 
 
+# In-memory rate limiter tracking PIN reset request timestamps per parent ID
+_pin_rate_limit_store: dict[str, list[float]] = {}
+PIN_RATE_LIMIT_WINDOW = 60.0  # seconds
+PIN_RATE_LIMIT_MAX_REQUESTS = 5  # max PIN reset requests per minute per parent
+
+
+def reset_pin_rate_limit_store() -> None:
+    """Reset rate limiter store for PIN resets (useful for unit testing)."""
+    _pin_rate_limit_store.clear()
+
+
+def enforce_pin_rate_limit(user_id: str) -> None:
+    """Enforce rate limiting for PIN reset requests per parent user."""
+    from time import time
+    now = time()
+    history = _pin_rate_limit_store.get(user_id, [])
+    recent_history = [t for t in history if now - t < PIN_RATE_LIMIT_WINDOW]
+
+    if len(recent_history) >= PIN_RATE_LIMIT_MAX_REQUESTS:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Rate limit exceeded for PIN updates. Please wait before trying again.",
+        )
+
+    recent_history.append(now)
+    _pin_rate_limit_store[user_id] = recent_history
+
+
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
     current_user: User = Depends(get_current_user),
@@ -437,6 +465,7 @@ async def reset_child_pin(
 
     Only the child's parent can perform this action.
     """
+    enforce_pin_rate_limit(str(current_user.id))
     if current_user.role != UserRole.PARENT:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -444,11 +473,12 @@ async def reset_child_pin(
         )
 
     result = await db.execute(
-        select(User).where(
+        select(User)
+        .where(
             User.id == id,
             User.role == UserRole.STUDENT,
-            User.parent_id == current_user.id,
         )
+        .execution_options(skip_tenant_filter=True)
     )
     child = result.scalar_one_or_none()
 
@@ -456,6 +486,12 @@ async def reset_child_pin(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Child not found",
+        )
+
+    if child.parent_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only reset your own child's PIN",
         )
 
     child.pin_code_hash = get_pin_hash(request.pin_code)

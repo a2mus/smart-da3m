@@ -7,6 +7,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.endpoints.auth import reset_pin_rate_limit_store
 from app.core.security import create_access_token, get_pin_hash, verify_pin
 from app.models.user import User, UserRole
 
@@ -148,3 +149,29 @@ async def test_reset_child_pin_forbidden_for_student_role(
         headers=student_headers,
     )
     assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_reset_child_pin_rate_limiting(
+    async_client: AsyncClient,
+    child_user: User,
+    auth_headers: dict,
+):
+    reset_pin_rate_limit_store()
+    for _ in range(5):
+        res = await async_client.post(
+            f"/api/v1/auth/children/{child_user.id}/pin",
+            json={"pin_code": "5678"},
+            headers=auth_headers,
+        )
+        assert res.status_code == 200
+
+    overflow_res = await async_client.post(
+        f"/api/v1/auth/children/{child_user.id}/pin",
+        json={"pin_code": "5678"},
+        headers=auth_headers,
+    )
+    assert overflow_res.status_code == 429
+    assert "Rate limit exceeded" in overflow_res.json()["detail"]
+    reset_pin_rate_limit_store()
+
