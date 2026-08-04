@@ -216,7 +216,14 @@
     "of": "من",
     "enterAnswer": "أدخل إجابتك هنا...",
     "submitting": "جاري التسجيل...",
-    "next": "التالي"
+    "next": "التالي",
+    "resumeBanner": {
+      "title": "استكمال الاختبار التشخيصي",
+      "progress": "السؤال {current} من {total}",
+      "resume": "متابعة الاختبار",
+      "abandon": "إلغاء الاختبار",
+      "abandonConfirm": "هل أنت متأكد من إلغاء هذا الاختبار التشخيصي؟"
+    }
   },
   "remediation": {
     "title": "مسار المعالجة",

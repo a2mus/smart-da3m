@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import DiagnosticResumeBanner from '@/components/student/DiagnosticResumeBanner.vue'
 
 const { t } = useI18n()
 </script>
@@ -118,6 +119,9 @@ const { t } = useI18n()
 
       <!-- Left Section: Welcome & Current Mission - Responsive Order 1 -->
       <section class="col-span-1 md:col-span-7 flex flex-col gap-8 order-1 md:order-2">
+        <!-- Diagnostic Resume Banner -->
+        <DiagnosticResumeBanner />
+
         <!-- Welcome Hero -->
         <div class="bg-gradient-to-br from-primary to-primary-container rounded-[3rem] p-6 md:p-10 flex flex-col md:flex-row items-center justify-between shadow-[0_20px_50px_rgba(0,83,91,0.15)] relative overflow-hidden text-center md:text-end gap-6 md:gap-0">
           <div class="relative z-10 w-full">

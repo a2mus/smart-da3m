@@ -116,4 +116,18 @@ resolution: resolved by sweep bundle dw-dw-metrics-response-field-alignment
   summary: Lack of HTTP integration test for mastery_speed_days response field on GET /analytics/metrics endpoint.
   evidence: test_metric_response_schema_fields in backend/tests/api/test_rbac_analytics.py validates schema unit model dump but does not test HTTP response payload.
 
+- source_spec: `_bmad-output/implementation-artifacts/spec-dw-analytics-metrics-cleanup.md`
+  summary: Frontend MetricsResponse total_assessments field required contract lacks runtime fallback guard if backend payload omits field.
+  evidence: frontend/src/services/analyticsService.ts line 34 defines total_assessments as required number without runtime fallback sanitizer.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-11-5-diagnostic-resume-banner-on-student-dashboard.md`
+  summary: DiagnosticRepository.get_active_student_session uses .first() on IN_PROGRESS sessions without enforcing database single-active-session unique constraints.
+  evidence: backend/app/repositories/diagnostic_repo.py get_active_student_session queries select(DiagnosticSession) where status is IN_PROGRESS and takes .first(), which relies on application logic rather than database constraints to prevent multiple concurrent active sessions.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-11-5-diagnostic-resume-banner-on-student-dashboard.md`
+  summary: Backend POST /diagnostic/session/{session_id}/abandon endpoint returns inline dict response instead of structured Pydantic schema model.
+  evidence: backend/app/api/endpoints/diagnostic.py abandon_session returns {"status": "success", "message": "Session abandoned"} instead of a Pydantic response schema model.
+
+
+
 

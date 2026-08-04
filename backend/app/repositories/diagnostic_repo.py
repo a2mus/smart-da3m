@@ -50,6 +50,20 @@ class DiagnosticRepository(BaseRepository[DiagnosticSession]):
         """Get a diagnostic session by ID."""
         return await self.get(session_id)
 
+    async def get_active_student_session(
+        self, student_id: UUID
+    ) -> Optional[DiagnosticSession]:
+        """Get the current in-progress diagnostic session for a student if one exists."""
+        result = await self.db.execute(
+            select(DiagnosticSession)
+            .where(
+                DiagnosticSession.student_id == student_id,
+                DiagnosticSession.status == DiagnosticSessionStatus.IN_PROGRESS,
+            )
+            .order_by(DiagnosticSession.started_at.desc())
+        )
+        return result.scalars().first()
+
     async def update_session_status(
         self,
         session_id: UUID,

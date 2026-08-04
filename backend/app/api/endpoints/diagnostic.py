@@ -19,6 +19,7 @@ from app.models.user import User
 from app.repositories.content_repo import ContentRepository
 from app.repositories.diagnostic_repo import DiagnosticRepository
 from app.schemas.diagnostic import (
+    ActiveDiagnosticSessionResponse,
     AnswerSubmitRequest,
     AnswerSubmitResponse,
     CompetencyProfileResponse,
@@ -416,3 +417,62 @@ async def get_competency_profiles(
         )
         for p in profiles
     ]
+
+
+@router.get(
+    "/active-session",
+    response_model=ActiveDiagnosticSessionResponse,
+    summary="Get active diagnostic session for student",
+)
+async def get_active_session(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_student),
+) -> ActiveDiagnosticSessionResponse:
+    """Get student's current in-progress diagnostic session if one exists."""
+    diag_repo = DiagnosticRepository(db)
+    session = await diag_repo.get_active_student_session(current_user.id)
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No active diagnostic session found",
+        )
+
+    answers = await diag_repo.get_session_answers(session.id)
+    question_number = min(len(answers) + 1, 10)
+
+    return ActiveDiagnosticSessionResponse(
+        session_id=session.id,
+        module_id=session.module_id,
+        question_number=question_number,
+        total_questions=10,
+        started_at=session.started_at,
+    )
+
+
+@router.post(
+    "/session/{session_id}/abandon",
+    status_code=status.HTTP_200_OK,
+    summary="Abandon diagnostic session",
+)
+async def abandon_session(
+    session_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_student),
+):
+    """Explicitly abandon an in-progress diagnostic session."""
+    diag_repo = DiagnosticRepository(db)
+    session = await diag_repo.get_session(session_id)
+    if not session or session.student_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found",
+        )
+
+    if session.status != DiagnosticSessionStatus.IN_PROGRESS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Session is not in progress",
+        )
+
+    await diag_repo.update_session_status(session_id, DiagnosticSessionStatus.ABANDONED)
+    return {"status": "success", "message": "Session abandoned"}

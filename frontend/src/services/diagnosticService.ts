@@ -58,6 +58,14 @@ export interface DiagnosticResults {
   completed_at: string
 }
 
+export interface ActiveDiagnosticSession {
+  session_id: string
+  module_id: string
+  question_number: number
+  total_questions: number
+  started_at: string
+}
+
 export interface CompetencyProfile {
   id: string
   student_id: string
@@ -147,6 +155,19 @@ class DiagnosticService {
   async getCompetencyProfiles(): Promise<CompetencyProfile[]> {
     const response = await api.get('/diagnostic/competency-profile')
     return response.data
+  }
+
+  async getActiveSession(): Promise<ActiveDiagnosticSession | null> {
+    try {
+      const response = await api.get('/diagnostic/active-session')
+      return response.data
+    } catch {
+      return null
+    }
+  }
+
+  async abandonSession(sessionId: string): Promise<void> {
+    await api.post(`/diagnostic/session/${sessionId}/abandon`)
   }
 }
 

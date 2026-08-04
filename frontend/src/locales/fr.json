@@ -216,7 +216,14 @@
     "of": "sur",
     "enterAnswer": "Entrez votre réponse ici...",
     "submitting": "Enregistrement...",
-    "next": "Suivant"
+    "next": "Suivant",
+    "resumeBanner": {
+      "title": "Reprendre le diagnostic",
+      "progress": "Question {current} sur {total}",
+      "resume": "Reprendre le test",
+      "abandon": "Abandonner le test",
+      "abandonConfirm": "Êtes-vous sûr de vouloir abandonner ce test diagnostic ?"
+    }
   },
   "remediation": {
     "title": "Parcours de remédiation",

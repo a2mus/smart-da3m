@@ -47,6 +47,16 @@ class StartDiagnosticResponse(BaseModel):
     question_number: int = 1
 
 
+class ActiveDiagnosticSessionResponse(BaseModel):
+    """Schema for active in-progress diagnostic session response."""
+
+    session_id: UUID
+    module_id: UUID
+    question_number: int
+    total_questions: int = 10
+    started_at: datetime
+
+
 # ==================== Answer Submission Schemas ====================
 
 class AnswerSubmitRequest(BaseModel):
